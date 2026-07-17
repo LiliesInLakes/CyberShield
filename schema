@@ -1,0 +1,19 @@
+from pydantic import BaseModel, Field
+from typing import List, Optional
+
+class Finding(BaseModel):
+    id: str
+    category: str  # e.g., "impersonation", "permission", "network"
+    detail: str
+    source: str    # "static" or "dynamic"
+    severity: float = Field(..., ge=0.0, le=1.0)
+
+class EvidenceSpine(BaseModel):
+    sha256: str
+    package_name: Optional[str] = None
+    app_label: Optional[str] = None
+    impersonates: Optional[str] = None
+    findings: List[Finding] = []
+    ml_score: float = 0.0
+    llm_summary: Optional[str] = None
+    final_score: int = 0
