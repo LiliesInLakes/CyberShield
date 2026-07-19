@@ -1,0 +1,29 @@
+{
+  "description": "Trusted Indian banking application whitelist for L0 impersonation checks. Populate icon_phash with the perceptual hash (imagehash.phash) of the official app icon. Use register_icon.py to compute it from an official APK or icon PNG.",
+  "banks": [
+    {
+      "bank_name": "State Bank of India",
+      "package_name": "com.sbi.lotusintouch",
+      "app_label": "YONO SBI",
+      "icon_phash": null
+    },
+    {
+      "bank_name": "HDFC Bank",
+      "package_name": "com.snapwork.hdfc",
+      "app_label": "HDFC Bank MobileBanking",
+      "icon_phash": null
+    },
+    {
+      "bank_name": "ICICI Bank",
+      "package_name": "com.csam.icici.bank.imobile",
+      "app_label": "iMobile",
+      "icon_phash": null
+    },
+    {
+      "bank_name": "Bank of India",
+      "package_name": "com.boi.ua.android",
+      "app_label": "BOI Mobile",
+      "icon_phash": null
+    }
+  ]
+}

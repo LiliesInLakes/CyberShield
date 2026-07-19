@@ -1,0 +1,74 @@
+{
+  "family": "Sharkbot",
+  "source_file": "C:\\Users\\DELL\\AppData\\Local\\Temp\\tmp7fgv8to7\\8f45831b1df8fe44111e35b05271f6ec1796b03c104a67cd6481bf93f2affe86.apk",
+  "fingerprint": {
+    "md5": "38c44fed7fce6446c61858495cd473b2",
+    "sha256": "8f45831b1df8fe44111e35b05271f6ec1796b03c104a67cd6481bf93f2affe86"
+  },
+  "manifest": {
+    "package_name": "com.pjszefgcemwsqpcf.sugwoyqipjtlvqx1gceh2ozt",
+    "app_label": "Norton 360: Online Security",
+    "version_name": "1.0",
+    "version_code": "1",
+    "min_sdk": "26",
+    "target_sdk": "30",
+    "permissions": [
+      "android.permission.ACTION_MANAGE_OVERLAY_PERMISSION",
+      "android.permission.FOREGROUND_SERVICE",
+      "android.permission.INTERNET",
+      "android.permission.QUERY_ALL_PACKAGES",
+      "android.permission.READ_CONTACTS",
+      "android.permission.READ_SMS",
+      "android.permission.RECEIVE_BOOT_COMPLETED",
+      "android.permission.RECEIVE_MMS",
+      "android.permission.RECEIVE_SMS",
+      "android.permission.REQUEST_DELETE_PACKAGES",
+      "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS",
+      "android.permission.REQUEST_INSTALL_PACKAGES",
+      "android.permission.SEND_SMS",
+      "android.permission.SYSTEM_ALERT_WINDOW",
+      "android.permission.WRITE_SMS"
+    ],
+    "permission_count": 15,
+    "high_risk_permissions": [
+      "android.permission.READ_CONTACTS",
+      "android.permission.READ_SMS",
+      "android.permission.RECEIVE_BOOT_COMPLETED",
+      "android.permission.RECEIVE_MMS",
+      "android.permission.RECEIVE_SMS",
+      "android.permission.REQUEST_INSTALL_PACKAGES",
+      "android.permission.SEND_SMS",
+      "android.permission.SYSTEM_ALERT_WINDOW"
+    ],
+    "high_risk_permission_count": 8
+  },
+  "icon": {
+    "present": true,
+    "phash": "92b66c6d63c31bc2",
+    "source": "res/Ey.png",
+    "saved_path": "dataset\\Sharkbot\\8f45831b1df8fe44111e35b05271f6ec1796b03c104a67cd6481bf93f2affe86\\icon.png"
+  },
+  "routing": {
+    "track": "track1_jadx",
+    "dex_files": [
+      "classes.dex"
+    ],
+    "dex_count": 1,
+    "native_libs": [],
+    "native_lib_count": 0,
+    "native_arches": [],
+    "framework_indicators": [
+      "kotlin"
+    ],
+    "packing_signals": [],
+    "routing_decisions": [
+      {
+        "engine": "jadx",
+        "targets": [
+          "classes.dex"
+        ],
+        "reason": "Dalvik bytecode present; decompile smali to Java for static triage."
+      }
+    ]
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "family": "FluBot",
+  "source_file": "C:\\Users\\DELL\\AppData\\Local\\Temp\\tmpgmsl3vda\\6a03efa4ffa38032edfb5b604672e8c9e01a324f8857b5848e8160593dfb325e.apk",
+  "fingerprint": {
+    "md5": "1edd97885a8a7e88694be9971ac317e5",
+    "sha256": "6a03efa4ffa38032edfb5b604672e8c9e01a324f8857b5848e8160593dfb325e"
+  },
+  "manifest": {
+    "package_name": "com.weico.international",
+    "app_label": "DHL",
+    "version_name": "1.5",
+    "version_code": "1",
+    "min_sdk": "24",
+    "target_sdk": "28",
+    "permissions": [
+      "android.permission.ACCESS_NETWORK_STATE",
+      "android.permission.CALL_PHONE",
+      "android.permission.FOREGROUND_SERVICE",
+      "android.permission.INTERNET",
+      "android.permission.KILL_BACKGROUND_PROCESSES",
+      "android.permission.QUERY_ALL_PACKAGES",
+      "android.permission.READ_CONTACTS",
+      "android.permission.READ_PHONE_STATE",
+      "android.permission.READ_SMS",
+      "android.permission.RECEIVE_SMS",
+      "android.permission.REQUEST_DELETE_PACKAGES",
+      "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS",
+      "android.permission.SEND_SMS",
+      "android.permission.WAKE_LOCK",
+      "android.permission.WRITE_SMS"
+    ],
+    "permission_count": 15,
+    "high_risk_permissions": [
+      "android.permission.CALL_PHONE",
+      "android.permission.READ_CONTACTS",
+      "android.permission.READ_PHONE_STATE",
+      "android.permission.READ_SMS",
+      "android.permission.RECEIVE_SMS",
+      "android.permission.SEND_SMS"
+    ],
+    "high_risk_permission_count": 6
+  },
+  "icon": {
+    "present": true,
+    "phash": "94836b7c3c83cb6c",
+    "source": "res/drawable/icon.png",
+    "saved_path": "dataset\\FluBot\\6a03efa4ffa38032edfb5b604672e8c9e01a324f8857b5848e8160593dfb325e\\icon.png"
+  },
+  "routing": {
+    "track": "track1_jadx",
+    "dex_files": [
+      "classes.dex"
+    ],
+    "dex_count": 1,
+    "native_libs": [],
+    "native_lib_count": 0,
+    "native_arches": [],
+    "framework_indicators": [],
+    "packing_signals": [],
+    "routing_decisions": [
+      {
+        "engine": "jadx",
+        "targets": [
+          "classes.dex"
+        ],
+        "reason": "Dalvik bytecode present; decompile smali to Java for static triage."
+      }
+    ]
+  }
+}

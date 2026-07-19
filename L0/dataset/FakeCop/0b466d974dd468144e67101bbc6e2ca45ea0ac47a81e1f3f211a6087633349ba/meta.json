@@ -1,0 +1,98 @@
+{
+  "family": "FakeCop",
+  "source_file": "C:\\Users\\DELL\\AppData\\Local\\Temp\\tmpkyip2hgb\\0b466d974dd468144e67101bbc6e2ca45ea0ac47a81e1f3f211a6087633349ba.apk",
+  "fingerprint": {
+    "md5": "7c872b75ab2c1902c497f5a129712b6c",
+    "sha256": "0b466d974dd468144e67101bbc6e2ca45ea0ac47a81e1f3f211a6087633349ba"
+  },
+  "manifest": {
+    "package_name": "com.again_oct_postmail.lu3",
+    "app_label": "OmaPosti",
+    "version_name": "2.0.1",
+    "version_code": "201",
+    "min_sdk": "19",
+    "target_sdk": "21",
+    "permissions": [
+      "android.permission.ACCESS_NETWORK_STATE",
+      "android.permission.ACCESS_WIFI_STATE",
+      "android.permission.BOOT_COMPLETED",
+      "android.permission.CALL_PHONE",
+      "android.permission.CHANGE_NETWORK_STATE",
+      "android.permission.CHANGE_WIFI_STATE",
+      "android.permission.FOREGROUND_SERVICE",
+      "android.permission.GET_TASKS",
+      "android.permission.INTERNET",
+      "android.permission.MODIFY_AUDIO_SETTINGS",
+      "android.permission.MOUNT_UNMOUNT_FILESYSTEMS",
+      "android.permission.READ_CONTACTS",
+      "android.permission.READ_EXTERNAL_STORAGE",
+      "android.permission.READ_PHONE_STATE",
+      "android.permission.READ_SMS",
+      "android.permission.RECEIVE_BOOT_COMPLETED",
+      "android.permission.RECEIVE_MMS",
+      "android.permission.RECEIVE_SMS",
+      "android.permission.RECEIVE_USER_PRESENT",
+      "android.permission.SEND_SMS",
+      "android.permission.WAKE_LOCK",
+      "android.permission.WRITE_EXTERNAL_STORAGE",
+      "android.permission.WRITE_SMS"
+    ],
+    "permission_count": 23,
+    "high_risk_permissions": [
+      "android.permission.CALL_PHONE",
+      "android.permission.READ_CONTACTS",
+      "android.permission.READ_EXTERNAL_STORAGE",
+      "android.permission.READ_PHONE_STATE",
+      "android.permission.READ_SMS",
+      "android.permission.RECEIVE_BOOT_COMPLETED",
+      "android.permission.RECEIVE_MMS",
+      "android.permission.RECEIVE_SMS",
+      "android.permission.SEND_SMS",
+      "android.permission.WRITE_EXTERNAL_STORAGE"
+    ],
+    "high_risk_permission_count": 10
+  },
+  "icon": {
+    "present": true,
+    "phash": "d0942ee16b963e69",
+    "source": "res/drawable/app_launcher.png",
+    "saved_path": "dataset\\FakeCop\\0b466d974dd468144e67101bbc6e2ca45ea0ac47a81e1f3f211a6087633349ba\\icon.png"
+  },
+  "routing": {
+    "track": "track1_jadx_then_track2_ghidra",
+    "dex_files": [
+      "classes.dex"
+    ],
+    "dex_count": 1,
+    "native_libs": [
+      "assets/libjiagu.so",
+      "assets/libjiagu_a64.so",
+      "assets/libjiagu_x64.so",
+      "assets/libjiagu_x86.so"
+    ],
+    "native_lib_count": 4,
+    "native_arches": [],
+    "framework_indicators": [],
+    "packing_signals": [],
+    "routing_decisions": [
+      {
+        "engine": "jadx",
+        "targets": [
+          "classes.dex"
+        ],
+        "reason": "Dalvik bytecode present; decompile smali to Java for static triage."
+      },
+      {
+        "engine": "ghidra",
+        "targets": [
+          "assets/libjiagu.so",
+          "assets/libjiagu_a64.so",
+          "assets/libjiagu_x64.so",
+          "assets/libjiagu_x86.so"
+        ],
+        "arches": [],
+        "reason": "Native shared libraries present; decompile ARM/x86 .so for C2 strings and hidden payloads."
+      }
+    ]
+  }
+}

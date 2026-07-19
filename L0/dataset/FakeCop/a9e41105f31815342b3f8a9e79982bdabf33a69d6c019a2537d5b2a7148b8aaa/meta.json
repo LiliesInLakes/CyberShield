@@ -1,0 +1,108 @@
+{
+  "family": "FakeCop",
+  "source_file": "C:\\Users\\DELL\\AppData\\Local\\Temp\\tmpbwftqzk0\\a9e41105f31815342b3f8a9e79982bdabf33a69d6c019a2537d5b2a7148b8aaa.apk",
+  "fingerprint": {
+    "md5": "cdfc15fac150c16f980d4b2678152353",
+    "sha256": "a9e41105f31815342b3f8a9e79982bdabf33a69d6c019a2537d5b2a7148b8aaa"
+  },
+  "manifest": {
+    "package_name": "com.google.hot",
+    "app_label": "postnord",
+    "version_name": "1.0.0",
+    "version_code": "4",
+    "min_sdk": "19",
+    "target_sdk": "21",
+    "permissions": [
+      "android.permission.ACCESS_FINE_LOCATION",
+      "android.permission.ACCESS_NETWORK_STATE",
+      "android.permission.ACCESS_WIFI_STATE",
+      "android.permission.BATTERY_STATS",
+      "android.permission.BOOT_COMPLETED",
+      "android.permission.CHANGE_CONFIGURATION",
+      "android.permission.CHANGE_NETWORK_STATE",
+      "android.permission.CHANGE_WIFI_MULTICAST_STATE",
+      "android.permission.CHANGE_WIFI_STATE",
+      "android.permission.EXPAND_STATUS_BAR",
+      "android.permission.FOREGROUND_SERVICE",
+      "android.permission.GET_PACKAGE_SIZE",
+      "android.permission.GET_TASKS",
+      "android.permission.INTERNET",
+      "android.permission.KILL_BACKGROUND_PROCESSES",
+      "android.permission.MODIFY_AUDIO_SETTINGS",
+      "android.permission.READ_CONTACTS",
+      "android.permission.READ_EXTERNAL_STORAGE",
+      "android.permission.READ_LOGS",
+      "android.permission.READ_PHONE_STATE",
+      "android.permission.READ_SMS",
+      "android.permission.RECEIVE_BOOT_COMPLETED",
+      "android.permission.RECEIVE_MMS",
+      "android.permission.RECEIVE_SMS",
+      "android.permission.RECEIVE_USER_PRESENT",
+      "android.permission.RECORD_AUDIO",
+      "android.permission.RESTART_PACKAGES",
+      "android.permission.SEND_SMS",
+      "android.permission.SET_WALLPAPER",
+      "android.permission.SET_WALLPAPER_HINTS",
+      "android.permission.WAKE_LOCK",
+      "android.permission.WRITE_EXTERNAL_STORAGE",
+      "android.permission.WRITE_SMS",
+      "com.android.launcher.permission.INSTALL_SHORTCUT"
+    ],
+    "permission_count": 34,
+    "high_risk_permissions": [
+      "android.permission.ACCESS_FINE_LOCATION",
+      "android.permission.READ_CONTACTS",
+      "android.permission.READ_EXTERNAL_STORAGE",
+      "android.permission.READ_PHONE_STATE",
+      "android.permission.READ_SMS",
+      "android.permission.RECEIVE_BOOT_COMPLETED",
+      "android.permission.RECEIVE_MMS",
+      "android.permission.RECEIVE_SMS",
+      "android.permission.RECORD_AUDIO",
+      "android.permission.SEND_SMS",
+      "android.permission.WRITE_EXTERNAL_STORAGE"
+    ],
+    "high_risk_permission_count": 11
+  },
+  "icon": {
+    "present": true,
+    "phash": "faa1e59691658479",
+    "source": "res/drawable/app_launcher.png",
+    "saved_path": "dataset\\FakeCop\\a9e41105f31815342b3f8a9e79982bdabf33a69d6c019a2537d5b2a7148b8aaa\\icon.png"
+  },
+  "routing": {
+    "track": "track1_jadx_then_track2_ghidra",
+    "dex_files": [
+      "classes.dex"
+    ],
+    "dex_count": 1,
+    "native_libs": [
+      "lib/armeabi/libaa.so"
+    ],
+    "native_lib_count": 1,
+    "native_arches": [
+      "armeabi"
+    ],
+    "framework_indicators": [],
+    "packing_signals": [],
+    "routing_decisions": [
+      {
+        "engine": "jadx",
+        "targets": [
+          "classes.dex"
+        ],
+        "reason": "Dalvik bytecode present; decompile smali to Java for static triage."
+      },
+      {
+        "engine": "ghidra",
+        "targets": [
+          "lib/armeabi/libaa.so"
+        ],
+        "arches": [
+          "armeabi"
+        ],
+        "reason": "Native shared libraries present; decompile ARM/x86 .so for C2 strings and hidden payloads."
+      }
+    ]
+  }
+}

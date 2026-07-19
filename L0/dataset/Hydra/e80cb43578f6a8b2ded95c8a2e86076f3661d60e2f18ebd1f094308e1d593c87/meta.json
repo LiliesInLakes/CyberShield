@@ -1,0 +1,90 @@
+{
+  "family": "Hydra",
+  "source_file": "C:\\Users\\DELL\\AppData\\Local\\Temp\\tmpjup78pwl\\e80cb43578f6a8b2ded95c8a2e86076f3661d60e2f18ebd1f094308e1d593c87.apk",
+  "fingerprint": {
+    "md5": "9326a01f58049dcd9947e91c71972fba",
+    "sha256": "e80cb43578f6a8b2ded95c8a2e86076f3661d60e2f18ebd1f094308e1d593c87"
+  },
+  "manifest": {
+    "package_name": "com.donor.festival",
+    "app_label": "BAWAG P.S.K. Security",
+    "version_name": "1.0",
+    "version_code": "1",
+    "min_sdk": "24",
+    "target_sdk": "28",
+    "permissions": [
+      "android.permission.ACCESS_NETWORK_STATE",
+      "android.permission.ACCESS_NOTIFICATION_POLICY",
+      "android.permission.ACCESS_WIFI_STATE",
+      "android.permission.ACTION_MANAGE_OVERLAY_PERMISSION",
+      "android.permission.CALL_PHONE",
+      "android.permission.CAPTURE_VIDEO_OUTPUT",
+      "android.permission.CHANGE_WIFI_STATE",
+      "android.permission.DISABLE_KEYGUARD",
+      "android.permission.FOREGROUND_SERVICE",
+      "android.permission.GET_TASKS",
+      "android.permission.INTERNET",
+      "android.permission.MODIFY_AUDIO_SETTINGS",
+      "android.permission.QUERY_ALL_PACKAGES",
+      "android.permission.QUICKBOOT_POWERON",
+      "android.permission.READ_CONTACTS",
+      "android.permission.READ_PHONE_NUMBERS",
+      "android.permission.READ_SMS",
+      "android.permission.RECEIVE_BOOT_COMPLETED",
+      "android.permission.RECEIVE_LAUNCH_BROADCASTS",
+      "android.permission.RECEIVE_SMS",
+      "android.permission.REORDER_TASKS",
+      "android.permission.REQUEST_DELETE_PACKAGES",
+      "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS",
+      "android.permission.REQUEST_INSTALL_PACKAGES",
+      "android.permission.SEND_SMS",
+      "android.permission.SYSTEM_ALERT_WINDOW",
+      "android.permission.WAKE_LOCK",
+      "android.permission.WRITE_EXTERNAL_STORAGE",
+      "android.permission.WRITE_SMS"
+    ],
+    "permission_count": 29,
+    "high_risk_permissions": [
+      "android.permission.CALL_PHONE",
+      "android.permission.READ_CONTACTS",
+      "android.permission.READ_PHONE_NUMBERS",
+      "android.permission.READ_SMS",
+      "android.permission.RECEIVE_BOOT_COMPLETED",
+      "android.permission.RECEIVE_SMS",
+      "android.permission.REQUEST_INSTALL_PACKAGES",
+      "android.permission.SEND_SMS",
+      "android.permission.SYSTEM_ALERT_WINDOW",
+      "android.permission.WRITE_EXTERNAL_STORAGE"
+    ],
+    "high_risk_permission_count": 10
+  },
+  "icon": {
+    "present": true,
+    "phash": "b93be6e493b18c82",
+    "source": "res/mipmap/ic_launcher.png",
+    "saved_path": "dataset\\Hydra\\e80cb43578f6a8b2ded95c8a2e86076f3661d60e2f18ebd1f094308e1d593c87\\icon.png"
+  },
+  "routing": {
+    "track": "track1_jadx",
+    "dex_files": [
+      "classes.dex"
+    ],
+    "dex_count": 1,
+    "native_libs": [],
+    "native_lib_count": 0,
+    "native_arches": [],
+    "framework_indicators": [
+      "kotlin"
+    ],
+    "packing_signals": [],
+    "routing_decisions": [
+      {
+        "engine": "jadx",
+        "targets": [
+          "classes.dex"
+        ],
+        "reason": "Dalvik bytecode present; decompile smali to Java for static triage."
+      }
+    ]
+  }
+}
