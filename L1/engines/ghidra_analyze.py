@@ -5,17 +5,21 @@ Uses ThreadPoolExecutor to analyse multiple .so in parallel.
 
 from __future__ import annotations
 
+import os
 import subprocess
 import tempfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
-from schema import L1Finding, L1Report, Severity, Category
+from schema import L1Finding, L1Report, Severity, Category, CATEGORY_MITRE_MAP
 from engines.yara_scan import scan_text
 
-GHIDRA_DIR = Path(r"D:\BOI\tools\ghidra\ghidra_12.1.2_PUBLIC")
-ANALYZE_HEADLESS = GHIDRA_DIR / "support" / "analyzeHeadless.bat"
-_JDK21 = Path(r"C:\Users\DELL\scoop\apps\temurin21-jdk\current")
+# Resolve via env var (set by setup_env.sh) or assume they are in PATH
+GHIDRA_DIR = Path(os.environ.get("GHIDRA_HOME", "/opt/apk-sentinel/tools/ghidra/ghidra_12.1.2_PUBLIC"))
+# On Linux it's just analyzeHeadless, on Windows .bat
+_analyze_headless = "analyzeHeadless.bat" if os.name == "nt" else "analyzeHeadless"
+ANALYZE_HEADLESS = GHIDRA_DIR / "support" / _analyze_headless
+_JDK21 = Path(os.environ.get("JDK21_HOME", "/usr/lib/jvm/java-21-openjdk-amd64"))
 EXPORT_SCRIPT = r"""
 from __future__ import print_function
 f = open(r"{out}", "w")
@@ -34,7 +38,9 @@ def _export_strings(target: Path, out_file: Path, timeout: int = 900) -> bool:
     script = Path(proj) / "export_strings.py"
     script.write_text(EXPORT_SCRIPT.format(out=str(out_file)))
     env = dict(__import__("os").environ)
-    env["JAVA_HOME"] = str(_JDK21)
+    if _JDK21.exists():
+        env["JAVA_HOME"] = str(_JDK21)
+        env["PATH"] = f"{_JDK21}/bin{__import__('os').pathsep}{env.get('PATH', '')}"
     cmd = [
         str(ANALYZE_HEADLESS),
         proj, "l1proj",
@@ -121,6 +127,7 @@ def analyze(apk_path: str | Path, sha256: str, track: str, l0_evidence: dict,
                 engine="ghidra", category=Category.NATIVE_PAYLOAD, severity=Severity.MEDIUM,
                 evidence=f"JNI native method present in {so.name}",
                 location=f"native_export:{so.name}",
+                mitre_techniques=CATEGORY_MITRE_MAP.get(Category.NATIVE_PAYLOAD, []),
             ))
             break
 
@@ -129,6 +136,7 @@ def analyze(apk_path: str | Path, sha256: str, track: str, l0_evidence: dict,
             engine="ghidra", category=Category.OTHER, severity=Severity.INFO,
             evidence="Ghidra analysis completed with no findings",
             location="ghidra_summary",
+            mitre_techniques=[],
         ))
 
     counts = {s.value: 0 for s in [Severity.INFO, Severity.LOW, Severity.MEDIUM, Severity.HIGH, Severity.CRITICAL]}

@@ -19,7 +19,7 @@ from typing import Any
 
 import yara
 
-from schema import L1Finding, Severity, Category
+from schema import L1Finding, Severity, Category, CATEGORY_MITRE_MAP
 
 # Library path prefixes to exclude from source scanning (never app code)
 _EXCLUDE_SOURCE_PREFIXES = (
@@ -97,6 +97,7 @@ def _findings_from_matches(matches: list, engine_label: str) -> list[L1Finding]:
                 severity=sev,
                 evidence=f"[{rule_name}] {desc} -> {data}",
                 location=sm.identifier if sm.instances else rule_name,
+                mitre_techniques=CATEGORY_MITRE_MAP.get(cat, []),
                 detail={"yara_rule": rule_name, "matched_strings": len(string_matches)},
             ))
         if not string_matches:
@@ -109,6 +110,7 @@ def _findings_from_matches(matches: list, engine_label: str) -> list[L1Finding]:
                     severity=sev,
                     evidence=f"[{rule_name}] {desc}",
                     location=rule_name,
+                    mitre_techniques=CATEGORY_MITRE_MAP.get(cat, []),
                     detail={"yara_rule": rule_name, "matched_strings": 0},
                 ))
     return findings
@@ -375,6 +377,7 @@ def _scan_batch(
                     severity=sev,
                     evidence=f"[{rule_name}] {desc} -> {data}",
                     location=f"{rel}:{sm.identifier}",
+                    mitre_techniques=CATEGORY_MITRE_MAP.get(cat, []),
                     detail={"yara_rule": rule_name, "source_file": rel},
                 ))
                 break  # one finding per rule per file
@@ -389,6 +392,7 @@ def _scan_batch(
                     severity=sev,
                     evidence=f"[{rule_name}] {desc}",
                     location=rule_name,
+                    mitre_techniques=CATEGORY_MITRE_MAP.get(cat, []),
                     detail={"yara_rule": rule_name, "source_file": ""},
                 ))
 
@@ -487,6 +491,7 @@ def scan_text(text: str, source_label: str = "text") -> list[L1Finding]:
                     severity=sev,
                     evidence=f"[{rule_name}] {desc} -> {data}",
                     location=f"{source_label}:{sm.identifier}",
+                    mitre_techniques=CATEGORY_MITRE_MAP.get(cat, []),
                     detail={"yara_rule": rule_name},
                 ))
                 break
@@ -500,6 +505,7 @@ def scan_text(text: str, source_label: str = "text") -> list[L1Finding]:
                     severity=sev,
                     evidence=f"[{rule_name}] {desc}",
                     location=rule_name,
+                    mitre_techniques=CATEGORY_MITRE_MAP.get(cat, []),
                     detail={"yara_rule": rule_name},
                 ))
     return findings

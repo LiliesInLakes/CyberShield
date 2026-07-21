@@ -37,7 +37,37 @@ class Category(str, Enum):
     PHISHING_IMPERSONATION = "phishing_impersonation"
     PRIVILEGE_ESCALATION = "privilege_escalation"
     EVASION = "evasion"
+    CLIPBOARD_HIJACK = "clipboard_hijack"
+    NOTIFICATION_ABUSE = "notification_abuse"
+    SCREEN_CAPTURE = "screen_capture"
+    MESSAGING_C2 = "messaging_c2"
     OTHER = "other"
+
+
+CATEGORY_MITRE_MAP: dict[Category, list[str]] = {
+    Category.SMS_INTERCEPT:          ["T1636.004"],       # Protected User Data: SMS
+    Category.OVERLAY:                ["T1417.002"],       # Input Capture: GUI Input
+    Category.ACCESSIBILITY_ABUSE:    ["T1453"],           # Abuse Accessibility Features
+    Category.C2_COMMS:               ["T1437"],           # Application Layer Protocol
+    Category.DATA_EXFIL:             ["T1646", "T1532"],  # Exfil Over C2, Data Staged
+    Category.RANSOMWARE:             ["T1471"],           # Data Encrypted for Impact
+    Category.PACKING:                ["T1406"],           # Obfuscated Files or Info
+    Category.NATIVE_PAYLOAD:         ["T1407"],           # Download New Code at Runtime
+    Category.PHISHING_IMPERSONATION: ["T1660"],           # Phishing
+    Category.PRIVILEGE_ESCALATION:   ["T1626"],           # Abuse Elevation Control
+    Category.EVASION:                ["T1418", "T1523"],  # Software Discovery, Evade Analysis
+    Category.CLIPBOARD_HIJACK:       ["T1414"],           # Clipboard Data
+    Category.NOTIFICATION_ABUSE:     ["T1517"],           # Access Notifications
+    Category.SCREEN_CAPTURE:         ["T1513"],           # Screen Capture
+    Category.MESSAGING_C2:           ["T1437.001"],       # Web Protocols (messaging API)
+    Category.OTHER:                  [],
+}
+
+
+class ObservationSource(str, Enum):
+    INFERRED = "inferred"       # Static analysis — default for L1
+    OBSERVED = "observed"       # Runtime-confirmed — set by L2
+    CONFIRMED = "confirmed"     # Analyst-verified — set by L6 feedback loop
 
 
 @dataclass
@@ -47,12 +77,15 @@ class L1Finding:
     severity: Severity
     evidence: str
     location: str = ""
+    mitre_techniques: list[str] = field(default_factory=list)
+    observation: ObservationSource = ObservationSource.INFERRED
     detail: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
         d["category"] = self.category.value
         d["severity"] = self.severity.value
+        d["observation"] = self.observation.value
         return d
 
 

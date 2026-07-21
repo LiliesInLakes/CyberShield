@@ -10,22 +10,24 @@ is only v8 and too old for jadx 1.5.6).
 
 from __future__ import annotations
 
+import os
 import subprocess
 from pathlib import Path
 
 from schema import L1Finding, L1Report, Severity
 from engines.yara_scan import scan_sources
 
-JADX_DIR = Path(r"D:\BOI\tools\jadx")
-JDK_DIR = Path(r"D:\BOI\tools\jdk17\jdk-17.0.19+10")
+# Resolve via env var (set by setup_env.sh) or assume they are in PATH
+JADX_DIR = Path(os.environ.get("JADX_DIR", "/opt/apk-sentinel/tools/jadx"))
+JDK_DIR = Path(os.environ.get("JDK17_HOME", "/usr/lib/jvm/java-17-openjdk-amd64"))
 JADX_JAR = JADX_DIR / "lib" / "jadx-1.5.6-all.jar"
 
 
 def _java() -> str:
-    java = JDK_DIR / "bin" / "java.exe"
+    java = JDK_DIR / "bin" / "java"
     if java.exists():
         return str(java)
-    return "java"  # fall back to PATH if user fixed system Java
+    return "java"  # fall back to PATH
 
 
 def decompile(apk_path: Path, out_dir: Path, timeout: int = 600) -> bool:

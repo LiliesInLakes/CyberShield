@@ -136,6 +136,60 @@ def extract_icon_phash(apk: APK, artifacts_dir: Path | None = None) -> dict[str,
     return result
 
 
+def extract_cert_info(apk: APK) -> dict[str, Any]:
+    """Extract signing certificate metadata.
+
+    Two standalone signals that need no reference data:
+      - self_signed: issuer == subject (no legitimate bank app is self-signed)
+      - debug_signed: subject contains "Android Debug" (dev forgot to sign)
+
+    The sha256_fingerprint enables whitelist matching when reference data exists.
+    """
+    result: dict[str, Any] = {
+        "present": False,
+        "sha256_fingerprint": None,
+        "issuer": None,
+        "subject": None,
+        "serial_number": None,
+        "not_before": None,
+        "not_after": None,
+        "self_signed": None,
+        "debug_signed": None,
+    }
+    try:
+        certs = apk.get_certificates()
+        if not certs:
+            return result
+        cert = certs[0]  # Primary signing cert
+        result["present"] = True
+        # Compute SHA-256 fingerprint from DER-encoded cert
+        import hashlib as _hl
+        der_bytes = cert.public_bytes(encoding=__import__("cryptography").x509.base.serialization.Encoding.DER)
+        result["sha256_fingerprint"] = _hl.sha256(der_bytes).hexdigest()
+        issuer = cert.issuer.rfc4514_string()
+        subject = cert.subject.rfc4514_string()
+        result["issuer"] = issuer
+        result["subject"] = subject
+        result["serial_number"] = str(cert.serial_number)
+        result["not_before"] = str(cert.not_valid_before_utc)
+        result["not_after"] = str(cert.not_valid_after_utc)
+        result["self_signed"] = (issuer == subject)
+        result["debug_signed"] = "android debug" in subject.lower()
+    except Exception as exc:  # noqa: BLE001
+        # Fallback: try androguard's simpler cert API
+        try:
+            certs_v2 = apk.get_certificates_der_v2()
+            if certs_v2:
+                import hashlib as _hl
+                der = certs_v2[0]
+                result["present"] = True
+                result["sha256_fingerprint"] = _hl.sha256(der).hexdigest()
+        except Exception:  # noqa: BLE001
+            pass
+        result["error"] = str(exc)
+    return result
+
+
 def load_threat_cache() -> dict[str, Any]:
     if not CACHE_PATH.exists():
         return {"hashes": {}}
@@ -157,7 +211,22 @@ def load_whitelist() -> dict[str, Any]:
         return json.load(fh)
 
 
-def impersonation_check(manifest: dict, icon: dict, whitelist: dict, threshold: int = 8, detected_logos: list[str] | None = None) -> dict[str, Any]:
+def _best_label_sim(app_label: str, bank: dict) -> float:
+    """Check app_label against a bank's primary label and alt_labels."""
+    app_lower = (app_label or "").lower()
+    best = _label_similarity(bank.get("app_label", "").lower(), app_lower)
+    for alt in bank.get("alt_labels", []):
+        sim = _label_similarity(alt.lower(), app_lower)
+        if sim > best:
+            best = sim
+    # Also check if bank_name appears as substring
+    bank_name = bank.get("bank_name", "").lower()
+    if bank_name and bank_name in app_lower:
+        best = max(best, 0.75)
+    return best
+
+
+def impersonation_check(manifest: dict, icon: dict, whitelist: dict, threshold: int = 8, detected_logos: list[str] | None = None, cert_info: dict[str, Any] | None = None) -> dict[str, Any]:
     findings = []
     matched_bank = None
     closest = None
@@ -167,11 +236,10 @@ def impersonation_check(manifest: dict, icon: dict, whitelist: dict, threshold: 
     trusted_names = {b.get("bank_name", "").lower() for b in banks}
     for bank in banks:
         pkg = bank.get("package_name", "")
-        label = bank.get("app_label", "").lower()
         trusted_phash = bank.get("icon_phash")
 
         pkg_match = bool(pkg) and pkg == manifest.get("package_name")
-        label_sim = _label_similarity(label, (manifest.get("app_label") or "").lower())
+        label_sim = _best_label_sim(manifest.get("app_label"), bank)
 
         dist = None
         if trusted_phash and icon.get("phash"):
@@ -226,6 +294,62 @@ def impersonation_check(manifest: dict, icon: dict, whitelist: dict, threshold: 
                     matched_bank = matched_bank or logo
     findings.extend(logo_findings)
 
+    # ── Certificate-based signals (asymmetric weighting) ──────────────
+    # Cert in whitelist  → strong positive  (+0.9)
+    # Cert unknown        → neutral          (0.0) — absence ≠ evidence
+    # Self-signed + bank  → red flag         (-0.9)
+    # Debug-signed        → moderate negative (-0.5)
+    cert_signal: dict[str, Any] = {
+        "cert_in_whitelist": False,
+        "cert_weight": 0.0,
+        "cert_detail": None,
+    }
+    if cert_info and cert_info.get("present"):
+        fp = cert_info.get("sha256_fingerprint")
+
+        # Positive match: cert fingerprint is in our verified whitelist
+        for bank in banks:
+            ref_cert = bank.get("cert_sha256")
+            if ref_cert and fp and ref_cert.lower() == fp.lower():
+                cert_signal["cert_in_whitelist"] = True
+                cert_signal["cert_weight"] = 0.9
+                cert_signal["cert_detail"] = f"Certificate matches verified {bank.get('bank_name')} cert"
+                matched_bank = bank.get("bank_name")
+                break
+
+        # Self-signed check (only fires if cert NOT already matched)
+        if not cert_signal["cert_in_whitelist"] and cert_info.get("self_signed"):
+            looks_like_bank = any(
+                _best_label_sim(manifest.get("app_label"), b) >= 0.6
+                for b in banks
+            )
+            if looks_like_bank:
+                cert_signal["cert_weight"] = -0.9
+                cert_signal["cert_detail"] = "Self-signed cert on bank-branded app"
+                findings.append({
+                    "type": "self_signed_bank_impersonation",
+                    "severity": "critical",
+                    "detail": "Self-signed certificate on an app mimicking a bank. "
+                              "No legitimate Indian bank ships self-signed.",
+                })
+            else:
+                cert_signal["cert_weight"] = -0.4
+                cert_signal["cert_detail"] = "Self-signed certificate (not bank-branded)"
+
+        # Debug-signed check
+        if not cert_signal["cert_in_whitelist"] and cert_info.get("debug_signed"):
+            cert_signal["cert_weight"] = -0.5
+            cert_signal["cert_detail"] = "Debug-signed certificate — never legitimate for distribution"
+            findings.append({
+                "type": "debug_signed",
+                "severity": "high",
+                "detail": "APK signed with Android debug key — not intended for release.",
+            })
+
+        # If cert not in whitelist and not self-signed/debug → NEUTRAL (0.0)
+        # This is intentional: we can't penalise unknown certs because we'll
+        # never have every legitimate cert. The whitelist grows over time.
+
     verdict = "trusted" if matched_bank else ("suspicious" if findings else "unknown")
     return {
         "verdict": verdict,
@@ -234,6 +358,7 @@ def impersonation_check(manifest: dict, icon: dict, whitelist: dict, threshold: 
         "closest_phash_distance": int(min_dist) if min_dist is not None else None,
         "phash_threshold": threshold,
         "vision_logos": detected_logos,
+        "cert_signal": cert_signal,
         "findings": findings,
     }
 
@@ -458,6 +583,7 @@ def run_l0(apk_path: str | Path, out_path: str | Path | None = None, vt_api_key:
     manifest = harvest_manifest(apk)
     artifacts_dir = L0_DIR / "artifacts" / hashes["sha256"]
     icon = extract_icon_phash(apk, artifacts_dir)
+    cert_info = extract_cert_info(apk)
     whitelist = load_whitelist()
     cache = load_threat_cache()
     local_hit = None if force_external else lookup_local_cache(hashes["sha256"], cache)
@@ -466,7 +592,7 @@ def run_l0(apk_path: str | Path, out_path: str | Path | None = None, vt_api_key:
     icon_file = L0_DIR / icon["saved_path"] if icon.get("saved_path") else None
     detected_logos = detect_logo_vision(icon_file, vision_key)
     vision_logos = detected_logos.get("detected_logos") if detected_logos else None
-    impersonation = impersonation_check(manifest, icon, whitelist, detected_logos=vision_logos)
+    impersonation = impersonation_check(manifest, icon, whitelist, detected_logos=vision_logos, cert_info=cert_info)
     routing = track_routing(apk_path)
 
     l0 = {
@@ -474,6 +600,7 @@ def run_l0(apk_path: str | Path, out_path: str | Path | None = None, vt_api_key:
         "fingerprint": hashes,
         "manifest": manifest,
         "icon": icon,
+        "certificate": cert_info,
         "impersonation": impersonation,
         "vision_logo_check": detected_logos,
         "routing": routing,

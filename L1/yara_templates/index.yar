@@ -32,3 +32,9 @@ include "apk_file_format.yar"
 
 // Android Vulnerability Anti-Patterns
 include "apk_vulnerabilities.yar"
+
+// India-specific Banking Threat Detection
+include "apk_india_banking.yar"
+
+// Clipboard, Notification, Screen Capture & Messaging C2
+include "apk_clipboard_notification.yar"
