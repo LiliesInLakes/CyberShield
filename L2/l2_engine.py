@@ -18,8 +18,11 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import logging
 from datetime import datetime, timezone
 from pathlib import Path
+
+_log = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Resolve imports — L1 schema lives one level up
@@ -346,7 +349,7 @@ def process(sha256: str,
 
     out = (out_root or ARTIFACTS) / sha256 / "analysis.json"
     report.write(out)
-    print(f"[L2] wrote {out}  findings={len(all_findings)}")
+    _log.info("wrote %s  findings=%d", out, len(all_findings))
     return report
 
 
@@ -368,7 +371,7 @@ def main(argv: list[str]) -> int:
                 Path(args.sandbox_dir) if args.sandbox_dir else None,
                 Path(args.out) if args.out else None)
     except Exception as exc:
-        print(f"[L2] error: {exc}", file=sys.stderr)
+        _log.error("error: %s", exc)
         import traceback; traceback.print_exc()
         return 1
     return 0

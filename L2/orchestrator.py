@@ -64,7 +64,7 @@ class EmulatorManager:
         out = self._sh("emulator", "-list-avds", check=False)
         avds = [l.strip() for l in out.stdout.splitlines()]
         if self.avd not in avds:
-            print(f"[L2] Creating AVD '{self.avd}'...")
+            _log.info(f" Creating AVD '{self.avd}'...")
             self._sh(
                 "avdmanager", "create", "avd",
                 "-n", self.avd,
@@ -83,13 +83,13 @@ class EmulatorManager:
         ]
         if self.wipe:
             cmd.append("-wipe-data")
-        print(f"[L2] Starting emulator '{self.avd}'...")
+        _log.info(f" Starting emulator '{self.avd}'...")
         self._proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         self._sh("adb", "wait-for-device", check=True, timeout=180)
         for _ in range(120):
             r = self._sh("adb", "-s", "emulator-5554", "shell", "getprop", "sys.boot_completed", check=False)
             if r.stdout.strip() == "1":
-                print("[L2] Device booted.")
+                _log.info("Device booted.")
                 time.sleep(5)
                 return "emulator-5554"
             time.sleep(2)
@@ -105,11 +105,11 @@ class EmulatorManager:
             self._proc = None
 
     def install(self, apk: str, serial="emulator-5554"):
-        print(f"[L2] Installing APK...")
+        _log.info(f" Installing APK...")
         r = self._sh("adb", "-s", serial, "install", "-r", "-g", apk, check=False)
         if "Success" not in r.stdout:
             raise RuntimeError(f"Install failed: {r.stdout} {r.stderr}")
-        print("[L2] APK installed.")
+        _log.info("[L2] APK installed.")
 
     def get_pkg(self, apk: str) -> str:
         for tool in ["aapt2", "aapt"]:
@@ -138,7 +138,7 @@ class FridaRunner:
             "-o", out_path,
         ]
         self._proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        print(f"[L2] Collecting Frida events for {timeout}s...")
+        _log.info(f" Collecting Frida events for {timeout}s...")
         time.sleep(timeout)
         self._stop()
         return self._read(out_path)
@@ -178,7 +178,7 @@ class MitmProxy:
         self._proc = None
 
     def start(self):
-        print(f"[L2] Starting mitmproxy on :{self.port}...")
+        _log.info(f" Starting mitmproxy on :{self.port}...")
         self._proc = subprocess.Popen([
             "mitmdump", "-s", self.addon,
             "-p", str(self.port),
@@ -189,7 +189,7 @@ class MitmProxy:
         time.sleep(2)
         if self._proc.poll() is not None:
             raise RuntimeError("mitmproxy failed to start")
-        print("[L2] mitmproxy running.")
+        _log.info("[L2] mitmproxy running.")
 
     def stop(self):
         if self._proc:
@@ -207,7 +207,7 @@ class MitmProxy:
             "settings", "put", "global", "http_proxy",
             f"{host_ip}:{self.port}"
         ], capture_output=True)
-        print(f"[L2] Proxy: {host_ip}:{self.port}")
+        _log.info(f" Proxy: {host_ip}:{self.port}")
 
     def _host_ip(self) -> str:
         try:
@@ -229,11 +229,11 @@ class HoneypotSeeder:
         cmd = ["adb", "-s", self.serial] + list(args)
         result = subprocess.run(cmd, capture_output=True, text=True)
         if result.returncode != 0:
-            print(f"[!] ADB Warning: {result.stderr}")
+            _log.warning("ADB: %s", result.stderr)
         return result.stdout.strip()
 
     def run_all(self):
-        print("=== Seeding Active Honeypot ===")
+        _log.info("=== Seeding Active Honeypot ===")
         now = int(time.time() * 1000)
 
         contacts = [
@@ -263,7 +263,7 @@ class HoneypotSeeder:
                       "--bind", "type:i:1", "--bind", "read:i:1")
 
         self._adb("emu", "geo", "fix", "77.2090", "28.6139")
-        print("=== Honeypot Seeding Complete ===")
+        _log.info("=== Honeypot Seeding Complete ===")
 
 
 def aggregate_events(events: list[dict], network_flows: list[dict] | None = None) -> dict:
@@ -387,7 +387,7 @@ def detonate(apk_path: str | Path, timeout: int = 90,
     try:
         serial = emu.start()
         pkg = emu.get_pkg(str(apk_path))
-        print(f"[L2] Package: {pkg}")
+        _log.info(f" Package: {pkg}")
 
         mitm.start()
         mitm.configure_proxy(serial)
@@ -403,11 +403,11 @@ def detonate(apk_path: str | Path, timeout: int = 90,
             "api_level": str(emu.api_level), "timeout_sec": str(timeout),
         }
         (out_dir / "dynamic.json").write_text(json.dumps(l2, indent=2))
-        print(f"[L2] Detonation complete. {len(events)} events, {len(network_flows)} flows.")
+        _log.info(f" Detonation complete. {len(events)} events, {len(network_flows)} flows.")
         return l2
 
     except Exception as e:
-        print(f"[L2] ERROR: {e}", file=sys.stderr)
+        _log.info(f" ERROR: {e}", file=sys.stderr)
         l2_err = {
             "status": "error", "error": str(e),
             "api_calls_observed": [], "dropper_payload_writes": [],
@@ -433,19 +433,19 @@ def main(argv: list[str]) -> int:
 
     l2 = detonate(args.apk, args.timeout, not args.no_emulator, None, args.wipe)
 
-    print("\n" + "=" * 60)
-    print("  L2 RESULTS")
-    print("=" * 60)
-    print(f"  Status:               {l2.get('status')}")
-    print(f"  Frida events:         {l2.get('frida_event_count', 0)}")
-    print(f"  API calls observed:   {l2.get('api_call_count', 0)}")
-    print(f"  Dropper writes:       {l2.get('dropper_write_count', 0)}")
-    print(f"  SMS/Notification:     {l2.get('sms_access_count', 0)}")
-    print(f"  Overlay creation:     {l2.get('overlay_count', 0)}")
-    print(f"  Dynamic code loading: {l2.get('dynamic_code_count', 0)}")
-    print(f"  Anti-evasion checks:  {l2.get('anti_evasion_count', 0)}")
-    print(f"  C2 beacons:           {l2.get('c2_beacon_count', 0)}")
-    print("=" * 60)
+    _log.info("\n" + "=" * 60)
+    _log.info("  L2 RESULTS")
+    _log.info("=" * 60)
+    _log.info(f"  Status:               {l2.get('status')}")
+    _log.info(f"  Frida events:         {l2.get('frida_event_count', 0)}")
+    _log.info(f"  API calls observed:   {l2.get('api_call_count', 0)}")
+    _log.info(f"  Dropper writes:       {l2.get('dropper_write_count', 0)}")
+    _log.info(f"  SMS/Notification:     {l2.get('sms_access_count', 0)}")
+    _log.info(f"  Overlay creation:     {l2.get('overlay_count', 0)}")
+    _log.info(f"  Dynamic code loading: {l2.get('dynamic_code_count', 0)}")
+    _log.info(f"  Anti-evasion checks:  {l2.get('anti_evasion_count', 0)}")
+    _log.info(f"  C2 beacons:           {l2.get('c2_beacon_count', 0)}")
+    _log.info("=" * 60)
     return 0
 
 

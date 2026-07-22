@@ -119,25 +119,21 @@ class L1Report:
         return out_path
 
 
-def load_l0_evidence(apk_path: str | Path, l0_artifacts: Path | None = None) -> dict:
-    """Locate and load the L0 evidence.json for a given APK.
+def load_l0_evidence(apk_path: str | Path, l0_artifacts: Path | None = None,
+                     sha256: str | None = None) -> dict:
+    if sha256 is None:
+        import hashlib
+        h = hashlib.sha256()
+        with Path(apk_path).open("rb") as fh:
+            for chunk in iter(lambda: fh.read(1 << 20), b""):
+                h.update(chunk)
+        sha256 = h.hexdigest()
 
-    Computes SHA256 of the APK to find the matching L0 artifacts directory.
-    Resolution order: explicit artifacts dir, then L0/artifacts/<sha256>/,
-    then a sibling evidence.json next to the APK.
-    """
-    apk_path = Path(apk_path)
-    import hashlib
-    sha256 = hashlib.sha256()
-    with apk_path.open("rb") as fh:
-        for chunk in iter(lambda: fh.read(1 << 20), b""):
-            sha256.update(chunk)
-    sha = sha256.hexdigest()
     candidates = []
     if l0_artifacts:
-        candidates.append(Path(l0_artifacts) / sha / "evidence.json")
-    candidates.append(L1_DIR.parent / "L0" / "artifacts" / sha / "evidence.json")
-    candidates.append(apk_path.parent / "evidence.json")
+        candidates.append(Path(l0_artifacts) / sha256 / "evidence.json")
+    candidates.append(L1_DIR / "artifacts" / sha256 / "evidence.json")
+    candidates.append(Path(apk_path).parent / "evidence.json")
     for c in candidates:
         if c.exists():
             return json.loads(c.read_text())

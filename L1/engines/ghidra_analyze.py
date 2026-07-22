@@ -13,13 +13,12 @@ from pathlib import Path
 
 from schema import L1Finding, L1Report, Severity, Category, CATEGORY_MITRE_MAP
 from engines.yara_scan import scan_text
+from config import get_path
 
-# Resolve via env var (set by setup_env.sh) or assume they are in PATH
-GHIDRA_DIR = Path(os.environ.get("GHIDRA_HOME", "/opt/apk-sentinel/tools/ghidra/ghidra_12.1.2_PUBLIC"))
-# On Linux it's just analyzeHeadless, on Windows .bat
+GHIDRA_DIR = Path(get_path("ghidra_home", "/opt/apk-sentinel/tools/ghidra/ghidra_12.1.2_PUBLIC"))
 _analyze_headless = "analyzeHeadless.bat" if os.name == "nt" else "analyzeHeadless"
 ANALYZE_HEADLESS = GHIDRA_DIR / "support" / _analyze_headless
-_JDK21 = Path(os.environ.get("JDK21_HOME", "/usr/lib/jvm/java-21-openjdk-amd64"))
+_JDK21 = Path(get_path("jdk21_home", "/usr/lib/jvm/java-21-openjdk-amd64"))
 EXPORT_SCRIPT = r"""
 from __future__ import print_function
 f = open(r"{out}", "w")

@@ -29,19 +29,24 @@ def _sha_of(apk_path: Path, l0: dict) -> str:
     fp = l0.get("fingerprint", {})
     if fp.get("sha256"):
         return fp["sha256"]
+    l0_fingerprint = l0.get("l0", {}).get("fingerprint", {})
+    if l0_fingerprint.get("sha256"):
+        return l0_fingerprint["sha256"]
     import hashlib
     h = hashlib.sha256()
-    h.update(apk_path.read_bytes())
+    with apk_path.open("rb") as fh:
+        for chunk in iter(lambda: fh.read(1 << 20), b""):
+            h.update(chunk)
     return h.hexdigest()
 
 
 def dispatch(apk_path: str | Path, l0_artifacts: Path | None = None,
-             out_root: Path | None = None) -> L1Report:
+             out_root: Path | None = None, sha256: str | None = None) -> L1Report:
     apk_path = Path(apk_path)
     if not apk_path.exists():
         raise FileNotFoundError(f"APK not found: {apk_path}")
-    l0 = load_l0_evidence(apk_path, l0_artifacts)
-    sha = _sha_of(apk_path, l0)
+    l0 = load_l0_evidence(apk_path, l0_artifacts, sha256=sha256)
+    sha = sha256 or _sha_of(apk_path, l0)
     track = (l0.get("l0", {}).get("routing", {}) or {}).get("track", "track1_jadx")
     artifacts_root = out_root or ARTIFACTS
 

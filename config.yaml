@@ -1,0 +1,15 @@
+paths:
+  jadx_dir: "/opt/apk-sentinel/tools/jadx"
+  jadx_jar: "lib/jadx-1.5.6-all.jar"
+  jdk17_home: "/usr/lib/jvm/java-17-openjdk-amd64"
+  jdk21_home: "/usr/lib/jvm/java-21-openjdk-amd64"
+  ghidra_home: "/opt/apk-sentinel/tools/ghidra/ghidra_12.1.2_PUBLIC"
+
+analysis:
+  l2_detonation_timeout: 90
+  phash_threshold: 8
+  yara_max_workers: 4
+
+logging:
+  level: "INFO"
+  format: "[%(name)s] %(levelname)s %(message)s"

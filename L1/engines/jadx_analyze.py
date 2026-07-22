@@ -16,11 +16,11 @@ from pathlib import Path
 
 from schema import L1Finding, L1Report, Severity
 from engines.yara_scan import scan_sources
+from config import get_path
 
-# Resolve via env var (set by setup_env.sh) or assume they are in PATH
-JADX_DIR = Path(os.environ.get("JADX_DIR", "/opt/apk-sentinel/tools/jadx"))
-JDK_DIR = Path(os.environ.get("JDK17_HOME", "/usr/lib/jvm/java-17-openjdk-amd64"))
-JADX_JAR = JADX_DIR / "lib" / "jadx-1.5.6-all.jar"
+JADX_DIR = Path(get_path("jadx_dir", "/opt/apk-sentinel/tools/jadx"))
+JDK_DIR = Path(get_path("jdk17_home", "/usr/lib/jvm/java-17-openjdk-amd64"))
+JADX_JAR = JADX_DIR / get_path("jadx_jar", "lib/jadx-1.5.6-all.jar")
 
 
 def _java() -> str:

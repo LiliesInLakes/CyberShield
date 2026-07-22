@@ -31,6 +31,8 @@ L0_DIR = ROOT_DIR / "L0"
 L1_DIR = ROOT_DIR / "L1"
 L2_DIR = ROOT_DIR / "L2"
 
+from cache import cached_analysis, cached_l1_analysis  # noqa: E402
+
 
 def compute_sha256(apk_path: Path) -> str:
     h = hashlib.sha256()
@@ -88,12 +90,12 @@ def run_l0(apk_path: Path, out_root: Path, evidence: dict, env: dict) -> dict:
     return l0
 
 
-def run_l1(apk_path: Path, out_root: Path, evidence: dict) -> dict:
+def run_l1(apk_path: Path, out_root: Path, evidence: dict, sha: str) -> dict:
     sys.path.insert(0, str(L1_DIR))
     from l1 import dispatch as l1_entry
 
-    l0_artifacts = out_root / compute_sha256(apk_path)
-    report = l1_entry(str(apk_path), l0_artifacts=l0_artifacts, out_root=l0_artifacts)
+    l0_artifacts = out_root / sha
+    report = l1_entry(str(apk_path), l0_artifacts=l0_artifacts, out_root=l0_artifacts, sha256=sha)
     l1_dict = {
         "status": "complete",
         "engine": report.engine,
@@ -164,21 +166,39 @@ def run_pipeline(apk_path: str | Path, out_root: Path | None = None,
     _log.info("=" * 60)
 
     t0 = time.time()
+    elapsed_l0 = 0.0
+    elapsed_l1 = 0.0
 
-    _log.info("--- L0: Ingestion & Triage ---")
-    run_l0(apk_path, out_root, evidence, env)
-    save_evidence(evidence, out_root, sha)
-    elapsed_l0 = time.time() - t0
+    cached_l0 = cached_analysis(out_root, sha, "l0")
+    if cached_l0:
+        evidence["l0"] = cached_l0
+        _log.info("--- L0: Cached (skipped) ---")
+    else:
+        _log.info("--- L0: Ingestion & Triage ---")
+        run_l0(apk_path, out_root, evidence, env)
+        save_evidence(evidence, out_root, sha)
+        elapsed_l0 = time.time() - t0
 
-    _log.info("--- L1: Static Analysis ---")
-    run_l1(apk_path, out_root, evidence)
-    save_evidence(evidence, out_root, sha)
-    elapsed_l1 = time.time() - t0
+    cached_l1_data = cached_l1_analysis(out_root, sha)
+    if cached_l1_data:
+        evidence["l1"] = cached_l1_data
+        _log.info("--- L1: Cached (skipped, %d findings) ---",
+                  cached_l1_data.get("finding_count", 0))
+    else:
+        _log.info("--- L1: Static Analysis ---")
+        run_l1(apk_path, out_root, evidence, sha)
+        save_evidence(evidence, out_root, sha)
+        elapsed_l1 = time.time() - t0
 
     if not skip_l2:
-        _log.info("--- L2: Dynamic Analysis ---")
-        run_l2(apk_path, out_root, evidence, l2_timeout, l2_no_emulator)
-        save_evidence(evidence, out_root, sha)
+        cached_l2 = cached_analysis(out_root, sha, "l2")
+        if cached_l2:
+            evidence["l2"] = cached_l2
+            _log.info("--- L2: Cached (skipped) ---")
+        else:
+            _log.info("--- L2: Dynamic Analysis ---")
+            run_l2(apk_path, out_root, evidence, l2_timeout, l2_no_emulator)
+            save_evidence(evidence, out_root, sha)
     else:
         evidence["l2"] = {"status": "skipped"}
         _log.info("--- L2: Skipped ---")

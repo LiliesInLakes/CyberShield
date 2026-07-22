@@ -117,107 +117,41 @@ def _findings_from_matches(matches: list, engine_label: str) -> list[L1Finding]:
 
 
 def _strip_byte_checks(source: str) -> str:
-    """Remove filesize, uint32(0), and hex-string checks from YARA conditions.
+    """Remove filesize, uint32(0), and hex-string checks from YARA conditions."""
+    result = source
 
-    Handles:
-      - 'filesize < NMB' lines
-      - 'uint32(0) == 0x...' lines
-      - 'or $hex_xxx' or '(1 of ($hex_xxx*))' within expressions
-      - Removes dangling 'and' after removed lines
-    """
-    lines = source.split("\n")
-    out: list[str] = []
-    in_condition = False
-    first_cond_line = False
-
-    _RE_BYTE_LINE = re.compile(
-        r"^(filesize\s*<\s*\d+\s*MB\s*"           # filesize < N
-        r"|uint32\(0\)\s*==\s*0x[0-9A-Fa-f]+\s*"  # uint32(0) == 0x...
-        r")$"
+    _BYTE_COND = (
+        r'filesize\s*<\s*\d+\s*MB(?:and\s*)?'
+        r'|uint32\(0\)\s*==\s*0x[0-9A-Fa-f]+(?:and\s*)?'
     )
 
-    _RE_HEX_INLINE = re.compile(r"\$hex_\w+")  # matches $hex_xxx anywhere in line
-
-    def _has_hex_ref(s: str) -> bool:
-        return bool(_RE_HEX_INLINE.search(s)) or bool(re.search(r'#hex_\w+', s))
-
-    def _strip_hex(cond: str) -> str:
-        """Remove hex-string references from a condition expression."""
-        cond = re.sub(r'\s+or\s+\$?hex_\w+\*?', '', cond)
-        cond = re.sub(r'\s+and\s+\$?hex_\w+\*?', '', cond)
-        cond = re.sub(r'\$?hex_\w+\*?\s+or\s+', '', cond)
-        cond = re.sub(r'\$?hex_\w+\*?\s+and\s+', '', cond)
-        cond = re.sub(r'#hex_\w+\s*>=\s*\d+', '', cond)  # #hex_xxx >= N
-        cond = re.sub(r'\$hex_\w+\s+at\s+\d+', '', cond)  # $hex_xxx at 0
-        cond = re.sub(r'\$hex_\w+\*?', '', cond)      # $hex_xxx or $hex_xxx*
-        cond = re.sub(r'#hex_\w+', '', cond)
-        # Remove (1 of ()) or (1 of (*)) BEFORE removing individual empty parens
-        cond = re.sub(r'\(1\s+of\s*\(\**\)\)', '', cond)  # (1 of ()) or (1 of (*))
-        cond = re.sub(r'\(\s*\)', '', cond)  # empty parens like ()
-        cond = re.sub(r'\(\s*or\s+', '(', cond)  # (or ... -> (...)
-        cond = re.sub(r'\s+or\s+\)', ')', cond)   # ... or ) -> ...)
-        cond = re.sub(r'^\s+and\s+', '', cond)    # leading 'and ' on first line
-        cond = re.sub(r'^\s+or\s+', '', cond)     # leading 'or ' on first line
-        cond = re.sub(r'\s+and\s*$', '', cond)    # trailing 'and' at end
-        cond = re.sub(r'\s+or\s*$', '', cond)     # trailing 'or' at end
-        cond = re.sub(r'^\s*,\s*', '', cond)      # leading comma
-        cond = re.sub(r',\s*$', '', cond)         # trailing comma
-        cond = cond.strip()
-        if re.match(r'^(and|or)\s*$', cond):
-            return ''
-        return cond
-
-    for i, line in enumerate(lines):
-        s = line.strip()
-
-        if not in_condition and re.match(r"^\s*condition:\s*$", line):
-            in_condition = True
-            first_cond_line = True
-            out.append(line)
-            continue
-
-        if not in_condition:
-            out.append(line)
-            continue
-
-        if re.match(r"^\s*rule\s+", s) or re.match(r"^\s*include\s+", s) or s.startswith("//"):
-            in_condition = False
-            out.append(line)
-            continue
-
-        if re.match(_RE_BYTE_LINE, s):
-            first_cond_line = True
-            continue
-
-        m = re.match(r"^and\s+(.+)", s)
-        if m and re.match(_RE_BYTE_LINE, m.group(1)):
-            continue
-
-        nxt = lines[i + 1].strip() if i + 1 < len(lines) else ""
-        if re.match(_RE_BYTE_LINE, nxt):
-            if s.rstrip().endswith("and") or s.rstrip().endswith("and("):
-                first_cond_line = True
-                continue
-
-        if _has_hex_ref(s):
-            s = _strip_hex(s)
-            if not s:
-                first_cond_line = True
-                continue
-            indent = line[:len(line) - len(line.lstrip())]
-            line = indent + s
-
-        if first_cond_line and s.startswith("and ") and not s[4:].lstrip().startswith("not"):
-            indent = line[:len(line) - len(line.lstrip())]
-            line = indent + s[4:].lstrip()
-        first_cond_line = False
-        out.append(line)
-
-    # Remove hex string definitions (they reference byte patterns not in Java source)
-    result = "\n".join(out)
     result = re.sub(r'^\s+\$hex_\w+\s*=.*$', '', result, flags=re.MULTILINE)
+
+    result = re.sub(
+        rf'^\s*{_BYTE_COND}\s*$',
+        '', result, flags=re.MULTILINE
+    )
+
+    result = re.sub(
+        rf'^\s*and\s+{_BYTE_COND}\s*$',
+        '', result, flags=re.MULTILINE
+    )
+
+    result = re.sub(rf'^\s*(.*?)and\s*$\n\s*{_BYTE_COND}',
+                    r'\1', result, flags=re.MULTILINE)
+
+    result = re.sub(r'\$hex_\w+\*?', '', result)
+    result = re.sub(r'#hex_\w+\s*>=?\s*\d+', '', result)
+    result = re.sub(r'#hex_\w+', '', result)
+    result = re.sub(r'\(\s*\)', '', result)
+    result = re.sub(r'\(\s*or\s+', '(', result)
+    result = re.sub(r'\s+or\s+\)', ')', result)
+    result = re.sub(r'\s+(and|or)\s+(and|or)\s+', r' \1 ', result)
+    result = re.sub(r'^\s+(and|or)\s+', '', result, flags=re.MULTILINE)
+    result = re.sub(r'\s+(and|or)\s*$', '', result, flags=re.MULTILINE)
     result = re.sub(r'\n{3,}', '\n\n', result)
-    return result
+
+    return result.strip()
 
 
 def _compile_rules() -> yara.Rules:
