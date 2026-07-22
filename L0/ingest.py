@@ -19,14 +19,17 @@ from androguard.core.apk import APK
 from PIL import Image
 import imagehash
 
+from cryptography.hazmat.primitives.serialization import Encoding
+
 L0_DIR = Path(__file__).resolve().parent
 WHITELIST_PATH = L0_DIR / "bank_whitelist.json"
 CACHE_PATH = L0_DIR / "threat_cache.json"
 EVIDENCE_PATH = L0_DIR / "evidence.json"
 
+_log = logging.getLogger(__name__)
+
 
 def load_env(path: Path | None = None) -> None:
-    """Minimal .env loader (no external dependency). Skips if vars already set."""
     env_path = path or (L0_DIR.parent / ".env")
     if not env_path.exists():
         return
@@ -38,6 +41,7 @@ def load_env(path: Path | None = None) -> None:
         key, val = key.strip(), val.strip().strip('"').strip("'")
         if key and key not in os.environ:
             os.environ[key] = val
+
 
 logging.getLogger("androguard").setLevel(logging.ERROR)
 for _nh in ("androguard.core.axml", "androguard.core.analysis", "androguard.core.bytecodes"):
@@ -85,6 +89,21 @@ class Evidence:
     l6: dict[str, Any] = field(default_factory=lambda: {"status": "pending"})
 
 
+def validate_apk(apk_path: Path) -> None:
+    if not apk_path.exists():
+        raise FileNotFoundError(f"APK not found: {apk_path}")
+    if not apk_path.is_file():
+        raise ValueError(f"Not a file: {apk_path}")
+    if apk_path.stat().st_size < 1000:
+        raise ValueError(f"APK too small to be valid: {apk_path.stat().st_size} bytes")
+    if not zipfile.is_zipfile(apk_path):
+        raise ValueError(f"Not a valid ZIP/APK file: {apk_path}")
+    with zipfile.ZipFile(apk_path) as zf:
+        names = zf.namelist()
+        if "AndroidManifest.xml" not in names:
+            raise ValueError("APK missing AndroidManifest.xml")
+
+
 def compute_hashes(apk_path: Path) -> dict[str, str]:
     md5 = hashlib.md5()
     sha256 = hashlib.sha256()
@@ -117,9 +136,11 @@ def extract_icon_phash(apk: APK, artifacts_dir: Path | None = None) -> dict[str,
     try:
         icon_path = apk.get_app_icon()
         if not icon_path:
+            _log.debug("No app icon found")
             return result
         data = apk.get_file(icon_path)
         if not data:
+            _log.debug("Icon resource missing: %s", icon_path)
             return result
         img = Image.open(io.BytesIO(data)).convert("RGB")
         result["present"] = True
@@ -131,20 +152,13 @@ def extract_icon_phash(apk: APK, artifacts_dir: Path | None = None) -> dict[str,
             out = artifacts_dir / safe
             img.save(out, format="PNG")
             result["saved_path"] = str(out.relative_to(L0_DIR))
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
+        _log.warning("Icon extraction failed: %s", exc)
         result["error"] = str(exc)
     return result
 
 
 def extract_cert_info(apk: APK) -> dict[str, Any]:
-    """Extract signing certificate metadata.
-
-    Two standalone signals that need no reference data:
-      - self_signed: issuer == subject (no legitimate bank app is self-signed)
-      - debug_signed: subject contains "Android Debug" (dev forgot to sign)
-
-    The sha256_fingerprint enables whitelist matching when reference data exists.
-    """
     result: dict[str, Any] = {
         "present": False,
         "sha256_fingerprint": None,
@@ -159,13 +173,12 @@ def extract_cert_info(apk: APK) -> dict[str, Any]:
     try:
         certs = apk.get_certificates()
         if not certs:
+            _log.debug("No certificates found in APK")
             return result
-        cert = certs[0]  # Primary signing cert
+        cert = certs[0]
         result["present"] = True
-        # Compute SHA-256 fingerprint from DER-encoded cert
-        import hashlib as _hl
-        der_bytes = cert.public_bytes(encoding=__import__("cryptography").x509.base.serialization.Encoding.DER)
-        result["sha256_fingerprint"] = _hl.sha256(der_bytes).hexdigest()
+        der_bytes = cert.public_bytes(encoding=Encoding.DER)
+        result["sha256_fingerprint"] = hashlib.sha256(der_bytes).hexdigest()
         issuer = cert.issuer.rfc4514_string()
         subject = cert.subject.rfc4514_string()
         result["issuer"] = issuer
@@ -175,17 +188,16 @@ def extract_cert_info(apk: APK) -> dict[str, Any]:
         result["not_after"] = str(cert.not_valid_after_utc)
         result["self_signed"] = (issuer == subject)
         result["debug_signed"] = "android debug" in subject.lower()
-    except Exception as exc:  # noqa: BLE001
-        # Fallback: try androguard's simpler cert API
+    except Exception as exc:
+        _log.warning("Certificate extraction failed (primary API): %s", exc)
         try:
             certs_v2 = apk.get_certificates_der_v2()
             if certs_v2:
-                import hashlib as _hl
                 der = certs_v2[0]
                 result["present"] = True
-                result["sha256_fingerprint"] = _hl.sha256(der).hexdigest()
-        except Exception:  # noqa: BLE001
-            pass
+                result["sha256_fingerprint"] = hashlib.sha256(der).hexdigest()
+        except Exception as fallback_exc:
+            _log.warning("Certificate extraction failed (fallback API): %s", fallback_exc)
         result["error"] = str(exc)
     return result
 
@@ -212,14 +224,12 @@ def load_whitelist() -> dict[str, Any]:
 
 
 def _best_label_sim(app_label: str, bank: dict) -> float:
-    """Check app_label against a bank's primary label and alt_labels."""
     app_lower = (app_label or "").lower()
     best = _label_similarity(bank.get("app_label", "").lower(), app_lower)
     for alt in bank.get("alt_labels", []):
         sim = _label_similarity(alt.lower(), app_lower)
         if sim > best:
             best = sim
-    # Also check if bank_name appears as substring
     bank_name = bank.get("bank_name", "").lower()
     if bank_name and bank_name in app_lower:
         best = max(best, 0.75)
@@ -294,11 +304,6 @@ def impersonation_check(manifest: dict, icon: dict, whitelist: dict, threshold: 
                     matched_bank = matched_bank or logo
     findings.extend(logo_findings)
 
-    # ── Certificate-based signals (asymmetric weighting) ──────────────
-    # Cert in whitelist  → strong positive  (+0.9)
-    # Cert unknown        → neutral          (0.0) — absence ≠ evidence
-    # Self-signed + bank  → red flag         (-0.9)
-    # Debug-signed        → moderate negative (-0.5)
     cert_signal: dict[str, Any] = {
         "cert_in_whitelist": False,
         "cert_weight": 0.0,
@@ -307,7 +312,6 @@ def impersonation_check(manifest: dict, icon: dict, whitelist: dict, threshold: 
     if cert_info and cert_info.get("present"):
         fp = cert_info.get("sha256_fingerprint")
 
-        # Positive match: cert fingerprint is in our verified whitelist
         for bank in banks:
             ref_cert = bank.get("cert_sha256")
             if ref_cert and fp and ref_cert.lower() == fp.lower():
@@ -317,7 +321,6 @@ def impersonation_check(manifest: dict, icon: dict, whitelist: dict, threshold: 
                 matched_bank = bank.get("bank_name")
                 break
 
-        # Self-signed check (only fires if cert NOT already matched)
         if not cert_signal["cert_in_whitelist"] and cert_info.get("self_signed"):
             looks_like_bank = any(
                 _best_label_sim(manifest.get("app_label"), b) >= 0.6
@@ -336,19 +339,14 @@ def impersonation_check(manifest: dict, icon: dict, whitelist: dict, threshold: 
                 cert_signal["cert_weight"] = -0.4
                 cert_signal["cert_detail"] = "Self-signed certificate (not bank-branded)"
 
-        # Debug-signed check
         if not cert_signal["cert_in_whitelist"] and cert_info.get("debug_signed"):
             cert_signal["cert_weight"] = -0.5
-            cert_signal["cert_detail"] = "Debug-signed certificate — never legitimate for distribution"
+            cert_signal["cert_detail"] = "Debug-signed certificate"
             findings.append({
                 "type": "debug_signed",
                 "severity": "high",
-                "detail": "APK signed with Android debug key — not intended for release.",
+                "detail": "APK signed with Android debug key.",
             })
-
-        # If cert not in whitelist and not self-signed/debug → NEUTRAL (0.0)
-        # This is intentional: we can't penalise unknown certs because we'll
-        # never have every legitimate cert. The whitelist grows over time.
 
     verdict = "trusted" if matched_bank else ("suspicious" if findings else "unknown")
     return {
@@ -373,14 +371,6 @@ def _label_similarity(a: str, b: str) -> float:
 
 
 def track_routing(apk_path: Path) -> dict[str, Any]:
-    """Deterministic L0 -> L1 track routing.
-
-    Decides which extraction engine(s) the sample must hit:
-      - track1_jadx              : Dalvik bytecode only
-      - track2_ghidra            : native .so only (no dex)
-      - track1_jadx_then_track2_ghidra : hybrid (dex + native)
-    Also flags packing/obfuscation signals that raise Ghidra priority.
-    """
     with zipfile.ZipFile(apk_path) as zf:
         names = zf.namelist()
         dex_sizes = {n: zf.getinfo(n).file_size for n in names if n.endswith(".dex")}
@@ -454,7 +444,6 @@ def _framework_indicators(names: list[str]) -> list[str]:
 
 
 def _packing_signals(names: list[str], dex_sizes: dict[str, int]) -> list[str]:
-    """Heuristics suggesting packing/obfuscation -> Ghidra priority."""
     signals = []
     lowered = [n.lower() for n in names]
     joined = "\n".join(lowered)
@@ -471,7 +460,6 @@ def _packing_signals(names: list[str], dex_sizes: dict[str, int]) -> list[str]:
         if token in joined:
             signals.append(label)
 
-    # Many dex files or abnormally large primary dex hint at packed payloads.
     if len(dex_sizes) > 3:
         signals.append(f"unusual_dex_count ({len(dex_sizes)})")
     big = [n for n, s in dex_sizes.items() if s > 8_000_000]
@@ -482,11 +470,6 @@ def _packing_signals(names: list[str], dex_sizes: dict[str, int]) -> list[str]:
 
 
 def lookup_malwarebazaar(sha256_hash: str, auth_key: str | None = None, timeout: int = 15) -> dict | None:
-    """Optional external reputation enrichment via abuse.ch MalwareBazaar.
-
-    Free Auth-Key required (https://bazaar.abuse.ch/api/). Offline-safe:
-    returns None when no key supplied. On-prem commitment: opt-in only.
-    """
     if not auth_key:
         return None
     try:
@@ -498,6 +481,7 @@ def lookup_malwarebazaar(sha256_hash: str, auth_key: str | None = None, timeout:
         )
         data = response.json()
     except (requests.RequestException, ValueError) as exc:
+        _log.warning("MalwareBazaar lookup failed: %s", exc)
         return {"source": "malwarebazaar", "error": str(exc)}
     if data.get("query_status") != "ok":
         return {"source": "malwarebazaar", "query_status": data.get("query_status")}
@@ -515,12 +499,6 @@ def lookup_malwarebazaar(sha256_hash: str, auth_key: str | None = None, timeout:
 
 
 def detect_logo_vision(icon_path: Path | None, api_key: str | None = None, timeout: int = 15) -> dict | None:
-    """Optional brand-logo detection via Google Cloud Vision API.
-
-    Sends the extracted app icon; returns detected brand/logos. Used to
-    escalate L0 impersonation checks when local pHash whitelist is inconclusive.
-    Requires GOOGLE_VISION_KEY env var. Offline-safe: None if no key.
-    """
     if not api_key or not icon_path:
         return None
     import base64
@@ -536,6 +514,7 @@ def detect_logo_vision(icon_path: Path | None, api_key: str | None = None, timeo
         resp = requests.post(url, json=payload, timeout=timeout)
         data = resp.json()
     except (requests.RequestException, ValueError) as exc:
+        _log.warning("Google Vision API call failed: %s", exc)
         return {"source": "google_vision", "error": str(exc)}
     annotations = data.get("responses", [{}])[0].get("logoAnnotations", [])
     logos = [a.get("description") for a in annotations]
@@ -543,11 +522,6 @@ def detect_logo_vision(icon_path: Path | None, api_key: str | None = None, timeo
 
 
 def lookup_hash_metadata(sha256_hash: str, api_key: str | None = None, timeout: int = 15) -> dict | None:
-    """Optional external reputation enrichment via VirusTotal v3.
-
-    Offline-safe: returns None when no API key supplied. Per the project's
-    data-residency commitment this is opt-in only and never blocks L0.
-    """
     if not api_key:
         return None
     url = f"https://www.virustotal.com/api/v3/files/{sha256_hash}"
@@ -555,6 +529,7 @@ def lookup_hash_metadata(sha256_hash: str, api_key: str | None = None, timeout: 
     try:
         response = requests.get(url, headers=headers, timeout=timeout)
     except requests.RequestException as exc:
+        _log.warning("VirusTotal lookup failed: %s", exc)
         return {"error": str(exc)}
     if response.status_code == 200:
         attributes = response.json().get("data", {}).get("attributes", {})
@@ -577,6 +552,7 @@ def lookup_hash_metadata(sha256_hash: str, api_key: str | None = None, timeout: 
 
 def run_l0(apk_path: str | Path, out_path: str | Path | None = None, vt_api_key: str | None = None, mb_auth_key: str | None = None, force_external: bool = False, vision_key: str | None = None) -> dict:
     apk_path = Path(apk_path)
+    validate_apk(apk_path)
     apk = APK(str(apk_path))
 
     hashes = compute_hashes(apk_path)
