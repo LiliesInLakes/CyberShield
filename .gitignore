@@ -31,6 +31,8 @@ tools/jadx*/
 tools/jadx-jre*/
 tools/platform-tools*/
 tools/ghidra/ghidra_*_PUBLIC/
+tools/android-sdk/
+tools/frida-server
 
 # APK test files (via LFS)
 # *.apk

@@ -118,36 +118,45 @@ def _findings_from_matches(matches: list, engine_label: str) -> list[L1Finding]:
 
 def _strip_byte_checks(source: str) -> str:
     """Remove filesize, uint32(0), and hex-string checks from YARA conditions."""
-    result = source
-
-    _BYTE_COND = (
-        r'filesize\s*<\s*\d+\s*MB(?:and\s*)?'
-        r'|uint32\(0\)\s*==\s*0x[0-9A-Fa-f]+(?:and\s*)?'
+    _BYTE_COND = re.compile(
+        r'filesize\s*<\s*\d+\s*MB|uint32\(0\)\s*==\s*0x[0-9A-Fa-f]+'
     )
 
-    result = re.sub(r'^\s+\$hex_\w+\s*=.*$', '', result, flags=re.MULTILINE)
+    lines = source.split("\n")
+    removed = [False] * len(lines)
 
-    result = re.sub(
-        rf'^\s*{_BYTE_COND}\s*$',
-        '', result, flags=re.MULTILINE
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if _BYTE_COND.fullmatch(stripped):
+            removed[i] = True
+        elif re.match(r'^\s+and\s+', line) and _BYTE_COND.search(stripped):
+            removed[i] = True
+        elif re.match(r'^\s+\$hex_\w+\s*=', line):
+            removed[i] = True
+
+    # Clean up: remove leading and/or from lines after a removed line
+    for i in range(len(lines)):
+        if removed[i]:
+            continue
+        if i > 0 and removed[i - 1]:
+            lines[i] = re.sub(r'^\s+(and|or)\s+', '', lines[i])
+        if i + 1 < len(lines) and removed[i + 1]:
+            lines[i] = re.sub(r'\s+(and|or)\s*$', '', lines[i])
+
+    # Remove hex refs from conditions inline
+    result = "\n".join(
+        l for i, l in enumerate(lines) if not removed[i]
     )
-
-    result = re.sub(
-        rf'^\s*and\s+{_BYTE_COND}\s*$',
-        '', result, flags=re.MULTILINE
-    )
-
-    result = re.sub(rf'^\s*(.*?)and\s*$\n\s*{_BYTE_COND}',
-                    r'\1', result, flags=re.MULTILINE)
 
     result = re.sub(r'\$hex_\w+\*?', '', result)
     result = re.sub(r'#hex_\w+\s*>=?\s*\d+', '', result)
     result = re.sub(r'#hex_\w+', '', result)
     result = re.sub(r'\(\s*\)', '', result)
+    result = re.sub(r'\(\s*(any|1|2|3|4)\s+of\s*\)', '', result)
     result = re.sub(r'\(\s*or\s+', '(', result)
     result = re.sub(r'\s+or\s+\)', ')', result)
-    result = re.sub(r'\s+(and|or)\s+(and|or)\s+', r' \1 ', result)
-    result = re.sub(r'^\s+(and|or)\s+', '', result, flags=re.MULTILINE)
+    result = re.sub(r'[ \t]+(and|or)[ \t]+(and|or)[ \t]+', r' \1 ', result)
+    result = re.sub(r'^\s+(and|or)\s*$', '', result, flags=re.MULTILINE)
     result = re.sub(r'\s+(and|or)\s*$', '', result, flags=re.MULTILINE)
     result = re.sub(r'\n{3,}', '\n\n', result)
 
@@ -191,7 +200,6 @@ def _filter_scope(text: str, target_scope: str = "source") -> str:
                     scope = m.group(1)
                     break
             if scope and scope != target_scope:
-                # Skip this rule
                 i += 1
                 continue
             out.extend(rule_lines)

@@ -19,6 +19,7 @@ import json
 import logging
 import os
 import re
+import shutil
 import signal
 import subprocess
 import sys
@@ -34,6 +35,18 @@ FRIDA_SCRIPT = L2_DIR / "frida_scripts" / "runtime_monitor.js"
 MITM_ADDON = L2_DIR / "mitmproxy_addon.py"
 ARTIFACTS_DIR = L2_DIR / "artifacts"
 
+_SDK_DIR = ROOT_DIR / "tools" / "android-sdk"
+_PLATFORM_TOOLS = str(_SDK_DIR / "platform-tools")
+_EMULATOR_DIR = str(_SDK_DIR / "emulator")
+_CMDLINE_TOOLS = str(_SDK_DIR / "cmdline-tools" / "latest" / "bin")
+_BT_DIRS = sorted((_SDK_DIR / "build-tools").iterdir(), reverse=True)
+_BUILD_TOOLS = str(_BT_DIRS[0]) if _BT_DIRS else ""
+_JAVA_DIR = str(ROOT_DIR / "tools" / "jdk17" / "bin")
+_PYTHON_BIN = "/var/data/python/bin"
+_EXTRA_PATH = f"{_PLATFORM_TOOLS}:{_EMULATOR_DIR}:{_CMDLINE_TOOLS}:{_BUILD_TOOLS}:{_JAVA_DIR}:{_PYTHON_BIN}"
+os.environ["PATH"] = f"{_EXTRA_PATH}:{os.environ.get('PATH', '')}"
+os.environ["JAVA_HOME"] = str(ROOT_DIR / "tools" / "jdk17")
+
 _log = logging.getLogger(__name__)
 
 
@@ -47,53 +60,84 @@ def _read_mitm_flows() -> list[dict]:
     return []
 
 
+FRIDA_SERVER = ROOT_DIR / "tools" / "frida-server"
+
 class EmulatorManager:
-    def __init__(self, avd: str = "sentinel", api_level: int = 30, wipe: bool = False):
+    def __init__(self, avd: str = "sentinel", api_level: int = 34, wipe: bool = False):
         self.avd = avd
         self.api_level = api_level
         self.wipe = wipe
         self._proc = None
 
+    def _env(self) -> dict[str, str]:
+        return os.environ.copy()
+
     def _sh(self, *a: str, check=True, **kw) -> subprocess.CompletedProcess:
+        kw.setdefault("env", self._env())
         return subprocess.run(list(a), check=check, capture_output=True, text=True, **kw)
 
     def _adb(self, *a: str, check=True) -> subprocess.CompletedProcess:
         return self._sh("adb", "-s", "emulator-5554", *a, check=check)
 
     def ensure_avd(self):
-        out = self._sh("emulator", "-list-avds", check=False)
-        avds = [l.strip() for l in out.stdout.splitlines()]
-        if self.avd not in avds:
-            _log.info(f" Creating AVD '{self.avd}'...")
-            self._sh(
-                "avdmanager", "create", "avd",
-                "-n", self.avd,
-                "-k", f"system-images;google_apis;x86_64;{self.api_level}",
-                "-d", "pixel", "--force",
-                check=False,
-            )
+        avd_home = Path.home() / ".android" / "avd"
+        if (avd_home / f"{self.avd}.avd").is_dir():
+            return
+        _log.info(f" Creating AVD '{self.avd}'...")
+        self._sh(
+            "avdmanager", "create", "avd",
+            "-n", self.avd,
+            "-k", f"system-images;android-{self.api_level};google_apis;x86_64",
+            "-d", "pixel", "--force",
+            check=False,
+        )
 
-    def start(self) -> str:
-        self.ensure_avd()
+    def _emu_cmd(self) -> tuple[list[str], dict[str, str]]:
+        emu_dir = Path(__file__).resolve().parent.parent / "tools" / "android-sdk" / "emulator"
+        qemu_path = emu_dir / "qemu" / "linux-x86_64" / "qemu-system-x86_64-headless"
+        lib_path = str(emu_dir / "lib64")
+        env = os.environ.copy()
+        env["LD_LIBRARY_PATH"] = f"{lib_path}:{env.get('LD_LIBRARY_PATH', '')}"
         cmd = [
-            "emulator", "-avd", self.avd,
+            str(qemu_path),
+            "-avd", self.avd,
             "-no-window", "-no-audio", "-no-boot-anim",
-            "-gpu", "swiftshader_indirect",
+            "-gpu", "off",
             "-memory", "2048", "-cores", "2",
+            "-no-metrics", "-no-snapshot",
         ]
         if self.wipe:
             cmd.append("-wipe-data")
+        return cmd, env
+
+    def start(self) -> str:
+        self.ensure_avd()
+        cmd, env = self._emu_cmd()
         _log.info(f" Starting emulator '{self.avd}'...")
-        self._proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        self._proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=env)
         self._sh("adb", "wait-for-device", check=True, timeout=180)
         for _ in range(120):
             r = self._sh("adb", "-s", "emulator-5554", "shell", "getprop", "sys.boot_completed", check=False)
             if r.stdout.strip() == "1":
                 _log.info("Device booted.")
                 time.sleep(5)
+                self._setup_frida()
                 return "emulator-5554"
             time.sleep(2)
         raise RuntimeError("Emulator boot timeout")
+
+    def _setup_frida(self):
+        fs = str(FRIDA_SERVER)
+        if not FRIDA_SERVER.exists():
+            _log.warning(" frida-server not found at %s, skipping setup", fs)
+            return
+        _log.info(" Pushing frida-server to emulator...")
+        self._sh("adb", "root", check=False)
+        time.sleep(2)
+        self._sh("adb", "shell", "chmod", "755", "/data/local/tmp", check=False)
+        self._sh("adb", "push", fs, "/data/local/tmp/frida-server", check=False)
+        self._sh("adb", "shell", "chmod", "755", "/data/local/tmp/frida-server", check=False)
+        self._sh("adb", "shell", "nohup /data/local/tmp/frida-server > /dev/null 2>&1 &", check=False)
 
     def stop(self):
         if self._proc:
@@ -114,8 +158,7 @@ class EmulatorManager:
     def get_pkg(self, apk: str) -> str:
         for tool in ["aapt2", "aapt"]:
             try:
-                r = subprocess.run([tool, "dump", "badging", apk],
-                                   capture_output=True, text=True, timeout=15)
+                r = self._sh(tool, "dump", "badging", apk, timeout=15)
                 for line in r.stdout.splitlines():
                     if line.startswith("package:"):
                         m = re.search(r"name='([^']+)'", line)
@@ -177,10 +220,21 @@ class MitmProxy:
         self.port = port
         self._proc = None
 
+    @staticmethod
+    def _find_mitmdump() -> str:
+        candidates = [
+            "/var/data/python/bin/mitmdump",
+            shutil.which("mitmdump") or "",
+        ]
+        for c in candidates:
+            if c and Path(c).exists():
+                return c
+        return "mitmdump"
+
     def start(self):
         _log.info(f" Starting mitmproxy on :{self.port}...")
         self._proc = subprocess.Popen([
-            "mitmdump", "-s", self.addon,
+            self._find_mitmdump(), "-s", self.addon,
             "-p", str(self.port),
             "--set", "upstream_cert=false",
             "--set", "ssl_insecure=true",
@@ -407,7 +461,7 @@ def detonate(apk_path: str | Path, timeout: int = 90,
         return l2
 
     except Exception as e:
-        _log.info(f" ERROR: {e}", file=sys.stderr)
+        _log.error(" ERROR: %s", e)
         l2_err = {
             "status": "error", "error": str(e),
             "api_calls_observed": [], "dropper_payload_writes": [],

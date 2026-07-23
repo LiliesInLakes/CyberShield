@@ -158,17 +158,43 @@ def extract_icon_phash(apk: APK, artifacts_dir: Path | None = None) -> dict[str,
     return result
 
 
+def _cert_to_der(cert: Any) -> bytes | None:
+    if hasattr(cert, "dump"):
+        try:
+            raw = cert.dump()
+            if isinstance(raw, bytes):
+                return raw
+        except Exception:
+            pass
+    for method in ("public_bytes", "certificate", "der", "contents"):
+        attr = getattr(cert, method, None)
+        if attr is None:
+            continue
+        try:
+            if method in ("der", "contents"):
+                return attr if isinstance(attr, bytes) else None
+            if method == "certificate":
+                return attr if isinstance(attr, bytes) else None
+            raw = attr(Encoding.DER)
+            if isinstance(raw, bytes):
+                return raw
+        except Exception:
+            continue
+    return None
+
+
+def _fingerprint_from_der(der: bytes) -> str:
+    return hashlib.sha256(der).hexdigest()
+
+
 def extract_cert_info(apk: APK) -> dict[str, Any]:
     result: dict[str, Any] = {
         "present": False,
         "sha256_fingerprint": None,
-        "issuer": None,
-        "subject": None,
+        "issuer": None, "subject": None,
         "serial_number": None,
-        "not_before": None,
-        "not_after": None,
-        "self_signed": None,
-        "debug_signed": None,
+        "not_before": None, "not_after": None,
+        "self_signed": None, "debug_signed": None,
     }
     try:
         certs = apk.get_certificates()
@@ -176,29 +202,52 @@ def extract_cert_info(apk: APK) -> dict[str, Any]:
             _log.debug("No certificates found in APK")
             return result
         cert = certs[0]
-        result["present"] = True
-        der_bytes = cert.public_bytes(encoding=Encoding.DER)
-        result["sha256_fingerprint"] = hashlib.sha256(der_bytes).hexdigest()
-        issuer = cert.issuer.rfc4514_string()
-        subject = cert.subject.rfc4514_string()
-        result["issuer"] = issuer
-        result["subject"] = subject
-        result["serial_number"] = str(cert.serial_number)
-        result["not_before"] = str(cert.not_valid_before_utc)
-        result["not_after"] = str(cert.not_valid_after_utc)
-        result["self_signed"] = (issuer == subject)
-        result["debug_signed"] = "android debug" in subject.lower()
+        der = _cert_to_der(cert)
+        if der:
+            result["present"] = True
+            result["sha256_fingerprint"] = _fingerprint_from_der(der)
+        def _name_str(n: Any) -> str:
+            try:
+                return n.rfc4514_string()
+            except Exception:
+                pass
+            try:
+                return str(n.human_friendly) if hasattr(n, "human_friendly") else str(n)
+            except Exception:
+                return str(n)
+
+        issuer = None
+        issuer_str = getattr(cert, "issuer", None)
+        if issuer_str is not None:
+            issuer = _name_str(issuer_str)
+            result["issuer"] = issuer
+        subject_str = getattr(cert, "subject", None)
+        if subject_str is not None:
+            subject = _name_str(subject_str)
+            result["subject"] = subject
+            if result.get("issuer"):
+                result["self_signed"] = (issuer == subject)
+            result["debug_signed"] = "android debug" in subject.lower()
+        try:
+            result["serial_number"] = str(cert.serial_number)
+            nb = getattr(cert, "not_valid_before_utc", None) or getattr(cert, "not_valid_before", None)
+            na = getattr(cert, "not_valid_after_utc", None) or getattr(cert, "not_valid_after", None)
+            if nb: result["not_before"] = str(nb)
+            if na: result["not_after"] = str(na)
+        except Exception:
+            pass
     except Exception as exc:
         _log.warning("Certificate extraction failed (primary API): %s", exc)
+        result["error"] = str(exc)
+    if not result["sha256_fingerprint"]:
         try:
             certs_v2 = apk.get_certificates_der_v2()
             if certs_v2:
                 der = certs_v2[0]
                 result["present"] = True
-                result["sha256_fingerprint"] = hashlib.sha256(der).hexdigest()
+                result["sha256_fingerprint"] = _fingerprint_from_der(der)
         except Exception as fallback_exc:
-            _log.warning("Certificate extraction failed (fallback API): %s", fallback_exc)
-        result["error"] = str(exc)
+            _log.warning("Certificate extraction failed: %s", fallback_exc)
     return result
 
 

@@ -25,7 +25,7 @@ def cached_analysis(artifacts_root: Path, sha256: str, layer: str) -> dict | Non
         evidence = json.loads(evidence_path.read_text())
         layer_data = evidence.get(layer, {})
         if layer_data.get("status") == "complete":
-            _log.info("Cache HIT for %s/%s (%s)", sha256[:12], layer)
+            _log.info("Cache HIT for %s/%s", sha256[:12], layer)
             return layer_data
     except (json.JSONDecodeError, KeyError):
         pass
