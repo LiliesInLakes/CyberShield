@@ -1,0 +1,102 @@
+{
+  "family": "BankBot",
+  "source_file": "C:\\Users\\DELL\\AppData\\Local\\Temp\\tmp9oiifa1i\\486d6a713d8c907df70a919729ac685328ab91a8977c2e352165640c4bd4d507.apk",
+  "fingerprint": {
+    "md5": "cee4b1fae8a45502d106a200593a9125",
+    "sha256": "486d6a713d8c907df70a919729ac685328ab91a8977c2e352165640c4bd4d507"
+  },
+  "manifest": {
+    "package_name": "hrevxqea.hgistuqw",
+    "app_label": "FlashPlayer",
+    "version_name": "1.2",
+    "version_code": "2000001",
+    "min_sdk": "21",
+    "target_sdk": "26",
+    "permissions": [
+      "android.permission.ACCESS_NETWORK_STATE",
+      "android.permission.ACCESS_NOTIFICATION_POLICY",
+      "android.permission.ACCESS_SUPERUSER",
+      "android.permission.CALL_PHONE",
+      "android.permission.CAMERA",
+      "android.permission.DISABLE_KEYGUARD",
+      "android.permission.INJECT_EVENTS",
+      "android.permission.INTERNET",
+      "android.permission.MODIFY_AUDIO_SETTINGS",
+      "android.permission.PACKAGE_USAGE_STATS",
+      "android.permission.READ_EXTERNAL_STORAGE",
+      "android.permission.READ_PHONE_STATE",
+      "android.permission.READ_PRIVILEGED_PHONE_STATE",
+      "android.permission.READ_SMS",
+      "android.permission.RECEIVE_BOOT_COMPLETED",
+      "android.permission.RECEIVE_MMS",
+      "android.permission.RECEIVE_SMS",
+      "android.permission.RECORD_AUDIO",
+      "android.permission.REQUEST_DELETE_PACKAGES",
+      "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS",
+      "android.permission.REQUEST_INSTALL_PACKAGES",
+      "android.permission.SEND_SMS",
+      "android.permission.SYSTEM_ALERT_WINDOW",
+      "android.permission.WAKE_LOCK",
+      "android.permission.WRITE_EXTERNAL_STORAGE",
+      "android.permission.WRITE_SMS"
+    ],
+    "permission_count": 26,
+    "high_risk_permissions": [
+      "android.permission.CALL_PHONE",
+      "android.permission.CAMERA",
+      "android.permission.READ_EXTERNAL_STORAGE",
+      "android.permission.READ_PHONE_STATE",
+      "android.permission.READ_SMS",
+      "android.permission.RECEIVE_BOOT_COMPLETED",
+      "android.permission.RECEIVE_MMS",
+      "android.permission.RECEIVE_SMS",
+      "android.permission.RECORD_AUDIO",
+      "android.permission.REQUEST_INSTALL_PACKAGES",
+      "android.permission.SEND_SMS",
+      "android.permission.SYSTEM_ALERT_WINDOW",
+      "android.permission.WRITE_EXTERNAL_STORAGE"
+    ],
+    "high_risk_permission_count": 13
+  },
+  "icon": {
+    "present": true,
+    "phash": "d05963b30de43ecc",
+    "source": "res/mipmap-xxxhdpi-v4/ic_launcher.png",
+    "saved_path": "dataset\\BankBot\\486d6a713d8c907df70a919729ac685328ab91a8977c2e352165640c4bd4d507\\icon.png"
+  },
+  "routing": {
+    "track": "track1_jadx_then_track2_ghidra",
+    "dex_files": [
+      "classes.dex"
+    ],
+    "dex_count": 1,
+    "native_libs": [
+      "lib/armeabi-v7a/libjingle_peerconnection_so.so"
+    ],
+    "native_lib_count": 1,
+    "native_arches": [
+      "armeabi-v7a"
+    ],
+    "framework_indicators": [],
+    "packing_signals": [],
+    "routing_decisions": [
+      {
+        "engine": "jadx",
+        "targets": [
+          "classes.dex"
+        ],
+        "reason": "Dalvik bytecode present; decompile smali to Java for static triage."
+      },
+      {
+        "engine": "ghidra",
+        "targets": [
+          "lib/armeabi-v7a/libjingle_peerconnection_so.so"
+        ],
+        "arches": [
+          "armeabi-v7a"
+        ],
+        "reason": "Native shared libraries present; decompile ARM/x86 .so for C2 strings and hidden payloads."
+      }
+    ]
+  }
+}

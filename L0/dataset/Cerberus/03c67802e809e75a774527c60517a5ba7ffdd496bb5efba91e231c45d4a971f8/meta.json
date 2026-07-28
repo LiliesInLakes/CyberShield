@@ -1,0 +1,80 @@
+{
+  "family": "Cerberus",
+  "source_file": "C:\\Users\\DELL\\AppData\\Local\\Temp\\tmp4s9ty4k2\\03c67802e809e75a774527c60517a5ba7ffdd496bb5efba91e231c45d4a971f8.apk",
+  "fingerprint": {
+    "md5": "f8f96afdb7b8f09149d3c408bb3ebc9d",
+    "sha256": "03c67802e809e75a774527c60517a5ba7ffdd496bb5efba91e231c45d4a971f8"
+  },
+  "manifest": {
+    "package_name": "flftowpyhygfa.kchoyulzgssarwo.mlypjkpnjqxbkxztjifzonl",
+    "app_label": "Sosyal Destek 30 GB",
+    "version_name": "1.0",
+    "version_code": "1",
+    "min_sdk": "20",
+    "target_sdk": "29",
+    "permissions": [
+      "android.permission.ACCESS_NETWORK_STATE",
+      "android.permission.ACCESS_NOTIFICATION_POLICY",
+      "android.permission.CALL_PHONE",
+      "android.permission.FOREGROUND_SERVICE",
+      "android.permission.GET_ACCOUNTS",
+      "android.permission.INTERNET",
+      "android.permission.READ_CONTACTS",
+      "android.permission.READ_EXTERNAL_STORAGE",
+      "android.permission.READ_PHONE_STATE",
+      "android.permission.READ_SMS",
+      "android.permission.RECEIVE_BOOT_COMPLETED",
+      "android.permission.RECEIVE_SMS",
+      "android.permission.RECORD_AUDIO",
+      "android.permission.REQUEST_COMPANION_USE_DATA_IN_BACKGROUND",
+      "android.permission.REQUEST_DELETE_PACKAGES",
+      "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS",
+      "android.permission.SEND_SMS",
+      "android.permission.USE_FULL_SCREEN_INTENT",
+      "android.permission.WAKE_LOCK",
+      "android.permission.WRITE_EXTERNAL_STORAGE"
+    ],
+    "permission_count": 20,
+    "high_risk_permissions": [
+      "android.permission.CALL_PHONE",
+      "android.permission.GET_ACCOUNTS",
+      "android.permission.READ_CONTACTS",
+      "android.permission.READ_EXTERNAL_STORAGE",
+      "android.permission.READ_PHONE_STATE",
+      "android.permission.READ_SMS",
+      "android.permission.RECEIVE_BOOT_COMPLETED",
+      "android.permission.RECEIVE_SMS",
+      "android.permission.RECORD_AUDIO",
+      "android.permission.SEND_SMS",
+      "android.permission.WRITE_EXTERNAL_STORAGE"
+    ],
+    "high_risk_permission_count": 11
+  },
+  "icon": {
+    "present": true,
+    "phash": "c0b4255a7fc93aca",
+    "source": "res/mipmap-xxxhdpi/ic_launcher.png",
+    "saved_path": "dataset\\Cerberus\\03c67802e809e75a774527c60517a5ba7ffdd496bb5efba91e231c45d4a971f8\\icon.png"
+  },
+  "routing": {
+    "track": "track1_jadx",
+    "dex_files": [
+      "classes.dex"
+    ],
+    "dex_count": 1,
+    "native_libs": [],
+    "native_lib_count": 0,
+    "native_arches": [],
+    "framework_indicators": [],
+    "packing_signals": [],
+    "routing_decisions": [
+      {
+        "engine": "jadx",
+        "targets": [
+          "classes.dex"
+        ],
+        "reason": "Dalvik bytecode present; decompile smali to Java for static triage."
+      }
+    ]
+  }
+}

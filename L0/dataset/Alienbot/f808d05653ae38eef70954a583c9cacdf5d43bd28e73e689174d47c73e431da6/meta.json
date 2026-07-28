@@ -1,0 +1,78 @@
+{
+  "family": "Alienbot",
+  "source_file": "C:\\Users\\DELL\\AppData\\Local\\Temp\\tmpicqn38jg\\f808d05653ae38eef70954a583c9cacdf5d43bd28e73e689174d47c73e431da6.apk",
+  "fingerprint": {
+    "md5": "757be08495745e8f90e97d33fa946aff",
+    "sha256": "f808d05653ae38eef70954a583c9cacdf5d43bd28e73e689174d47c73e431da6"
+  },
+  "manifest": {
+    "package_name": "video.typical.scrap",
+    "app_label": "Porno \u0130zle",
+    "version_name": "1.0",
+    "version_code": "1",
+    "min_sdk": "20",
+    "target_sdk": "29",
+    "permissions": [
+      "android.permission.ACCESS_NETWORK_STATE",
+      "android.permission.CALL_PHONE",
+      "android.permission.FOREGROUND_SERVICE",
+      "android.permission.GET_ACCOUNTS",
+      "android.permission.INTERNET",
+      "android.permission.READ_CONTACTS",
+      "android.permission.READ_EXTERNAL_STORAGE",
+      "android.permission.READ_PHONE_STATE",
+      "android.permission.READ_SMS",
+      "android.permission.RECEIVE_BOOT_COMPLETED",
+      "android.permission.RECEIVE_SMS",
+      "android.permission.RECORD_AUDIO",
+      "android.permission.REQUEST_DELETE_PACKAGES",
+      "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS",
+      "android.permission.SEND_SMS",
+      "android.permission.USE_FULL_SCREEN_INTENT",
+      "android.permission.WAKE_LOCK",
+      "android.permission.WRITE_EXTERNAL_STORAGE"
+    ],
+    "permission_count": 18,
+    "high_risk_permissions": [
+      "android.permission.CALL_PHONE",
+      "android.permission.GET_ACCOUNTS",
+      "android.permission.READ_CONTACTS",
+      "android.permission.READ_EXTERNAL_STORAGE",
+      "android.permission.READ_PHONE_STATE",
+      "android.permission.READ_SMS",
+      "android.permission.RECEIVE_BOOT_COMPLETED",
+      "android.permission.RECEIVE_SMS",
+      "android.permission.RECORD_AUDIO",
+      "android.permission.SEND_SMS",
+      "android.permission.WRITE_EXTERNAL_STORAGE"
+    ],
+    "high_risk_permission_count": 11
+  },
+  "icon": {
+    "present": true,
+    "phash": "ce003100cc006600",
+    "source": "res/mipmap-xxxhdpi/ic_launcher.png",
+    "saved_path": "dataset\\Alienbot\\f808d05653ae38eef70954a583c9cacdf5d43bd28e73e689174d47c73e431da6\\icon.png"
+  },
+  "routing": {
+    "track": "track1_jadx",
+    "dex_files": [
+      "classes.dex"
+    ],
+    "dex_count": 1,
+    "native_libs": [],
+    "native_lib_count": 0,
+    "native_arches": [],
+    "framework_indicators": [],
+    "packing_signals": [],
+    "routing_decisions": [
+      {
+        "engine": "jadx",
+        "targets": [
+          "classes.dex"
+        ],
+        "reason": "Dalvik bytecode present; decompile smali to Java for static triage."
+      }
+    ]
+  }
+}

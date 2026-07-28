@@ -1,0 +1,70 @@
+{
+  "family": "SMS Stealer",
+  "source_file": "C:\\Users\\DELL\\AppData\\Local\\Temp\\tmp8can99me\\c385020ef9e6e04ad08757324f78963378675a1bdb57a4de0fd525cffe7f2139.apk",
+  "fingerprint": {
+    "md5": "a1b5c184d447eaac1ed47bc5a0db4725",
+    "sha256": "c385020ef9e6e04ad08757324f78963378675a1bdb57a4de0fd525cffe7f2139"
+  },
+  "manifest": {
+    "package_name": "org.starsizew",
+    "app_label": "Spy Mouse",
+    "version_name": null,
+    "version_code": null,
+    "min_sdk": "9",
+    "target_sdk": null,
+    "permissions": [
+      "android.permission.ACCESS_NETWORK_STATE",
+      "android.permission.CALL_PHONE",
+      "android.permission.GET_TASKS",
+      "android.permission.INTERNET",
+      "android.permission.READ_CONTACTS",
+      "android.permission.READ_LOGS",
+      "android.permission.READ_PHONE_STATE",
+      "android.permission.READ_SMS",
+      "android.permission.RECEIVE_BOOT_COMPLETED",
+      "android.permission.RECEIVE_SMS",
+      "android.permission.SEND_SMS",
+      "android.permission.WRITE_EXTERNAL_STORAGE",
+      "android.permission.WRITE_SMS"
+    ],
+    "permission_count": 13,
+    "high_risk_permissions": [
+      "android.permission.CALL_PHONE",
+      "android.permission.READ_CONTACTS",
+      "android.permission.READ_PHONE_STATE",
+      "android.permission.READ_SMS",
+      "android.permission.RECEIVE_BOOT_COMPLETED",
+      "android.permission.RECEIVE_SMS",
+      "android.permission.SEND_SMS",
+      "android.permission.WRITE_EXTERNAL_STORAGE"
+    ],
+    "high_risk_permission_count": 8
+  },
+  "icon": {
+    "present": true,
+    "phash": "c785387a1de8d538",
+    "source": "res/mipmap-hdpi-v4/ic_launcher.png",
+    "saved_path": "dataset\\SMS Stealer\\c385020ef9e6e04ad08757324f78963378675a1bdb57a4de0fd525cffe7f2139\\icon.png"
+  },
+  "routing": {
+    "track": "track1_jadx",
+    "dex_files": [
+      "classes.dex"
+    ],
+    "dex_count": 1,
+    "native_libs": [],
+    "native_lib_count": 0,
+    "native_arches": [],
+    "framework_indicators": [],
+    "packing_signals": [],
+    "routing_decisions": [
+      {
+        "engine": "jadx",
+        "targets": [
+          "classes.dex"
+        ],
+        "reason": "Dalvik bytecode present; decompile smali to Java for static triage."
+      }
+    ]
+  }
+}

@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Virtual environment
+env/
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Project-specific
+L0/artifacts/
+L1/artifacts/
+**/artifacts/
+
+# Tools (downloaded binaries)
+tools/jdk*/
+tools/jadx*/
+tools/jadx-jre*/
+tools/platform-tools*/
+tools/ghidra/ghidra_*_PUBLIC/
+
+# APK test files (via LFS)
+# *.apk
+
+# Temp files
+*.log
+*.tmp

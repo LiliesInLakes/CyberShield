@@ -1,0 +1,86 @@
+{
+  "family": "Covid",
+  "source_file": "C:\\Users\\DELL\\AppData\\Local\\Temp\\tmp37b0bl8l\\462e131e3b1b3e72f475374496bd6d0067fb271b78d25302f4798764e961e529.apk",
+  "fingerprint": {
+    "md5": "e143e7e9c6518566b164d17779aeaced",
+    "sha256": "462e131e3b1b3e72f475374496bd6d0067fb271b78d25302f4798764e961e529"
+  },
+  "manifest": {
+    "package_name": "kcbemzsjob.pcqswfdcpw.xhnxkqw",
+    "app_label": "Google Play",
+    "version_name": "1.0",
+    "version_code": "1",
+    "min_sdk": "21",
+    "target_sdk": "28",
+    "permissions": [
+      "android.permission.ACCESS_FINE_LOCATION",
+      "android.permission.ACCESS_NETWORK_STATE",
+      "android.permission.BROADCAST_STICKY",
+      "android.permission.CALL_PHONE",
+      "android.permission.CHANGE_WIFI_STATE",
+      "android.permission.DISABLE_KEYGUARD",
+      "android.permission.FOREGROUND_SERVICE",
+      "android.permission.GET_TASKS",
+      "android.permission.INTERNET",
+      "android.permission.NFC",
+      "android.permission.PACKAGE_USAGE_STATS",
+      "android.permission.READ_CONTACTS",
+      "android.permission.READ_EXTERNAL_STORAGE",
+      "android.permission.READ_PHONE_STATE",
+      "android.permission.READ_SMS",
+      "android.permission.RECEIVE_BOOT_COMPLETED",
+      "android.permission.RECEIVE_SMS",
+      "android.permission.RECORD_AUDIO",
+      "android.permission.REQUEST_DELETE_PACKAGES",
+      "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS",
+      "android.permission.SEND_SMS",
+      "android.permission.SYSTEM_ALERT_WINDOW",
+      "android.permission.WAKE_LOCK",
+      "android.permission.WRITE_EXTERNAL_STORAGE",
+      "android.permission.WRITE_SMS"
+    ],
+    "permission_count": 25,
+    "high_risk_permissions": [
+      "android.permission.ACCESS_FINE_LOCATION",
+      "android.permission.CALL_PHONE",
+      "android.permission.READ_CONTACTS",
+      "android.permission.READ_EXTERNAL_STORAGE",
+      "android.permission.READ_PHONE_STATE",
+      "android.permission.READ_SMS",
+      "android.permission.RECEIVE_BOOT_COMPLETED",
+      "android.permission.RECEIVE_SMS",
+      "android.permission.RECORD_AUDIO",
+      "android.permission.SEND_SMS",
+      "android.permission.SYSTEM_ALERT_WINDOW",
+      "android.permission.WRITE_EXTERNAL_STORAGE"
+    ],
+    "high_risk_permission_count": 12
+  },
+  "icon": {
+    "present": true,
+    "phash": "94cc6b236f983b0e",
+    "source": "res/mipmap-xxxhdpi/ic_launcher.png",
+    "saved_path": "dataset\\Covid\\462e131e3b1b3e72f475374496bd6d0067fb271b78d25302f4798764e961e529\\icon.png"
+  },
+  "routing": {
+    "track": "track1_jadx",
+    "dex_files": [
+      "classes.dex"
+    ],
+    "dex_count": 1,
+    "native_libs": [],
+    "native_lib_count": 0,
+    "native_arches": [],
+    "framework_indicators": [],
+    "packing_signals": [],
+    "routing_decisions": [
+      {
+        "engine": "jadx",
+        "targets": [
+          "classes.dex"
+        ],
+        "reason": "Dalvik bytecode present; decompile smali to Java for static triage."
+      }
+    ]
+  }
+}

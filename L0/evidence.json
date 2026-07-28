@@ -1,0 +1,104 @@
+{
+  "schema_version": "apk-sentinel-0.1",
+  "generated_at": "2026-07-18T16:00:34.345945+00:00",
+  "source_apk": "D:\\BOI\\testing_apps\\InsecureBankv2.apk",
+  "l0": {
+    "status": "complete",
+    "fingerprint": {
+      "md5": "5ee4829065640f9c936ac861d1650ffc",
+      "sha256": "b18af2a0e44d7634bbcdf93664d9c78a2695e050393fcfbb5e8b91f902d194a4"
+    },
+    "manifest": {
+      "package_name": "com.android.insecurebankv2",
+      "app_label": "InsecureBankv2",
+      "version_name": "1.0",
+      "version_code": "1",
+      "min_sdk": "15",
+      "target_sdk": "22",
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.GET_ACCOUNTS",
+        "android.permission.INTERNET",
+        "android.permission.READ_CALL_LOG",
+        "android.permission.READ_CONTACTS",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.READ_PHONE_STATE",
+        "android.permission.READ_PROFILE",
+        "android.permission.SEND_SMS",
+        "android.permission.USE_CREDENTIALS",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ],
+      "permission_count": 12,
+      "high_risk_permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.GET_ACCOUNTS",
+        "android.permission.READ_CALL_LOG",
+        "android.permission.READ_CONTACTS",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.READ_PHONE_STATE",
+        "android.permission.SEND_SMS",
+        "android.permission.USE_CREDENTIALS",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ],
+      "high_risk_permission_count": 9
+    },
+    "icon": {
+      "present": true,
+      "phash": "979c6863879c7863",
+      "source": "res/mipmap-xxxhdpi-v4/ic_launcher.png"
+    },
+    "impersonation": {
+      "verdict": "unknown",
+      "matched_bank": null,
+      "closest_bank": null,
+      "closest_phash_distance": null,
+      "phash_threshold": 8,
+      "findings": []
+    },
+    "routing": {
+      "track": "track1_jadx",
+      "dex_files": [
+        "classes.dex"
+      ],
+      "dex_count": 1,
+      "native_libs": [],
+      "native_lib_count": 0,
+      "framework_indicators": []
+    },
+    "reputation": {
+      "local_cache_hit": false,
+      "local": null,
+      "external_vt": {
+        "source": "virustotal",
+        "meaningful_name": "InsecureBankv2.apk",
+        "malicious": 24,
+        "suspicious": 0,
+        "undetected": 42,
+        "harmless": 0,
+        "total_scans": 74,
+        "signer": null
+      },
+      "external_malwarebazaar": null,
+      "note": "Local cache checked first (on-prem). External enrichment (VT or MalwareBazaar) only if no cache hit and respective key is set."
+    }
+  },
+  "l1": {
+    "status": "pending"
+  },
+  "l2": {
+    "status": "pending"
+  },
+  "l3": {
+    "status": "pending"
+  },
+  "l4": {
+    "status": "pending"
+  },
+  "l5": {
+    "status": "pending"
+  },
+  "l6": {
+    "status": "pending"
+  }
+}

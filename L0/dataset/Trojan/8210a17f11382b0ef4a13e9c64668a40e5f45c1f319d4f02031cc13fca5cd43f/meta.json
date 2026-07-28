@@ -1,0 +1,88 @@
+{
+  "family": "Trojan",
+  "source_file": "C:\\Users\\DELL\\AppData\\Local\\Temp\\tmpbu2ne6uj\\8210a17f11382b0ef4a13e9c64668a40e5f45c1f319d4f02031cc13fca5cd43f.apk",
+  "fingerprint": {
+    "md5": "9ee061573fe4905c8d0c4fb4d69711eb",
+    "sha256": "8210a17f11382b0ef4a13e9c64668a40e5f45c1f319d4f02031cc13fca5cd43f"
+  },
+  "manifest": {
+    "package_name": "tehi.weqza.nzxpd",
+    "app_label": "\u0421hr\u043eme ",
+    "version_name": "dbgkvfmiglzr",
+    "version_code": "95448866",
+    "min_sdk": "14",
+    "target_sdk": "21",
+    "permissions": [
+      "android.permission.ACCESS_NETWORK_STATE",
+      "android.permission.ACCESS_WIFI_STATE",
+      "android.permission.CALL_PHONE",
+      "android.permission.CHANGE_NETWORK_STATE",
+      "android.permission.CHANGE_WIFI_STATE",
+      "android.permission.DISABLE_KEYGUARD",
+      "android.permission.GET_ACCOUNTS",
+      "android.permission.INTERNET",
+      "android.permission.MODIFY_AUDIO_SETTINGS",
+      "android.permission.READ_CONTACTS",
+      "android.permission.READ_EXTERNAL_STORAGE",
+      "android.permission.READ_PHONE_STATE",
+      "android.permission.READ_PROFILE",
+      "android.permission.READ_SMS",
+      "android.permission.RECEIVE_BOOT_COMPLETED",
+      "android.permission.RECEIVE_SMS",
+      "android.permission.SEND_SMS",
+      "android.permission.SYSTEM_ALERT_WINDOW",
+      "android.permission.SYSTEM_OVERLAY_WINDOW",
+      "android.permission.WAKE_LOCK",
+      "android.permission.WRITE_EXTERNAL_STORAGE",
+      "android.permission.WRITE_SMS",
+      "djjttyi.ebrrr.iafyub",
+      "mekftgy.edygo.ikci",
+      "sqkreyl.niebw.lkuqnsz",
+      "vsjb.otzus.wonrdes"
+    ],
+    "permission_count": 26,
+    "high_risk_permissions": [
+      "android.permission.CALL_PHONE",
+      "android.permission.GET_ACCOUNTS",
+      "android.permission.READ_CONTACTS",
+      "android.permission.READ_EXTERNAL_STORAGE",
+      "android.permission.READ_PHONE_STATE",
+      "android.permission.READ_SMS",
+      "android.permission.RECEIVE_BOOT_COMPLETED",
+      "android.permission.RECEIVE_SMS",
+      "android.permission.SEND_SMS",
+      "android.permission.SYSTEM_ALERT_WINDOW",
+      "android.permission.WRITE_EXTERNAL_STORAGE"
+    ],
+    "high_risk_permission_count": 11
+  },
+  "icon": {
+    "present": true,
+    "phash": "956c59e46b949e92",
+    "source": "res/drawable-xhdpi/ic_launcher.png",
+    "saved_path": "dataset\\Trojan\\8210a17f11382b0ef4a13e9c64668a40e5f45c1f319d4f02031cc13fca5cd43f\\icon.png"
+  },
+  "routing": {
+    "track": "track1_jadx",
+    "dex_files": [
+      "classes.dex"
+    ],
+    "dex_count": 1,
+    "native_libs": [],
+    "native_lib_count": 0,
+    "native_arches": [],
+    "framework_indicators": [
+      "kotlin"
+    ],
+    "packing_signals": [],
+    "routing_decisions": [
+      {
+        "engine": "jadx",
+        "targets": [
+          "classes.dex"
+        ],
+        "reason": "Dalvik bytecode present; decompile smali to Java for static triage."
+      }
+    ]
+  }
+}
