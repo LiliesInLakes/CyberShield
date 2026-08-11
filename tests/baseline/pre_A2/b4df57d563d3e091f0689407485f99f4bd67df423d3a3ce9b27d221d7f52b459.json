@@ -1,0 +1,66 @@
+{
+  "sha256": "b4df57d563d3e091f0689407485f99f4bd67df423d3a3ce9b27d221d7f52b459",
+  "source_apk": "testing_apps/good_apps/org.diekaiju.duckassist_245.apk",
+  "engine": "jadx+yara",
+  "track": "track1_jadx",
+  "generated_at": "2026-08-07T05:09:50.004277+00:00",
+  "findings": [
+    {
+      "engine": "yara_source",
+      "category": "other",
+      "severity": "critical",
+      "evidence": "[Android_WebView_JavascriptInterface] WebView exposes JavaScript bridge \u2014 potential XSS-to-RCE if untrusted content loaded -> addJavascriptInterface",
+      "location": "sources/g/s2.java:$jsi",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "detail": {
+        "yara_rule": "Android_WebView_JavascriptInterface",
+        "source_file": "sources/g/s2.java"
+      }
+    },
+    {
+      "engine": "yara_source",
+      "category": "other",
+      "severity": "high",
+      "evidence": "[Android_WebView_JavaScriptEnabled] WebView has JavaScript enabled \u2014 increases XSS attack surface -> setJavaScriptEnabled",
+      "location": "sources/g/s2.java:$jse",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "detail": {
+        "yara_rule": "Android_WebView_JavaScriptEnabled",
+        "source_file": "sources/g/s2.java"
+      }
+    },
+    {
+      "engine": "yara_source",
+      "category": "other",
+      "severity": "medium",
+      "evidence": "[Android_Secrets_Hardcoded] Potential hardcoded credential or secret \u2014 review for plaintext secrets -> .Password",
+      "location": "sources/g/h0.java:$pw1",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "detail": {
+        "yara_rule": "Android_Secrets_Hardcoded",
+        "source_file": "sources/g/h0.java"
+      }
+    }
+  ],
+  "artifacts": {
+    "decompiled_src": "/home/nightwings/cybershield/CyberShield/L1/artifacts/b4df57d563d3e091f0689407485f99f4bd67df423d3a3ce9b27d221d7f52b459/jadx_src"
+  },
+  "summary": {
+    "finding_count": 3,
+    "severity_counts": {
+      "info": 0,
+      "low": 0,
+      "medium": 1,
+      "high": 1,
+      "critical": 1
+    },
+    "categories": [
+      "other"
+    ],
+    "decompiled_files": 605,
+    "source_findings": 3
+  }
+}

@@ -7,6 +7,8 @@
 
 rule Android_Spyware_Generic_GPS_Surveillance {
     meta:
+        category = "data_exfiltration"
+        scope = "both"
         description = "Detects generic Android spyware with GPS tracking and location surveillance"
         author = "Agent-Sentinel"
         severity = "High"
@@ -39,7 +41,7 @@ rule Android_Spyware_Generic_GPS_Surveillance {
 
     condition:
         filesize < 12MB
-        and uint32(0) == 0x504B0304
+        and uint32be(0) == 0x504B0304
         and (3 of ($loc*))
         and (2 of ($svc*))
         and (2 of ($exfil*))
@@ -49,6 +51,8 @@ rule Android_Spyware_Generic_GPS_Surveillance {
 
 rule Android_Spyware_SMS_Call_Log_Harvester {
     meta:
+        category = "sms_intercept"
+        scope = "both"
         description = "Detects spyware harvesting SMS, call logs, and contact data"
         author = "Agent-Sentinel"
         severity = "High"
@@ -81,7 +85,7 @@ rule Android_Spyware_SMS_Call_Log_Harvester {
 
     condition:
         filesize < 10MB
-        and uint32(0) == 0x504B0304
+        and uint32be(0) == 0x504B0304
         and (2 of ($sms*))
         and (2 of ($call*))
         and (2 of ($contact*))
@@ -91,6 +95,8 @@ rule Android_Spyware_SMS_Call_Log_Harvester {
 
 rule Android_Spyware_Microphone_Camera_Access {
     meta:
+        category = "data_exfiltration"
+        scope = "both"
         description = "Detects spyware accessing microphone and camera for surveillance"
         author = "Agent-Sentinel"
         severity = "Critical"
@@ -124,7 +130,7 @@ rule Android_Spyware_Microphone_Camera_Access {
 
     condition:
         filesize < 20MB
-        and uint32(0) == 0x504B0304
+        and uint32be(0) == 0x504B0304
         and (
             (2 of ($cam*) and 2 of ($mic*))
             or (2 of ($screen*) and 1 of ($store*))
@@ -134,6 +140,8 @@ rule Android_Spyware_Microphone_Camera_Access {
 
 rule Android_Spyware_Keylogger_Credential_Theft {
     meta:
+        category = "data_exfiltration"
+        scope = "both"
         description = "Detects keylogger functionality and credential theft in Android apps"
         author = "Agent-Sentinel"
         severity = "Critical"
@@ -164,7 +172,7 @@ rule Android_Spyware_Keylogger_Credential_Theft {
 
     condition:
         filesize < 10MB
-        and uint32(0) == 0x504B0304
+        and uint32be(0) == 0x504B0304
         and (3 of ($kl*))
         and (2 of ($clip*))
         and (2 of ($cred*))

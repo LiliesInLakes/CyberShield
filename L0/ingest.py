@@ -20,6 +20,17 @@ from PIL import Image
 import imagehash
 
 L0_DIR = Path(__file__).resolve().parent
+REPO_ROOT = L0_DIR.parent
+for _p in (str(L0_DIR), str(REPO_ROOT)):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
+# Certificate parsing lives in certinfo.py. Re-exported here so existing callers
+# (cert_registry.py, evidence readers) keep importing it from ingest unchanged.
+from certinfo import extract_cert_info  # noqa: E402,F401
+import impersonation  # noqa: E402
+import promote  # noqa: E402
+import spine  # noqa: E402
 WHITELIST_PATH = L0_DIR / "bank_whitelist.json"
 CACHE_PATH = L0_DIR / "threat_cache.json"
 EVIDENCE_PATH = L0_DIR / "evidence.json"
@@ -113,81 +124,52 @@ def harvest_manifest(apk: APK) -> dict[str, Any]:
 
 
 def extract_icon_phash(apk: APK, artifacts_dir: Path | None = None) -> dict[str, Any]:
-    result = {"present": False, "phash": None, "source": None, "saved_path": None}
-    try:
-        icon_path = apk.get_app_icon()
-        if not icon_path:
-            return result
-        data = apk.get_file(icon_path)
-        if not data:
-            return result
-        img = Image.open(io.BytesIO(data)).convert("RGB")
-        result["present"] = True
-        result["phash"] = str(imagehash.phash(img))
-        result["source"] = icon_path
-        if artifacts_dir:
-            artifacts_dir.mkdir(parents=True, exist_ok=True)
-            safe = "icon.png"
-            out = artifacts_dir / safe
-            img.save(out, format="PNG")
-            result["saved_path"] = str(out.relative_to(L0_DIR))
-    except Exception as exc:  # noqa: BLE001
-        result["error"] = str(exc)
-    return result
+    """Extract the launcher icon and perceptual hashes.
 
-
-def extract_cert_info(apk: APK) -> dict[str, Any]:
-    """Extract signing certificate metadata.
-
-    Two standalone signals that need no reference data:
-      - self_signed: issuer == subject (no legitimate bank app is self-signed)
-      - debug_signed: subject contains "Android Debug" (dev forgot to sign)
-
-    The sha256_fingerprint enables whitelist matching when reference data exists.
+    androguard's ``get_app_icon()`` defaults to ``max_dpi=65536``, which selects
+    the ``anydpi-v26`` **adaptive-icon binary XML** in preference to any raster.
+    PIL cannot decode that, so the icon silently failed to extract on roughly
+    half of all modern APKs — including every India-targeted sample in the
+    corpus. Walking down a dpi ladder makes it pick a real bitmap instead.
     """
     result: dict[str, Any] = {
-        "present": False,
-        "sha256_fingerprint": None,
-        "issuer": None,
-        "subject": None,
-        "serial_number": None,
-        "not_before": None,
-        "not_after": None,
-        "self_signed": None,
-        "debug_signed": None,
+        "present": False, "extraction_ok": False, "phash": None, "dhash": None,
+        "source": None, "saved_path": None, "attempted_sources": [],
     }
     try:
-        certs = apk.get_certificates()
-        if not certs:
+        for max_dpi in (640, 480, 320, 240, 160, 65536):
+            try:
+                icon_path = apk.get_app_icon(max_dpi=max_dpi)
+            except Exception:  # noqa: BLE001
+                continue
+            if not icon_path or icon_path in result["attempted_sources"]:
+                continue
+            result["attempted_sources"].append(icon_path)
+            data = apk.get_file(icon_path)
+            if not data:
+                continue
+            try:
+                img = Image.open(io.BytesIO(data)).convert("RGB")
+            except Exception:  # noqa: BLE001
+                continue  # adaptive-icon XML or another non-raster: try lower dpi
+            result["present"] = True
+            result["extraction_ok"] = True
+            result["phash"] = str(imagehash.phash(img))
+            result["dhash"] = str(imagehash.dhash(img))
+            result["source"] = icon_path
+            if artifacts_dir:
+                artifacts_dir.mkdir(parents=True, exist_ok=True)
+                out = artifacts_dir / "icon.png"
+                img.save(out, format="PNG")
+                result["saved_path"] = str(out.relative_to(L0_DIR))
             return result
-        cert = certs[0]  # Primary signing cert
-        result["present"] = True
-        # Compute SHA-256 fingerprint from DER-encoded cert
-        import hashlib as _hl
-        der_bytes = cert.public_bytes(encoding=__import__("cryptography").x509.base.serialization.Encoding.DER)
-        result["sha256_fingerprint"] = _hl.sha256(der_bytes).hexdigest()
-        issuer = cert.issuer.rfc4514_string()
-        subject = cert.subject.rfc4514_string()
-        result["issuer"] = issuer
-        result["subject"] = subject
-        result["serial_number"] = str(cert.serial_number)
-        result["not_before"] = str(cert.not_valid_before_utc)
-        result["not_after"] = str(cert.not_valid_after_utc)
-        result["self_signed"] = (issuer == subject)
-        result["debug_signed"] = "android debug" in subject.lower()
+        result["error"] = "no decodable raster icon found"
     except Exception as exc:  # noqa: BLE001
-        # Fallback: try androguard's simpler cert API
-        try:
-            certs_v2 = apk.get_certificates_der_v2()
-            if certs_v2:
-                import hashlib as _hl
-                der = certs_v2[0]
-                result["present"] = True
-                result["sha256_fingerprint"] = _hl.sha256(der).hexdigest()
-        except Exception:  # noqa: BLE001
-            pass
         result["error"] = str(exc)
     return result
+
+
+# (extract_cert_info now lives in certinfo.py — imported at the top of this file)
 
 
 def load_threat_cache() -> dict[str, Any]:
@@ -226,6 +208,18 @@ def _best_label_sim(app_label: str, bank: dict) -> float:
     return best
 
 
+_ANOMALY_DETAIL = {
+    "debug_keystore": "APK signed with an Android debug keystore — never used for "
+                      "legitimate distribution.",
+    "aosp_test_key": "APK signed with the public AOSP platform test key — anyone can "
+                     "sign with it, so it proves no publisher identity.",
+    "empty_dn": "Signing certificate carries no real publisher identity.",
+    "placeholder_dn": "Signing certificate uses placeholder publisher details.",
+    "absurd_validity": "Signing certificate has an implausible validity period.",
+    "vendor_claiming_dn": "Self-signed certificate claims to be a major device vendor.",
+}
+
+
 def impersonation_check(manifest: dict, icon: dict, whitelist: dict, threshold: int = 8, detected_logos: list[str] | None = None, cert_info: dict[str, Any] | None = None) -> dict[str, Any]:
     findings = []
     matched_bank = None
@@ -233,6 +227,12 @@ def impersonation_check(manifest: dict, icon: dict, whitelist: dict, threshold: 
     min_dist = None
 
     banks = whitelist.get("banks", [])
+
+    # Brand claims from manifest-declared identity only (never dex/strings).
+    brand_claims = (impersonation.match_label_brand(manifest.get("app_label") or "", whitelist)
+                    + impersonation.match_package(manifest.get("package_name") or "", whitelist))
+    official_packages = {b.get("package_name") for b in banks if b.get("package_name")}
+    is_official_package = manifest.get("package_name") in official_packages
     trusted_names = {b.get("bank_name", "").lower() for b in banks}
     for bank in banks:
         pkg = bank.get("package_name", "")
@@ -317,43 +317,87 @@ def impersonation_check(manifest: dict, icon: dict, whitelist: dict, threshold: 
                 matched_bank = bank.get("bank_name")
                 break
 
-        # Self-signed check (only fires if cert NOT already matched)
-        if not cert_signal["cert_in_whitelist"] and cert_info.get("self_signed"):
-            looks_like_bank = any(
-                _best_label_sim(manifest.get("app_label"), b) >= 0.6
-                for b in banks
-            )
-            if looks_like_bank:
-                cert_signal["cert_weight"] = -0.9
-                cert_signal["cert_detail"] = "Self-signed cert on bank-branded app"
-                findings.append({
-                    "type": "self_signed_bank_impersonation",
-                    "severity": "critical",
-                    "detail": "Self-signed certificate on an app mimicking a bank. "
-                              "No legitimate Indian bank ships self-signed.",
-                })
-            else:
-                cert_signal["cert_weight"] = -0.4
-                cert_signal["cert_detail"] = "Self-signed certificate (not bank-branded)"
-
-        # Debug-signed check
-        if not cert_signal["cert_in_whitelist"] and cert_info.get("debug_signed"):
-            cert_signal["cert_weight"] = -0.5
-            cert_signal["cert_detail"] = "Debug-signed certificate — never legitimate for distribution"
+        # Signer anomalies. `self_signed` is deliberately NOT among them: every
+        # Android APK is self-signed (verified 22/22 locally, including all
+        # benign controls), so on its own it carries no information and is
+        # weighted zero. Only anomalies a real publisher never ships count.
+        anomalies = [a for a in (cert_info.get("anomalies") or []) if a != "self_signed"]
+        if not cert_signal["cert_in_whitelist"] and anomalies:
+            brand_claimed = bool(brand_claims)
+            # Two strong anomalies without a brand claim is still high: it is
+            # how the mayJioTarget family presents (debug DN + 999-year validity)
+            # with no brand token in its label at all.
+            strong = {"debug_keystore", "aosp_test_key", "vendor_claiming_dn"}
+            severity = ("high" if (brand_claimed and set(anomalies) & strong)
+                        else "high" if len(anomalies) >= 2 and set(anomalies) & strong
+                        else "medium" if set(anomalies) & strong
+                        else "low")
+            cert_signal["cert_weight"] = -0.9 if brand_claimed else -0.5
+            cert_signal["cert_detail"] = f"Signer anomalies: {', '.join(anomalies)}"
             findings.append({
-                "type": "debug_signed",
-                "severity": "high",
-                "detail": "APK signed with Android debug key — not intended for release.",
+                "type": f"cert_{anomalies[0]}",
+                "severity": severity,
+                "anomalies": anomalies,
+                "subject": cert_info.get("subject"),
+                "detail": _ANOMALY_DETAIL.get(
+                    anomalies[0], "Signing certificate shows publisher anomalies.")
+                + (f" App claims to be {brand_claims[0]['entity']}." if brand_claimed else ""),
             })
 
         # If cert not in whitelist and not self-signed/debug → NEUTRAL (0.0)
         # This is intentional: we can't penalise unknown certs because we'll
         # never have every legitimate cert. The whitelist grows over time.
 
-    verdict = "trusted" if matched_bank else ("suspicious" if findings else "unknown")
+    # Brand claims become findings only when the app is NOT the official package.
+    claimed_entity = None
+    if brand_claims and not is_official_package:
+        claimed_entity = brand_claims[0]["entity"]
+        entities = sorted({c["entity"] for c in brand_claims if c.get("entity")})
+        has_cert_anomaly = any(f["type"].startswith("cert_") for f in findings)
+        sev = ("critical" if has_cert_anomaly
+               else "high" if len(brand_claims) >= 2 else "medium")
+        findings.append({
+            "type": "brand_impersonation",
+            "severity": sev,
+            "entity": claimed_entity,
+            "entities": entities,
+            "claims": brand_claims,
+            "detail": f"App presents itself as {claimed_entity} "
+                      f"({', '.join(c['type'] for c in brand_claims)}) but is not an "
+                      f"official {claimed_entity} package."
+                      + (" Signer is anomalous." if has_cert_anomaly else ""),
+        })
+
+    # The verdict is a function of the findings, never of matched_bank alone.
+    # Previously `matched_bank` short-circuited it, so a package+label clone was
+    # reported `trusted` while carrying a critical finding in the same object.
+    _RANK = {"info": 0, "low": 1, "medium": 2, "high": 3, "critical": 4}
+    worst = max((_RANK.get(f.get("severity", "low"), 1) for f in findings), default=0)
+    if matched_bank and worst <= 1:
+        verdict = "trusted"
+    elif worst >= 4:
+        verdict = "impersonation_likely"
+    elif worst == 3:
+        verdict = "impersonation_suspected"
+    elif findings:
+        verdict = "suspicious"
+    else:
+        verdict = "unknown"
     return {
         "verdict": verdict,
         "matched_bank": matched_bank,
+        "claimed_entity": claimed_entity,
+        "brand_claims": brand_claims,
+        "smoking_gun_inputs": {
+            "brand_claim": bool(brand_claims) and not is_official_package,
+            "claimed_entity": claimed_entity,
+            "cert_anomalies": [a for a in ((cert_info or {}).get("anomalies") or [])
+                               if a != "self_signed"],
+            "sms_trifecta": {"android.permission.READ_SMS",
+                             "android.permission.RECEIVE_SMS",
+                             "android.permission.SEND_SMS"}.issubset(
+                                 set(manifest.get("permissions") or [])),
+        },
         "closest_bank": closest,
         "closest_phash_distance": int(min_dist) if min_dist is not None else None,
         "phash_threshold": threshold,
@@ -622,6 +666,21 @@ def run_l0(apk_path: str | Path, out_path: str | Path | None = None, vt_api_key:
     out = Path(out_path) if out_path else (artifacts_dir / "evidence.json")
     with out.open("w") as fh:
         json.dump(asdict(evidence), fh, indent=2)
+
+    # Fold L0 into the shared spine. This file is L0's own record and is
+    # rewritten wholesale on every run — which is exactly why the spine lives
+    # elsewhere and is merged into rather than overwritten.
+    spine.update_layer(
+        hashes["sha256"],
+        "l0",
+        status=spine.LayerStatus.COMPLETE,
+        findings=promote.impersonation_findings(l0),
+        summary=promote.l0_summary(l0),
+        coverage=promote.l0_coverage(l0),
+        gaps=promote.l0_gaps(l0),
+        identity=promote.identity(l0, str(apk_path)),
+        artifact=out,
+    )
 
     return l0
 

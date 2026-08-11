@@ -18,6 +18,9 @@ from pathlib import Path
 _REPO = Path(__file__).resolve().parent.parent.parent
 
 LAYERS = [
+    # The merged spine first — it is the record downstream layers actually read.
+    # The per-layer files below it are the raw output it was built from.
+    ("SPINE", _REPO / "artifacts"),
     ("L0", _REPO / "L0" / "artifacts"),
     ("L1", _REPO / "L1" / "artifacts"),
     ("L2", _REPO / "L2" / "artifacts"),

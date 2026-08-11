@@ -14,14 +14,19 @@ import argparse
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from schema import load_l0_evidence, L1Report  # noqa: E402
+L1_DIR = Path(__file__).resolve().parent
+REPO_ROOT = L1_DIR.parent
+for _p in (str(L1_DIR), str(REPO_ROOT)):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
+from schema import load_l0_evidence, L1Report, Severity  # noqa: E402
 from engines.jadx_analyze import analyze as jadx_analyze  # noqa: E402
 from engines.ghidra_analyze import analyze as ghidra_analyze  # noqa: E402
 from engines.combo_analyze import analyze as combo_analyze  # noqa: E402
-from engines.yara_scan import scan_apk  # noqa: E402
+from engines.yara_scan import scan_apk, merge_findings, ruleset_version  # noqa: E402
+import spine  # noqa: E402
 
-L1_DIR = Path(__file__).resolve().parent
 ARTIFACTS = L1_DIR / "artifacts"
 
 
@@ -46,29 +51,73 @@ def dispatch(apk_path: str | Path, l0_artifacts: Path | None = None,
     artifacts_root = out_root or ARTIFACTS
 
     print(f"[L1] sha256={sha[:12]} track={track} apk={apk_path.name}")
-    if track in ("track2_ghidra",):
-        report = ghidra_analyze(apk_path, sha, track, l0, artifacts_root)
-    elif track in ("track1_jadx",):
-        report = jadx_analyze(apk_path, sha, track, l0, artifacts_root)
-    elif track in ("track1_jadx+track2_ghidra", "track1_jadx_then_track2_ghidra"):
-        report = combo_analyze(apk_path, sha, track, l0, artifacts_root)
-    else:
-        report = jadx_analyze(apk_path, sha, track, l0, artifacts_root)
+    try:
+        if track in ("track2_ghidra",):
+            report = ghidra_analyze(apk_path, sha, track, l0, artifacts_root)
+        elif track in ("track1_jadx",):
+            report = jadx_analyze(apk_path, sha, track, l0, artifacts_root)
+        elif track in ("track1_jadx+track2_ghidra", "track1_jadx_then_track2_ghidra"):
+            report = combo_analyze(apk_path, sha, track, l0, artifacts_root)
+        else:
+            report = jadx_analyze(apk_path, sha, track, l0, artifacts_root)
+    except Exception as exc:  # noqa: BLE001
+        # A sample L1 could not analyse must be *visible* as failed. Left out of
+        # the spine entirely it is indistinguishable from one never attempted,
+        # and a corpus run would quietly under-report its own coverage.
+        spine.update_layer(
+            sha, "l1",
+            status=spine.LayerStatus.FAILED,
+            findings=[],
+            error=f"{type(exc).__name__}: {str(exc)[:300]}",
+            gaps=["l1_engine_failed"],
+        )
+        raise
 
+    # Merge the APK-scoped scan into the engine's findings. merge_findings()
+    # collapses a rule that fired in several scopes into ONE finding, so the
+    # source and APK passes can no longer produce paired duplicates.
     yara_apk = scan_apk(apk_path)
-    if yara_apk:
-        report.findings.extend(yara_apk)
-        report.summary["finding_count"] = len(report.findings)
-        report.summary["apk_yara_findings"] = len(yara_apk)
-        for sev in {f.severity.value for f in yara_apk}:
-            report.summary.setdefault("severity_counts", {}).setdefault(sev, 0)
-            report.summary["severity_counts"][sev] = sum(
-                1 for f in report.findings if f.severity.value == sev
-            )
-        report.summary["categories"] = sorted({f.category.value for f in report.findings})
+    report.findings = merge_findings(report.findings, yara_apk)
+    report.summary["finding_count"] = len(report.findings)
+    report.summary["apk_yara_rules"] = len(yara_apk)
+    report.summary["severity_counts"] = {
+        s.value: sum(1 for f in report.findings if f.severity is s) for s in Severity
+    }
+    report.summary["categories"] = sorted({f.category.value for f in report.findings})
+    report.summary["ruleset_version"] = ruleset_version()
 
     out = artifacts_root / sha / "analysis.json"
     report.write(out)
+
+    # Fold L1 into the spine. `partial` rather than `complete` whenever the
+    # engine reported a coverage gap — a combo run without Ghidra genuinely did
+    # not look at the native layer, and calling that "complete" is how a blind
+    # spot turns into unearned confidence downstream.
+    gaps = list(report.summary.get("analysis_gaps") or [])
+    spine.update_layer(
+        sha, "l1",
+        status=spine.LayerStatus.PARTIAL if gaps else spine.LayerStatus.COMPLETE,
+        findings=[f.to_dict() for f in report.findings],
+        summary={
+            "engine": report.engine,
+            "track": report.track,
+            "finding_count": report.summary.get("finding_count"),
+            "categories": report.summary.get("categories", []),
+            "severity_counts": report.summary.get("severity_counts", {}),
+            "ruleset_version": report.summary.get("ruleset_version"),
+        },
+        coverage={
+            "decompiled_files": report.summary.get("decompiled_files", 0),
+            "source_findings": report.summary.get("source_findings", 0),
+            "apk_yara_rules": report.summary.get("apk_yara_rules", 0),
+            "ghidra_available": report.summary.get("ghidra_available", False),
+            "ghidra_attempted": report.summary.get("ghidra_attempted", False),
+            "ghidra_ok": report.summary.get("ghidra_ok", False),
+        },
+        gaps=gaps,
+        artifact=out,
+    )
+
     print(f"[L1] wrote {out}  findings={report.summary.get('finding_count')}")
     return report
 

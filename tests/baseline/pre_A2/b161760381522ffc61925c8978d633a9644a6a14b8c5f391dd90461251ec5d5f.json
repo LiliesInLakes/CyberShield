@@ -1,0 +1,170 @@
+{
+  "sha256": "b161760381522ffc61925c8978d633a9644a6a14b8c5f391dd90461251ec5d5f",
+  "source_apk": "testing_apps/good_apps/me.proton.android.lumo_50.apk",
+  "engine": "jadx+ghidra",
+  "track": "track1_jadx_then_track2_ghidra",
+  "generated_at": "2026-08-07T05:13:04.041866+00:00",
+  "findings": [
+    {
+      "engine": "yara_source",
+      "category": "other",
+      "severity": "critical",
+      "evidence": "[Android_WebView_JavascriptInterface] WebView exposes JavaScript bridge \u2014 potential XSS-to-RCE if untrusted content loaded -> addJavascriptInterface",
+      "location": "sources/I3/C0231l.java:$jsi",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "detail": {
+        "yara_rule": "Android_WebView_JavascriptInterface",
+        "source_file": "sources/I3/C0231l.java"
+      }
+    },
+    {
+      "engine": "yara_source",
+      "category": "other",
+      "severity": "medium",
+      "evidence": "[Android_Secrets_Hardcoded] Potential hardcoded credential or secret \u2014 review for plaintext secrets -> .Password",
+      "location": "sources/J2/ViewOnClickListenerC0257a.java:$pw1",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "detail": {
+        "yara_rule": "Android_Secrets_Hardcoded",
+        "source_file": "sources/J2/ViewOnClickListenerC0257a.java"
+      }
+    },
+    {
+      "engine": "yara_source",
+      "category": "other",
+      "severity": "medium",
+      "evidence": "[Android_Clipboard_Hijacker] Detects clipboard monitoring and content replacement (clipper malware) -> ClipboardManager",
+      "location": "sources/p046l/AbstractC0438u.java:$clip1",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "detail": {
+        "yara_rule": "Android_Clipboard_Hijacker",
+        "source_file": "sources/p046l/AbstractC0438u.java"
+      }
+    },
+    {
+      "engine": "yara_source",
+      "category": "other",
+      "severity": "high",
+      "evidence": "[Android_WebView_JavaScriptEnabled] WebView has JavaScript enabled \u2014 increases XSS attack surface -> setJavaScriptEnabled",
+      "location": "sources/me/proton/android/lumo/MainActivity.java:$jse",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "detail": {
+        "yara_rule": "Android_WebView_JavaScriptEnabled",
+        "source_file": "sources/me/proton/android/lumo/MainActivity.java"
+      }
+    },
+    {
+      "engine": "yara_apk",
+      "category": "other",
+      "severity": "critical",
+      "evidence": "[Android_WebView_JavascriptInterface] WebView exposes JavaScript bridge \u2014 potential XSS-to-RCE if untrusted content loaded -> addJavascriptInterface",
+      "location": "$jsi",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "detail": {
+        "yara_rule": "Android_WebView_JavascriptInterface",
+        "matched_strings": 1
+      }
+    },
+    {
+      "engine": "yara_apk",
+      "category": "other",
+      "severity": "high",
+      "evidence": "[Android_WebView_JavaScriptEnabled] WebView has JavaScript enabled \u2014 increases XSS attack surface -> setJavaScriptEnabled",
+      "location": "$jse",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "detail": {
+        "yara_rule": "Android_WebView_JavaScriptEnabled",
+        "matched_strings": 1
+      }
+    },
+    {
+      "engine": "yara_apk",
+      "category": "other",
+      "severity": "medium",
+      "evidence": "[Android_Clipboard_Hijacker] Detects clipboard monitoring and content replacement (clipper malware) -> ClipboardManager",
+      "location": "$clip1",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "detail": {
+        "yara_rule": "Android_Clipboard_Hijacker",
+        "matched_strings": 5
+      }
+    },
+    {
+      "engine": "yara_apk",
+      "category": "other",
+      "severity": "medium",
+      "evidence": "[Android_Clipboard_Hijacker] Detects clipboard monitoring and content replacement (clipper malware) -> getPrimaryClip",
+      "location": "$clip4",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "detail": {
+        "yara_rule": "Android_Clipboard_Hijacker",
+        "matched_strings": 5
+      }
+    },
+    {
+      "engine": "yara_apk",
+      "category": "other",
+      "severity": "medium",
+      "evidence": "[Android_Clipboard_Hijacker] Detects clipboard monitoring and content replacement (clipper malware) -> 19CreateSharedCounterEiPPv",
+      "location": "$wallet1",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "detail": {
+        "yara_rule": "Android_Clipboard_Hijacker",
+        "matched_strings": 5
+      }
+    },
+    {
+      "engine": "yara_apk",
+      "category": "other",
+      "severity": "medium",
+      "evidence": "[Android_Clipboard_Hijacker] Detects clipboard monitoring and content replacement (clipper malware) -> TouchExplorationStateChangeListene",
+      "location": "$wallet3",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "detail": {
+        "yara_rule": "Android_Clipboard_Hijacker",
+        "matched_strings": 5
+      }
+    },
+    {
+      "engine": "yara_apk",
+      "category": "other",
+      "severity": "medium",
+      "evidence": "[Android_Clipboard_Hijacker] Detects clipboard monitoring and content replacement (clipper malware) -> p@q",
+      "location": "$upi_id",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "detail": {
+        "yara_rule": "Android_Clipboard_Hijacker",
+        "matched_strings": 5
+      }
+    }
+  ],
+  "artifacts": {
+    "decompiled_src": "/home/nightwings/cybershield/CyberShield/L1/artifacts/b161760381522ffc61925c8978d633a9644a6a14b8c5f391dd90461251ec5d5f/jadx_src"
+  },
+  "summary": {
+    "finding_count": 11,
+    "severity_counts": {
+      "info": 0,
+      "low": 0,
+      "medium": 7,
+      "high": 2,
+      "critical": 2
+    },
+    "categories": [
+      "other"
+    ],
+    "ghidra_run": false,
+    "apk_yara_findings": 7
+  }
+}

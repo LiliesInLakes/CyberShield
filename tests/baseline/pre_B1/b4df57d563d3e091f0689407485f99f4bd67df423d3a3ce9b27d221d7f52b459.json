@@ -1,0 +1,318 @@
+{
+  "analysis_gaps": [
+    "detonation_not_attempted"
+  ],
+  "counts": {
+    "by_category": {
+      "other": 4
+    },
+    "by_layer": {
+      "l1": 4
+    },
+    "by_severity": {
+      "critical": 1,
+      "high": 1,
+      "low": 1,
+      "medium": 1
+    },
+    "certificate_anomaly": 0,
+    "findings": 4,
+    "malware_category": 0
+  },
+  "created_at": "2026-08-08T17:10:10.984203+00:00",
+  "findings": [
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 2,
+        "locations": [
+          "sources/g/s2.java",
+          "sources/org/diekaiju/duckassist/MainActivity.java"
+        ],
+        "match_count": 2,
+        "matched_string_ids": [
+          "$jsi"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$jsi",
+            "location": "sources/g/s2.java",
+            "snippet": "addJavascriptInterface"
+          },
+          {
+            "id": "$jsi",
+            "location": "sources/org/diekaiju/duckassist/MainActivity.java",
+            "snippet": "addJavascriptInterface"
+          }
+        ],
+        "scopes": [
+          "source"
+        ],
+        "yara_rule": "Android_WebView_JavascriptInterface"
+      },
+      "engine": "yara",
+      "evidence": "[Android_WebView_JavascriptInterface] WebView exposes JavaScript bridge \u2014 potential XSS-to-RCE if untrusted content loaded -> addJavascriptInterface",
+      "fingerprint": "14800d072fb9",
+      "id": "F001",
+      "layer": "l1",
+      "location": "sources/g/s2.java",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "critical"
+    },
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 2,
+        "locations": [
+          "sources/g/s2.java",
+          "sources/org/diekaiju/duckassist/MainActivity.java"
+        ],
+        "match_count": 2,
+        "matched_string_ids": [
+          "$jse"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$jse",
+            "location": "sources/g/s2.java",
+            "snippet": "setJavaScriptEnabled"
+          },
+          {
+            "id": "$jse",
+            "location": "sources/org/diekaiju/duckassist/MainActivity.java",
+            "snippet": "setJavaScriptEnabled"
+          }
+        ],
+        "scopes": [
+          "source"
+        ],
+        "yara_rule": "Android_WebView_JavaScriptEnabled"
+      },
+      "engine": "yara",
+      "evidence": "[Android_WebView_JavaScriptEnabled] WebView has JavaScript enabled \u2014 increases XSS attack surface -> setJavaScriptEnabled",
+      "fingerprint": "86ad5e3865bc",
+      "id": "F002",
+      "layer": "l1",
+      "location": "sources/g/s2.java",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "high"
+    },
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 3,
+        "locations": [
+          "sources/g/h0.java",
+          "sources/b0/h.java",
+          "sources/k0/d.java"
+        ],
+        "match_count": 3,
+        "matched_string_ids": [
+          "$pw1"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$pw1",
+            "location": "sources/g/h0.java",
+            "snippet": ".Password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/b0/h.java",
+            "snippet": ".Password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/k0/d.java",
+            "snippet": ".Password"
+          }
+        ],
+        "scopes": [
+          "source"
+        ],
+        "yara_rule": "Android_Secrets_Hardcoded"
+      },
+      "engine": "yara",
+      "evidence": "[Android_Secrets_Hardcoded] Potential hardcoded credential or secret \u2014 review for plaintext secrets -> .Password",
+      "fingerprint": "cc1927d9d7c8",
+      "id": "F003",
+      "layer": "l1",
+      "location": "sources/g/h0.java",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "medium"
+    },
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 1,
+        "locations": [
+          "org.diekaiju.duckassist_245.apk"
+        ],
+        "match_count": 504,
+        "matched_string_ids": [
+          "$cert1",
+          "$cert2",
+          "$cert4",
+          "$classes",
+          "$hex_cd",
+          "$hex_eocd",
+          "$hex_zip",
+          "$manifest",
+          "$resources"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$manifest",
+            "location": "org.diekaiju.duckassist_245.apk",
+            "snippet": "AndroidManifest.xml"
+          },
+          {
+            "id": "$manifest",
+            "location": "org.diekaiju.duckassist_245.apk",
+            "snippet": "AndroidManifest.xml"
+          },
+          {
+            "id": "$classes",
+            "location": "org.diekaiju.duckassist_245.apk",
+            "snippet": "classes.dex"
+          },
+          {
+            "id": "$classes",
+            "location": "org.diekaiju.duckassist_245.apk",
+            "snippet": "classes.dex"
+          },
+          {
+            "id": "$resources",
+            "location": "org.diekaiju.duckassist_245.apk",
+            "snippet": "resources.arsc"
+          },
+          {
+            "id": "$resources",
+            "location": "org.diekaiju.duckassist_245.apk",
+            "snippet": "resources.arsc"
+          },
+          {
+            "id": "$cert1",
+            "location": "org.diekaiju.duckassist_245.apk",
+            "snippet": "META-INF/"
+          },
+          {
+            "id": "$cert1",
+            "location": "org.diekaiju.duckassist_245.apk",
+            "snippet": "META-INF/"
+          }
+        ],
+        "scopes": [
+          "container"
+        ],
+        "yara_rule": "APK_Valid_Structure_Check"
+      },
+      "engine": "yara",
+      "evidence": "[APK_Valid_Structure_Check] Validates basic APK file structure integrity -> AndroidManifest.xml",
+      "fingerprint": "a983bb24584a",
+      "id": "F004",
+      "layer": "l1",
+      "location": "org.diekaiju.duckassist_245.apk",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "low"
+    }
+  ],
+  "identity": {
+    "app_label": "duckAssist",
+    "md5": "bf070bba2251aea645ddfffd6550bacb",
+    "package": "org.diekaiju.duckassist",
+    "sha256": "b4df57d563d3e091f0689407485f99f4bd67df423d3a3ce9b27d221d7f52b459",
+    "source_apk": "testing_apps/good_apps/org.diekaiju.duckassist_245.apk",
+    "version_name": "0.4.0"
+  },
+  "layers": {
+    "l0": {
+      "artifact": "L0/artifacts/b4df57d563d3e091f0689407485f99f4bd67df423d3a3ce9b27d221d7f52b459/evidence.json",
+      "coverage": {
+        "certificate_parsed": true,
+        "icon_extracted": true,
+        "manifest_parsed": true,
+        "permission_count": 6,
+        "reputation_checked": false
+      },
+      "gaps": [],
+      "status": "complete",
+      "summary": {
+        "cert_anomalies": [],
+        "cert_signal": {
+          "cert_detail": null,
+          "cert_in_whitelist": false,
+          "cert_weight": 0.0
+        },
+        "claimed_entity": null,
+        "matched_bank": null,
+        "reputation_hit": false,
+        "smoking_gun_inputs": {
+          "brand_claim": false,
+          "cert_anomalies": [],
+          "claimed_entity": null,
+          "sms_trifecta": false
+        },
+        "track": "track1_jadx",
+        "verdict": "unknown"
+      },
+      "updated_at": "2026-08-08T17:12:10.643424+00:00"
+    },
+    "l1": {
+      "artifact": "L1/artifacts/b4df57d563d3e091f0689407485f99f4bd67df423d3a3ce9b27d221d7f52b459/analysis.json",
+      "coverage": {
+        "apk_yara_rules": 1,
+        "decompiled_files": 605,
+        "ghidra_attempted": false,
+        "ghidra_available": false,
+        "ghidra_ok": false,
+        "source_findings": 3
+      },
+      "gaps": [],
+      "status": "complete",
+      "summary": {
+        "categories": [
+          "other"
+        ],
+        "engine": "jadx+yara",
+        "finding_count": 4,
+        "ruleset_version": "614d58d9a5b9",
+        "severity_counts": {
+          "critical": 1,
+          "high": 1,
+          "info": 0,
+          "low": 1,
+          "medium": 1
+        },
+        "track": "track1_jadx"
+      },
+      "updated_at": "2026-08-08T17:10:27.157555+00:00"
+    },
+    "l2": {
+      "status": "not_attempted"
+    },
+    "l3": {
+      "status": "not_attempted"
+    },
+    "l4": {
+      "status": "not_attempted"
+    },
+    "l5": {
+      "status": "not_attempted"
+    },
+    "l6": {
+      "status": "not_attempted"
+    }
+  },
+  "schema_version": "apk-sentinel-0.2",
+  "sha256": "b4df57d563d3e091f0689407485f99f4bd67df423d3a3ce9b27d221d7f52b459",
+  "updated_at": "2026-08-08T17:12:10.643756+00:00"
+}

@@ -7,6 +7,8 @@
 
 rule Android_Suspicious_Dangerous_Permissions_Cluster {
     meta:
+        category = "other"
+        scope = "both"
         description = "Detects clustering of dangerous Android permissions indicating high-risk app"
         author = "Agent-Sentinel"
         severity = "High"
@@ -48,7 +50,7 @@ rule Android_Suspicious_Dangerous_Permissions_Cluster {
 
     condition:
         filesize < 20MB
-        and uint32(0) == 0x504B0304
+        and uint32be(0) == 0x504B0304
         and (
             (2 of ($sms_p*) and 2 of ($loc_p*))
             or (2 of ($call_p*) and 1 of ($admin_p*))
@@ -60,6 +62,8 @@ rule Android_Suspicious_Dangerous_Permissions_Cluster {
 
 rule Android_Suspicious_Network_Communication {
     meta:
+        category = "c2_communication"
+        scope = "both"
         description = "Detects suspicious network communication patterns in Android apps"
         author = "Agent-Sentinel"
         severity = "Medium"
@@ -95,7 +99,7 @@ rule Android_Suspicious_Network_Communication {
 
     condition:
         filesize < 20MB
-        and uint32(0) == 0x504B0304
+        and uint32be(0) == 0x504B0304
         and (1 of ($http*) or 1 of ($ws*))
         and (1 of ($sock*))
         and (1 of ($url*))
@@ -105,6 +109,8 @@ rule Android_Suspicious_Network_Communication {
 
 rule Android_Suspicious_Command_Execution {
     meta:
+        category = "privilege_escalation"
+        scope = "both"
         description = "Detects command execution and shell access in Android apps"
         author = "Agent-Sentinel"
         severity = "Critical"
@@ -139,7 +145,7 @@ rule Android_Suspicious_Command_Execution {
 
     condition:
         filesize < 20MB
-        and uint32(0) == 0x504B0304
+        and uint32be(0) == 0x504B0304
         and (2 of ($exec*))
         and (1 of ($shell*))
         and (1 of ($cmd*))
@@ -149,6 +155,8 @@ rule Android_Suspicious_Command_Execution {
 
 rule Android_Suspicious_Package_Installer_Abuse {
     meta:
+        category = "native_payload"
+        scope = "both"
         description = "Detects abuse of package installer for sideloading and secondary payload delivery"
         author = "Agent-Sentinel"
         severity = "High"
@@ -179,7 +187,7 @@ rule Android_Suspicious_Package_Installer_Abuse {
 
     condition:
         filesize < 15MB
-        and uint32(0) == 0x504B0304
+        and uint32be(0) == 0x504B0304
         and (2 of ($pkg*))
         and (1 of ($dl*))
         and (2 of ($apk*))

@@ -142,6 +142,35 @@ def print_summary(sha256: str, apk_name: str = ""):
             print(f"      - [{sev}] [{obs}] {cat}")
             print(f"        {ev}...")
 
+    # ------- Spine -------
+    # The merged record. Unlike the per-layer sections above, every finding
+    # here carries the evidence ID that a score or a report cites.
+    spine_doc = _load_json(_REPO / "artifacts" / sha256 / "evidence.json")
+
+    if spine_doc:
+        counts = spine_doc.get("counts", {})
+        _print_header("🧬 EVIDENCE SPINE")
+        statuses = " ".join(
+            f"{name}={block.get('status', '?')}"
+            for name, block in spine_doc.get("layers", {}).items()
+        )
+        print(f"    Layers      : {statuses}")
+        print(f"    Findings    : {counts.get('findings', 0)}"
+              f"  (malware-category: {counts.get('malware_category', 0)},"
+              f" cert-anomaly: {counts.get('certificate_anomaly', 0)})")
+        gaps = spine_doc.get("analysis_gaps", [])
+        print(f"    Coverage gaps: {', '.join(gaps) if gaps else 'none'}")
+
+        for f in spine_doc.get("findings", []):
+            print(f"      {f['id']} [{f['severity'].upper():8s}] "
+                  f"{f['category']:24s} {f['engine']}")
+            print(f"           {f.get('evidence', '')[:90]}")
+            if f.get("mitre_techniques"):
+                print(f"           MITRE: {', '.join(f['mitre_techniques'])}")
+    else:
+        _print_header("🧬 EVIDENCE SPINE: NOT BUILT")
+        print("    Run L0 (and L1) to populate artifacts/<sha256>/evidence.json")
+
     # ------- Aggregate -------
     total_l1 = len(l1.get("findings", []))
     total_l2 = len(l2.get("findings", []))

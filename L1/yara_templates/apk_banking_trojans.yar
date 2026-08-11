@@ -7,6 +7,8 @@
 
 rule Android_Banking_Zanubis_AccessibilityOverlay {
     meta:
+        category = "accessibility_abuse"
+        scope = "both"
         description = "Detects Zanubis banking trojan using accessibility services for overlay attacks"
         author = "Agent-Sentinel"
         severity = "Critical"
@@ -39,7 +41,7 @@ rule Android_Banking_Zanubis_AccessibilityOverlay {
 
     condition:
         filesize < 15MB
-        and uint32(0) == 0x504B0304
+        and uint32be(0) == 0x504B0304
         and (all of ($acc_svc*) or all of ($ws*))
         and (2 of ($overlay*))
         and (any of ($target*) or $hex_ws)
@@ -48,9 +50,11 @@ rule Android_Banking_Zanubis_AccessibilityOverlay {
 
 rule Android_Banking_TaxiSpy_RAT {
     meta:
+        scope = "both"
         description = "Detects TaxiSpy Android Banking RAT targeting Russian financial users"
         author = "Agent-Sentinel"
         severity = "Critical"
+        category = "data_exfiltration"
         platform = "Android"
         reference = "https://www.cyfirma.com/research/taxispy-rat-analysis/"
         date = "2026-07-19"
@@ -77,7 +81,7 @@ rule Android_Banking_TaxiSpy_RAT {
 
     condition:
         filesize < 20MB
-        and uint32(0) == 0x504B0304
+        and uint32be(0) == 0x504B0304
         and (
             any of ($pkg, $c2_ip, $worker_key)
             or any of ($firebase_xor, $c2_xor)
@@ -89,6 +93,8 @@ rule Android_Banking_TaxiSpy_RAT {
 
 rule Android_Banking_Ankara_Stealer {
     meta:
+        category = "data_exfiltration"
+        scope = "both"
         description = "Detects Ankara banking trojan with SMS interception and credential theft"
         author = "Agent-Sentinel"
         severity = "High"
@@ -119,7 +125,7 @@ rule Android_Banking_Ankara_Stealer {
 
     condition:
         filesize < 10MB
-        and uint32(0) == 0x504B0304
+        and uint32be(0) == 0x504B0304
         and (2 of ($sms*))
         and (2 of ($web*))
         and (2 of ($cred*))
@@ -129,6 +135,8 @@ rule Android_Banking_Ankara_Stealer {
 
 rule Android_Banking_Generic_OverlayEngine {
     meta:
+        category = "overlay_attack"
+        scope = "both"
         description = "Detects generic banking overlay engines using window injection"
         author = "Agent-Sentinel"
         severity = "High"
@@ -159,7 +167,7 @@ rule Android_Banking_Generic_OverlayEngine {
 
     condition:
         filesize < 15MB
-        and uint32(0) == 0x504B0304
+        and uint32be(0) == 0x504B0304
         and (3 of ($wm*))
         and (2 of ($phish*))
         and (1 of ($target_pkg*))

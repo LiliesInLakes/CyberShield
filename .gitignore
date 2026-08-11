@@ -9,6 +9,11 @@ build/
 # Virtual environment
 env/
 .env
+.env.local
+
+# Secrets — API keys live here, never in tracked files
+*.key
+secrets/
 
 # IDE
 .vscode/
@@ -31,6 +36,8 @@ tools/jadx*/
 tools/jadx-jre*/
 tools/platform-tools*/
 tools/ghidra/ghidra_*_PUBLIC/
+tools/android-sdk/
+tools/frida-server
 
 # APK test files (via LFS)
 # *.apk
@@ -38,3 +45,6 @@ tools/ghidra/ghidra_*_PUBLIC/
 # Temp files
 *.log
 *.tmp
+
+# Live malware corpus — NEVER commit. Samples stay password-zipped at rest.
+corpus/

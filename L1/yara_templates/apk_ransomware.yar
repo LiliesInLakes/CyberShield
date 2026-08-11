@@ -7,6 +7,8 @@
 
 rule Android_Ransomware_Generic_File_Encryption {
     meta:
+        category = "ransomware"
+        scope = "both"
         description = "Detects generic Android ransomware with file encryption capabilities"
         author = "Agent-Sentinel"
         severity = "Critical"
@@ -44,7 +46,7 @@ rule Android_Ransomware_Generic_File_Encryption {
 
     condition:
         filesize < 15MB
-        and uint32(0) == 0x504B0304
+        and uint32be(0) == 0x504B0304
         and (3 of ($enc*))
         and (2 of ($file*))
         and (1 of ($note*))
@@ -54,6 +56,8 @@ rule Android_Ransomware_Generic_File_Encryption {
 
 rule Android_Ransomware_Locker_Screen {
     meta:
+        category = "ransomware"
+        scope = "both"
         description = "Detects screen-locking ransomware that blocks device access"
         author = "Agent-Sentinel"
         severity = "Critical"
@@ -88,7 +92,7 @@ rule Android_Ransomware_Locker_Screen {
 
     condition:
         filesize < 10MB
-        and uint32(0) == 0x504B0304
+        and uint32be(0) == 0x504B0304
         and (3 of ($admin*))
         and (2 of ($overlay*))
         and (1 of ($demand*))

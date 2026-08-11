@@ -22,6 +22,12 @@ JADX_DIR = Path(os.environ.get("JADX_DIR", "/opt/apk-sentinel/tools/jadx"))
 JDK_DIR = Path(os.environ.get("JDK17_HOME", "/usr/lib/jvm/java-17-openjdk-amd64"))
 JADX_JAR = JADX_DIR / "lib" / "jadx-1.5.6-all.jar"
 
+# Corpus runs need a much shorter leash than interactive analysis: a handful of
+# deliberately-obfuscated samples will otherwise spend 10 minutes each. Set via
+# env so it reaches this engine through the combo track too, without every
+# caller in between having to forward a parameter.
+DEFAULT_TIMEOUT = int(os.environ.get("SENTINEL_JADX_TIMEOUT", "600"))
+
 
 def _java() -> str:
     java = JDK_DIR / "bin" / "java"
@@ -30,13 +36,14 @@ def _java() -> str:
     return "java"  # fall back to PATH
 
 
-def decompile(apk_path: Path, out_dir: Path, timeout: int = 600) -> bool:
+def decompile(apk_path: Path, out_dir: Path, timeout: int | None = None) -> bool:
     """Run headless jadx.
 
     IMPORTANT: must invoke the explicit CLI class (jadx.cli.JadxCLI) via
     -cp, NOT -jar. On Windows the -jar entry point falls back to the GUI
     launcher. The CLI class keeps it headless.
     """
+    timeout = DEFAULT_TIMEOUT if timeout is None else timeout
     out_dir.mkdir(parents=True, exist_ok=True)
     cmd = [
         _java(),
@@ -48,10 +55,18 @@ def decompile(apk_path: Path, out_dir: Path, timeout: int = 600) -> bool:
     ]
     try:
         subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=timeout)
-    except subprocess.CalledProcessError as exc:
-        # jadx may still emit partial sources on non-zero exit; warn not fail
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
+        # jadx writes sources incrementally, so a non-zero exit OR a timeout
+        # usually still leaves usable output. Only fail when nothing was written.
+        # (Timeout previously escaped this handler entirely, discarding partial
+        # work and killing the sample — which matters once the corpus run uses a
+        # short timeout against deliberately-obfuscated malware.)
         if not any(out_dir.rglob("*.java")):
-            raise RuntimeError(f"jadx failed: {exc.stderr[:500]}") from exc
+            detail = getattr(exc, "stderr", None) or str(exc)
+            if isinstance(detail, bytes):
+                detail = detail.decode("utf-8", errors="replace")
+            raise RuntimeError(f"jadx produced no sources: {str(detail)[:500]}") from exc
+        return False  # partial
     return True
 
 
@@ -60,8 +75,9 @@ def analyze(apk_path: str | Path, sha256: str, track: str, l0_evidence: dict,
     apk_path = Path(apk_path)
     out_dir = artifacts_root / sha256 / "jadx_src"
     existing = list(out_dir.rglob("*.java"))
+    complete = True
     if len(existing) < 10:
-        decompile(apk_path, out_dir)
+        complete = decompile(apk_path, out_dir)
     else:
         print(f"[jadx] cached — {len(existing)} files")
 
@@ -90,6 +106,11 @@ def analyze(apk_path: str | Path, sha256: str, track: str, l0_evidence: dict,
             "categories": cats,
             "decompiled_files": len(list(out_dir.rglob("*.java"))),
             "source_findings": len(source_findings),
+            # A timed-out or crashed jadx still yields usable partial sources.
+            # Scoring one of those as fully analysed is how a blind spot turns
+            # into unearned confidence, so the gap is recorded explicitly.
+            "decompile_complete": complete,
+            "analysis_gaps": [] if complete else ["decompilation_partial"],
         },
     )
     return report

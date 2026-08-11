@@ -7,6 +7,8 @@
 
 rule Android_Adware_Aggressive_Ad_Injection {
     meta:
+        category = "overlay_attack"
+        scope = "both"
         description = "Detects aggressive adware with intrusive ad injection and overlay"
         author = "Agent-Sentinel"
         severity = "Medium"
@@ -41,7 +43,7 @@ rule Android_Adware_Aggressive_Ad_Injection {
 
     condition:
         filesize < 20MB
-        and uint32(0) == 0x504B0304
+        and uint32be(0) == 0x504B0304
         and (2 of ($ad*))
         and (2 of ($load*))
         and (3 of ($agg*))
@@ -51,6 +53,8 @@ rule Android_Adware_Aggressive_Ad_Injection {
 
 rule Android_Fraud_SMS_Subscription_Abuse {
     meta:
+        category = "sms_intercept"
+        scope = "both"
         description = "Detects SMS subscription fraud and premium number dialing"
         author = "Agent-Sentinel"
         severity = "High"
@@ -83,7 +87,7 @@ rule Android_Fraud_SMS_Subscription_Abuse {
 
     condition:
         filesize < 10MB
-        and uint32(0) == 0x504B0304
+        and uint32be(0) == 0x504B0304
         and (2 of ($sms*))
         and (1 of ($premium*))
         and (1 of ($bill*))
@@ -93,6 +97,8 @@ rule Android_Fraud_SMS_Subscription_Abuse {
 
 rule Android_Fraud_Click_Jacking_Tapjacking {
     meta:
+        category = "overlay_attack"
+        scope = "both"
         description = "Detects clickjacking and tapjacking attack implementations"
         author = "Agent-Sentinel"
         severity = "High"
@@ -124,7 +130,7 @@ rule Android_Fraud_Click_Jacking_Tapjacking {
 
     condition:
         filesize < 10MB
-        and uint32(0) == 0x504B0304
+        and uint32be(0) == 0x504B0304
         and (2 of ($tap*))
         and (2 of ($touch*))
         and (2 of ($acc*))

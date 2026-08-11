@@ -7,6 +7,8 @@
 
 rule Android_Evasion_Dynamic_Loading_DexClassLoader {
     meta:
+        category = "evasion"
+        scope = "both"
         description = "Detects dynamic code loading via DexClassLoader and PathClassLoader"
         author = "Agent-Sentinel"
         severity = "High"
@@ -41,7 +43,7 @@ rule Android_Evasion_Dynamic_Loading_DexClassLoader {
 
     condition:
         filesize < 20MB
-        and uint32(0) == 0x504B0304
+        and uint32be(0) == 0x504B0304
         and (2 of ($dyn*))
         and (3 of ($refl*))
         and (1 of ($enc*))
@@ -51,6 +53,8 @@ rule Android_Evasion_Dynamic_Loading_DexClassLoader {
 
 rule Android_Evasion_Anti_Analysis_VirtualMachine {
     meta:
+        category = "evasion"
+        scope = "both"
         description = "Detects anti-analysis techniques targeting emulators and VMs"
         author = "Agent-Sentinel"
         severity = "Medium"
@@ -82,7 +86,7 @@ rule Android_Evasion_Anti_Analysis_VirtualMachine {
 
     condition:
         filesize < 15MB
-        and uint32(0) == 0x504B0304
+        and uint32be(0) == 0x504B0304
         and (3 of ($build*))
         and (2 of ($vm*))
         and (1 of ($debug*))
@@ -91,6 +95,8 @@ rule Android_Evasion_Anti_Analysis_VirtualMachine {
 
 rule Android_Evasion_Root_Detection_Bypass {
     meta:
+        category = "evasion"
+        scope = "both"
         description = "Detects root detection and bypass techniques"
         author = "Agent-Sentinel"
         severity = "Medium"
@@ -125,7 +131,7 @@ rule Android_Evasion_Root_Detection_Bypass {
 
     condition:
         filesize < 15MB
-        and uint32(0) == 0x504B0304
+        and uint32be(0) == 0x504B0304
         and (2 of ($root*))
         and (1 of ($app*))
         and (1 of ($hide*) or 1 of ($safety*))
@@ -134,6 +140,8 @@ rule Android_Evasion_Root_Detection_Bypass {
 
 rule Android_Evasion_String_Obfuscation_Encryption {
     meta:
+        category = "packing_obfuscation"
+        scope = "both"
         description = "Detects string obfuscation and encryption techniques"
         author = "Agent-Sentinel"
         severity = "Medium"
@@ -163,7 +171,7 @@ rule Android_Evasion_String_Obfuscation_Encryption {
 
     condition:
         filesize < 15MB
-        and uint32(0) == 0x504B0304
+        and uint32be(0) == 0x504B0304
         and (2 of ($b64_*))
         and (3 of ($sb*))
         and (1 of ($native*))

@@ -10,6 +10,7 @@ rule Android_Clipboard_Hijacker {
     meta:
         description = "Detects clipboard monitoring and content replacement (clipper malware)"
         severity = "Critical"
+        category = "clipboard_hijack"
         scope = "source"
 
     strings:
@@ -36,6 +37,7 @@ rule Android_Notification_Listener_Abuse {
     meta:
         description = "Detects notification listener abuse for OTP/banking alert interception"
         severity = "High"
+        category = "notification_abuse"
         scope = "source"
 
     strings:
@@ -65,6 +67,7 @@ rule Android_Screen_Recording_RAT {
     meta:
         description = "Detects screen recording and remote access via MediaProjection"
         severity = "High"
+        category = "screen_capture"
         scope = "source"
 
     strings:
@@ -86,6 +89,7 @@ rule Android_Screen_Recording_RAT {
 
 rule Android_Telegram_WhatsApp_C2 {
     meta:
+        category = "messaging_c2"
         description = "Detects use of Telegram/WhatsApp bot APIs as C2 channel"
         severity = "High"
         scope = "source"

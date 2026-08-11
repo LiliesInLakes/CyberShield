@@ -1,0 +1,224 @@
+{
+  "analysis_gaps": [
+    "detonation_not_attempted"
+  ],
+  "counts": {
+    "by_category": {
+      "other": 2
+    },
+    "by_layer": {
+      "l1": 2
+    },
+    "by_severity": {
+      "low": 1,
+      "medium": 1
+    },
+    "certificate_anomaly": 0,
+    "findings": 2,
+    "malware_category": 0
+  },
+  "created_at": "2026-08-08T17:10:12.242305+00:00",
+  "findings": [
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 1,
+        "locations": [
+          "sources/sg/vantagepoint/a/a.java"
+        ],
+        "match_count": 1,
+        "matched_string_ids": [
+          "$pw2"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$pw2",
+            "location": "sources/sg/vantagepoint/a/a.java",
+            "snippet": ".Secret"
+          }
+        ],
+        "scopes": [
+          "source"
+        ],
+        "yara_rule": "Android_Secrets_Hardcoded"
+      },
+      "engine": "yara",
+      "evidence": "[Android_Secrets_Hardcoded] Potential hardcoded credential or secret \u2014 review for plaintext secrets -> .Secret",
+      "fingerprint": "cc1927d9d7c8",
+      "id": "F001",
+      "layer": "l1",
+      "location": "sources/sg/vantagepoint/a/a.java",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "medium"
+    },
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 1,
+        "locations": [
+          "uncrackable-level1.apk"
+        ],
+        "match_count": 31,
+        "matched_string_ids": [
+          "$cert1",
+          "$cert2",
+          "$cert4",
+          "$classes",
+          "$hex_cd",
+          "$hex_eocd",
+          "$hex_zip",
+          "$manifest",
+          "$resources"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$manifest",
+            "location": "uncrackable-level1.apk",
+            "snippet": "AndroidManifest.xml"
+          },
+          {
+            "id": "$manifest",
+            "location": "uncrackable-level1.apk",
+            "snippet": "AndroidManifest.xml"
+          },
+          {
+            "id": "$classes",
+            "location": "uncrackable-level1.apk",
+            "snippet": "classes.dex"
+          },
+          {
+            "id": "$classes",
+            "location": "uncrackable-level1.apk",
+            "snippet": "classes.dex"
+          },
+          {
+            "id": "$resources",
+            "location": "uncrackable-level1.apk",
+            "snippet": "resources.arsc"
+          },
+          {
+            "id": "$resources",
+            "location": "uncrackable-level1.apk",
+            "snippet": "resources.arsc"
+          },
+          {
+            "id": "$cert1",
+            "location": "uncrackable-level1.apk",
+            "snippet": "META-INF/"
+          },
+          {
+            "id": "$cert1",
+            "location": "uncrackable-level1.apk",
+            "snippet": "META-INF/"
+          }
+        ],
+        "scopes": [
+          "container"
+        ],
+        "yara_rule": "APK_Valid_Structure_Check"
+      },
+      "engine": "yara",
+      "evidence": "[APK_Valid_Structure_Check] Validates basic APK file structure integrity -> AndroidManifest.xml",
+      "fingerprint": "a983bb24584a",
+      "id": "F002",
+      "layer": "l1",
+      "location": "uncrackable-level1.apk",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "low"
+    }
+  ],
+  "identity": {
+    "app_label": "Uncrackable1",
+    "md5": "6aa29e071a3e12f5122a3cfe2354a53c",
+    "package": "owasp.mstg.uncrackable1",
+    "sha256": "1da8bf57d266109f9a07c01bf7111a1975ce01f190b9d914bcd3ae3dbef96f21",
+    "source_apk": "testing_apps/vuln/uncrackable-level1.apk",
+    "version_name": "1.0"
+  },
+  "layers": {
+    "l0": {
+      "artifact": "L0/artifacts/1da8bf57d266109f9a07c01bf7111a1975ce01f190b9d914bcd3ae3dbef96f21/evidence.json",
+      "coverage": {
+        "certificate_parsed": true,
+        "icon_extracted": true,
+        "manifest_parsed": true,
+        "permission_count": 0,
+        "reputation_checked": false
+      },
+      "gaps": [],
+      "status": "complete",
+      "summary": {
+        "cert_anomalies": [],
+        "cert_signal": {
+          "cert_detail": null,
+          "cert_in_whitelist": false,
+          "cert_weight": 0.0
+        },
+        "claimed_entity": null,
+        "matched_bank": null,
+        "reputation_hit": false,
+        "smoking_gun_inputs": {
+          "brand_claim": false,
+          "cert_anomalies": [],
+          "claimed_entity": null,
+          "sms_trifecta": false
+        },
+        "track": "track1_jadx",
+        "verdict": "unknown"
+      },
+      "updated_at": "2026-08-08T17:12:12.785913+00:00"
+    },
+    "l1": {
+      "artifact": "L1/artifacts/1da8bf57d266109f9a07c01bf7111a1975ce01f190b9d914bcd3ae3dbef96f21/analysis.json",
+      "coverage": {
+        "apk_yara_rules": 1,
+        "decompiled_files": 6,
+        "ghidra_attempted": false,
+        "ghidra_available": false,
+        "ghidra_ok": false,
+        "source_findings": 1
+      },
+      "gaps": [],
+      "status": "complete",
+      "summary": {
+        "categories": [
+          "other"
+        ],
+        "engine": "jadx+yara",
+        "finding_count": 2,
+        "ruleset_version": "614d58d9a5b9",
+        "severity_counts": {
+          "critical": 0,
+          "high": 0,
+          "info": 0,
+          "low": 1,
+          "medium": 1
+        },
+        "track": "track1_jadx"
+      },
+      "updated_at": "2026-08-08T17:10:28.808702+00:00"
+    },
+    "l2": {
+      "status": "not_attempted"
+    },
+    "l3": {
+      "status": "not_attempted"
+    },
+    "l4": {
+      "status": "not_attempted"
+    },
+    "l5": {
+      "status": "not_attempted"
+    },
+    "l6": {
+      "status": "not_attempted"
+    }
+  },
+  "schema_version": "apk-sentinel-0.2",
+  "sha256": "1da8bf57d266109f9a07c01bf7111a1975ce01f190b9d914bcd3ae3dbef96f21",
+  "updated_at": "2026-08-08T17:12:12.786253+00:00"
+}

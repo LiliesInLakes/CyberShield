@@ -41,6 +41,11 @@ class Category(str, Enum):
     NOTIFICATION_ABUSE = "notification_abuse"
     SCREEN_CAPTURE = "screen_capture"
     MESSAGING_C2 = "messaging_c2"
+    # Signer anomalies are their own class of signal, not "other": they are the
+    # measured differentiator between India-targeted malware and benign apps
+    # (8/8 vs 0/4). Folding them into OTHER would hide them the same way the
+    # missing catalog entries hid clipboard_hijack and friends.
+    CERTIFICATE_ANOMALY = "certificate_anomaly"
     OTHER = "other"
 
 
@@ -53,13 +58,17 @@ CATEGORY_MITRE_MAP: dict[Category, list[str]] = {
     Category.RANSOMWARE:             ["T1471"],           # Data Encrypted for Impact
     Category.PACKING:                ["T1406"],           # Obfuscated Files or Info
     Category.NATIVE_PAYLOAD:         ["T1407"],           # Download New Code at Runtime
-    Category.PHISHING_IMPERSONATION: ["T1660"],           # Phishing
+    Category.PHISHING_IMPERSONATION: ["T1655", "T1660"],  # Masquerading, Phishing
     Category.PRIVILEGE_ESCALATION:   ["T1626"],           # Abuse Elevation Control
     Category.EVASION:                ["T1418", "T1523"],  # Software Discovery, Evade Analysis
     Category.CLIPBOARD_HIJACK:       ["T1414"],           # Clipboard Data
     Category.NOTIFICATION_ABUSE:     ["T1517"],           # Access Notifications
     Category.SCREEN_CAPTURE:         ["T1513"],           # Screen Capture
     Category.MESSAGING_C2:           ["T1437.001"],       # Web Protocols (messaging API)
+    # Deliberately empty: no ATT&CK Mobile technique cleanly describes an
+    # anomalous *signer*, and asserting a plausible-looking ID we have not
+    # verified against the matrix is the kind of claim this project does not make.
+    Category.CERTIFICATE_ANOMALY:    [],
     Category.OTHER:                  [],
 }
 

@@ -1,0 +1,23 @@
+{
+  "sha256": "4c7980ef1f6cc29508f38417c2a5b5b7721eeb4a3d7f00a0c1a08f5192fa6ddd",
+  "source_apk": "testing_apps/vuln/uncrackable-level2.apk",
+  "engine": "jadx+ghidra",
+  "track": "track1_jadx_then_track2_ghidra",
+  "generated_at": "2026-08-07T05:09:40.628041+00:00",
+  "findings": [],
+  "artifacts": {
+    "decompiled_src": "/home/nightwings/cybershield/CyberShield/L1/artifacts/4c7980ef1f6cc29508f38417c2a5b5b7721eeb4a3d7f00a0c1a08f5192fa6ddd/jadx_src"
+  },
+  "summary": {
+    "finding_count": 0,
+    "severity_counts": {
+      "info": 0,
+      "low": 0,
+      "medium": 0,
+      "high": 0,
+      "critical": 0
+    },
+    "categories": [],
+    "ghidra_run": false
+  }
+}

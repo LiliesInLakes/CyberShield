@@ -38,3 +38,6 @@ include "apk_india_banking.yar"
 
 // Clipboard, Notification, Screen Capture & Messaging C2
 include "apk_clipboard_notification.yar"
+
+// BFSI banking-trojan primitives (per-class API co-occurrence, dex + source)
+include "apk_bfsi_primitives.yar"

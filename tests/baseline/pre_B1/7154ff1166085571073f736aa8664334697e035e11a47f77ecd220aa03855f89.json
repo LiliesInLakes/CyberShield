@@ -1,0 +1,533 @@
+{
+  "analysis_gaps": [
+    "detonation_not_attempted",
+    "ghidra_unavailable"
+  ],
+  "counts": {
+    "by_category": {
+      "certificate_anomaly": 1,
+      "other": 6
+    },
+    "by_layer": {
+      "l0": 1,
+      "l1": 6
+    },
+    "by_severity": {
+      "critical": 2,
+      "high": 2,
+      "low": 1,
+      "medium": 2
+    },
+    "certificate_anomaly": 1,
+    "findings": 7,
+    "malware_category": 0
+  },
+  "created_at": "2026-08-08T17:13:47.895128+00:00",
+  "findings": [
+    {
+      "category": "certificate_anomaly",
+      "detail": {
+        "l0_finding": {
+          "anomalies": [
+            "debug_keystore",
+            "empty_dn",
+            "absurd_validity"
+          ],
+          "detail": "APK signed with an Android debug keystore \u2014 never used for legitimate distribution.",
+          "severity": "high",
+          "subject": "Country: debugging",
+          "type": "cert_debug_keystore"
+        },
+        "l0_finding_type": "cert_debug_keystore",
+        "spine_key": "cert_debug_keystore"
+      },
+      "engine": "l0_impersonation",
+      "evidence": "[cert_debug_keystore] APK signed with an Android debug keystore \u2014 never used for legitimate distribution.",
+      "fingerprint": "824885a094cd",
+      "id": "F001",
+      "layer": "l0",
+      "location": "META-INF/ (signing block)",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "high"
+    },
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 1,
+        "locations": [
+          "sources/com/startapp/networkTest/a/a.java"
+        ],
+        "match_count": 23,
+        "matched_string_ids": [
+          "$tm1",
+          "$tm2"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$tm1",
+            "location": "sources/com/startapp/networkTest/a/a.java",
+            "snippet": "X509TrustManager"
+          },
+          {
+            "id": "$tm1",
+            "location": "sources/com/startapp/networkTest/a/a.java",
+            "snippet": "X509TrustManager"
+          },
+          {
+            "id": "$tm1",
+            "location": "sources/com/startapp/networkTest/a/a.java",
+            "snippet": "X509TrustManager"
+          },
+          {
+            "id": "$tm1",
+            "location": "sources/com/startapp/networkTest/a/a.java",
+            "snippet": "X509TrustManager"
+          },
+          {
+            "id": "$tm1",
+            "location": "sources/com/startapp/networkTest/a/a.java",
+            "snippet": "X509TrustManager"
+          },
+          {
+            "id": "$tm1",
+            "location": "sources/com/startapp/networkTest/a/a.java",
+            "snippet": "X509TrustManager"
+          },
+          {
+            "id": "$tm1",
+            "location": "sources/com/startapp/networkTest/a/a.java",
+            "snippet": "X509TrustManager"
+          },
+          {
+            "id": "$tm1",
+            "location": "sources/com/startapp/networkTest/a/a.java",
+            "snippet": "X509TrustManager"
+          }
+        ],
+        "scopes": [
+          "source"
+        ],
+        "yara_rule": "Android_SSL_TrustAll"
+      },
+      "engine": "yara",
+      "evidence": "[Android_SSL_TrustAll] Custom X509TrustManager detected \u2014 may bypass SSL validation (MITM risk) -> X509TrustManager",
+      "fingerprint": "7ebdced6433c",
+      "id": "F002",
+      "layer": "l1",
+      "location": "sources/com/startapp/networkTest/a/a.java",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "critical"
+    },
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 4,
+        "locations": [
+          "sources/com/startapp/sdk/adsbase/adinformation/AdInformationObject.java",
+          "sources/com/startapp/sdk/ads/splash/SplashHtml.java",
+          "sources/com/startapp/sdk/ads/a/c.java",
+          "sources/com/startapp/sdk/ads/banner/bannerstandard/BannerStandard.java"
+        ],
+        "match_count": 4,
+        "matched_string_ids": [
+          "$jsi"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$jsi",
+            "location": "sources/com/startapp/sdk/adsbase/adinformation/AdInformationObject.java",
+            "snippet": "addJavascriptInterface"
+          },
+          {
+            "id": "$jsi",
+            "location": "sources/com/startapp/sdk/ads/splash/SplashHtml.java",
+            "snippet": "addJavascriptInterface"
+          },
+          {
+            "id": "$jsi",
+            "location": "sources/com/startapp/sdk/ads/a/c.java",
+            "snippet": "addJavascriptInterface"
+          },
+          {
+            "id": "$jsi",
+            "location": "sources/com/startapp/sdk/ads/banner/bannerstandard/BannerStandard.java",
+            "snippet": "addJavascriptInterface"
+          }
+        ],
+        "scopes": [
+          "source"
+        ],
+        "yara_rule": "Android_WebView_JavascriptInterface"
+      },
+      "engine": "yara",
+      "evidence": "[Android_WebView_JavascriptInterface] WebView exposes JavaScript bridge \u2014 potential XSS-to-RCE if untrusted content loaded -> addJavascriptInterface",
+      "fingerprint": "14800d072fb9",
+      "id": "F003",
+      "layer": "l1",
+      "location": "sources/com/startapp/sdk/adsbase/adinformation/AdInformationObject.java",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "critical"
+    },
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 10,
+        "locations": [
+          "sources/com/startapp/sdk/adsbase/a.java",
+          "sources/com/startapp/sdk/inappbrowser/a.java",
+          "sources/com/startapp/sdk/adsbase/adinformation/AdInformationObject.java",
+          "sources/com/startapp/sdk/adsbase/j/u.java",
+          "sources/com/startapp/sdk/adsbase/consent/ConsentActivity.java",
+          "sources/com/startapp/sdk/ads/splash/SplashHtml.java",
+          "sources/com/startapp/sdk/ads/a/c.java",
+          "sources/com/startapp/sdk/ads/banner/bannerstandard/BannerStandard.java",
+          "sources/b/b/a/a/a/j/b.java",
+          "sources/b/b/a/a/a/j/c.java"
+        ],
+        "match_count": 10,
+        "matched_string_ids": [
+          "$jse"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$jse",
+            "location": "sources/com/startapp/sdk/adsbase/a.java",
+            "snippet": "setJavaScriptEnabled"
+          },
+          {
+            "id": "$jse",
+            "location": "sources/com/startapp/sdk/inappbrowser/a.java",
+            "snippet": "setJavaScriptEnabled"
+          },
+          {
+            "id": "$jse",
+            "location": "sources/com/startapp/sdk/adsbase/adinformation/AdInformationObject.java",
+            "snippet": "setJavaScriptEnabled"
+          },
+          {
+            "id": "$jse",
+            "location": "sources/com/startapp/sdk/adsbase/j/u.java",
+            "snippet": "setJavaScriptEnabled"
+          },
+          {
+            "id": "$jse",
+            "location": "sources/com/startapp/sdk/adsbase/consent/ConsentActivity.java",
+            "snippet": "setJavaScriptEnabled"
+          },
+          {
+            "id": "$jse",
+            "location": "sources/com/startapp/sdk/ads/splash/SplashHtml.java",
+            "snippet": "setJavaScriptEnabled"
+          },
+          {
+            "id": "$jse",
+            "location": "sources/com/startapp/sdk/ads/a/c.java",
+            "snippet": "setJavaScriptEnabled"
+          },
+          {
+            "id": "$jse",
+            "location": "sources/com/startapp/sdk/ads/banner/bannerstandard/BannerStandard.java",
+            "snippet": "setJavaScriptEnabled"
+          }
+        ],
+        "scopes": [
+          "source"
+        ],
+        "yara_rule": "Android_WebView_JavaScriptEnabled"
+      },
+      "engine": "yara",
+      "evidence": "[Android_WebView_JavaScriptEnabled] WebView has JavaScript enabled \u2014 increases XSS attack surface -> setJavaScriptEnabled",
+      "fingerprint": "86ad5e3865bc",
+      "id": "F004",
+      "layer": "l1",
+      "location": "sources/com/startapp/sdk/adsbase/a.java",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "high"
+    },
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 1,
+        "locations": [
+          "sources/com/jijaei/pikapinjan/blasting.java"
+        ],
+        "match_count": 1,
+        "matched_string_ids": [
+          "$iv"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$iv",
+            "location": "sources/com/jijaei/pikapinjan/blasting.java",
+            "snippet": "IvParameterSpec("
+          }
+        ],
+        "scopes": [
+          "source"
+        ],
+        "yara_rule": "Android_Crypto_StaticIV"
+      },
+      "engine": "yara",
+      "evidence": "[Android_Crypto_StaticIV] IvParameterSpec usage \u2014 verify IV is not hardcoded or static -> IvParameterSpec(",
+      "fingerprint": "499988df8c86",
+      "id": "F005",
+      "layer": "l1",
+      "location": "sources/com/jijaei/pikapinjan/blasting.java",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "medium"
+    },
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 3,
+        "locations": [
+          "sources/com/jijaei/pikapinjan/blasting.java",
+          "sources/com/google/android/material/textfield/TextInputLayout.java",
+          "sources/b/a/a/b/k.java"
+        ],
+        "match_count": 7,
+        "matched_string_ids": [
+          "$pw1",
+          "$pw2"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$pw2",
+            "location": "sources/com/jijaei/pikapinjan/blasting.java",
+            "snippet": ".Secret"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/com/google/android/material/textfield/TextInputLayout.java",
+            "snippet": ".Password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/b/a/a/b/k.java",
+            "snippet": ".password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/b/a/a/b/k.java",
+            "snippet": ".password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/b/a/a/b/k.java",
+            "snippet": ".password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/b/a/a/b/k.java",
+            "snippet": ".password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/b/a/a/b/k.java",
+            "snippet": ".password"
+          }
+        ],
+        "scopes": [
+          "source"
+        ],
+        "yara_rule": "Android_Secrets_Hardcoded"
+      },
+      "engine": "yara",
+      "evidence": "[Android_Secrets_Hardcoded] Potential hardcoded credential or secret \u2014 review for plaintext secrets -> .Secret",
+      "fingerprint": "cc1927d9d7c8",
+      "id": "F006",
+      "layer": "l1",
+      "location": "sources/com/jijaei/pikapinjan/blasting.java",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "medium"
+    },
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 1,
+        "locations": [
+          "sample.apk"
+        ],
+        "match_count": 843,
+        "matched_string_ids": [
+          "$cert1",
+          "$cert2",
+          "$cert4",
+          "$classes",
+          "$hex_cd",
+          "$hex_eocd",
+          "$hex_zip",
+          "$manifest",
+          "$resources"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$manifest",
+            "location": "sample.apk",
+            "snippet": "AndroidManifest.xml"
+          },
+          {
+            "id": "$manifest",
+            "location": "sample.apk",
+            "snippet": "AndroidManifest.xml"
+          },
+          {
+            "id": "$classes",
+            "location": "sample.apk",
+            "snippet": "classes.dex"
+          },
+          {
+            "id": "$classes",
+            "location": "sample.apk",
+            "snippet": "classes.dex"
+          },
+          {
+            "id": "$resources",
+            "location": "sample.apk",
+            "snippet": "resources.arsc"
+          },
+          {
+            "id": "$resources",
+            "location": "sample.apk",
+            "snippet": "resources.arsc"
+          },
+          {
+            "id": "$cert1",
+            "location": "sample.apk",
+            "snippet": "META-INF/"
+          },
+          {
+            "id": "$cert1",
+            "location": "sample.apk",
+            "snippet": "META-INF/"
+          }
+        ],
+        "scopes": [
+          "container"
+        ],
+        "yara_rule": "APK_Valid_Structure_Check"
+      },
+      "engine": "yara",
+      "evidence": "[APK_Valid_Structure_Check] Validates basic APK file structure integrity -> AndroidManifest.xml",
+      "fingerprint": "a983bb24584a",
+      "id": "F007",
+      "layer": "l1",
+      "location": "sample.apk",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "low"
+    }
+  ],
+  "identity": {
+    "app_label": "Registerlaptop",
+    "md5": "b9db0c60100099d860b9ef42e6b3903a",
+    "package": "com.jijaei.pikapinjan",
+    "sha256": "7154ff1166085571073f736aa8664334697e035e11a47f77ecd220aa03855f89",
+    "source_apk": "/home/nightwings/cybershield/CyberShield/corpus/_work/s758371088429/sample.apk",
+    "version_name": "3.5.5"
+  },
+  "layers": {
+    "l0": {
+      "artifact": "L0/artifacts/7154ff1166085571073f736aa8664334697e035e11a47f77ecd220aa03855f89/evidence.json",
+      "coverage": {
+        "certificate_parsed": true,
+        "icon_extracted": true,
+        "manifest_parsed": true,
+        "permission_count": 12,
+        "reputation_checked": false
+      },
+      "gaps": [],
+      "status": "complete",
+      "summary": {
+        "cert_anomalies": [
+          "debug_keystore",
+          "empty_dn",
+          "absurd_validity"
+        ],
+        "cert_signal": {
+          "cert_detail": "Signer anomalies: debug_keystore, empty_dn, absurd_validity",
+          "cert_in_whitelist": false,
+          "cert_weight": -0.5
+        },
+        "claimed_entity": null,
+        "matched_bank": null,
+        "reputation_hit": false,
+        "smoking_gun_inputs": {
+          "brand_claim": false,
+          "cert_anomalies": [
+            "debug_keystore",
+            "empty_dn",
+            "absurd_validity"
+          ],
+          "claimed_entity": null,
+          "sms_trifecta": false
+        },
+        "track": "track1_jadx_then_track2_ghidra",
+        "verdict": "impersonation_suspected"
+      },
+      "updated_at": "2026-08-08T19:12:52.325857+00:00"
+    },
+    "l1": {
+      "artifact": "L1/artifacts/7154ff1166085571073f736aa8664334697e035e11a47f77ecd220aa03855f89/analysis.json",
+      "coverage": {
+        "apk_yara_rules": 1,
+        "decompiled_files": 1083,
+        "ghidra_attempted": true,
+        "ghidra_available": false,
+        "ghidra_ok": false,
+        "source_findings": 5
+      },
+      "gaps": [
+        "ghidra_unavailable"
+      ],
+      "status": "partial",
+      "summary": {
+        "categories": [
+          "other"
+        ],
+        "engine": "jadx+ghidra",
+        "finding_count": 6,
+        "ruleset_version": "614d58d9a5b9",
+        "severity_counts": {
+          "critical": 2,
+          "high": 1,
+          "info": 0,
+          "low": 1,
+          "medium": 2
+        },
+        "track": "track1_jadx_then_track2_ghidra"
+      },
+      "updated_at": "2026-08-08T19:12:57.173313+00:00"
+    },
+    "l2": {
+      "status": "not_attempted"
+    },
+    "l3": {
+      "status": "not_attempted"
+    },
+    "l4": {
+      "status": "not_attempted"
+    },
+    "l5": {
+      "status": "not_attempted"
+    },
+    "l6": {
+      "status": "not_attempted"
+    }
+  },
+  "schema_version": "apk-sentinel-0.2",
+  "sha256": "7154ff1166085571073f736aa8664334697e035e11a47f77ecd220aa03855f89",
+  "updated_at": "2026-08-08T19:12:57.173561+00:00"
+}

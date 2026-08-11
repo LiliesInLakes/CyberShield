@@ -8,6 +8,8 @@
 
 rule Android_India_Drinik_ITR_Impersonation {
     meta:
+        category = "phishing_impersonation"
+        scope = "both"
         description = "Detects Drinik trojan impersonating Indian Income Tax/ITR apps"
         author = "Agent-Sentinel"
         severity = "Critical"
@@ -21,20 +23,25 @@ rule Android_India_Drinik_ITR_Impersonation {
         $itr2 = "income tax" ascii wide nocase
         $itr3 = "iAssist" ascii wide
         $itr4 = "tax refund" ascii wide nocase
-        $itr5 = "ITR" ascii wide
+        // Word-bounded: bare "ITR" matched inside unrelated identifiers.
+        $itr5 = /\bITR\b/ ascii wide
 
-        // Drinik-specific strings
+        // Drinik-specific strings — the only strings here unique to the family.
         $drinik1 = "LocalCapture" ascii wide
         $drinik2 = "LocksAndIntercepts" ascii wide
         $drinik3 = "GAnalytics" ascii wide
 
-        // Accessibility abuse for credential theft
+        // Accessibility abuse for credential theft. NOTE: these are ambient in
+        // any app that touches the accessibility API, so they are a supporting
+        // signal only and must never carry a match on their own.
         $acc1 = "AccessibilityService" ascii wide
         $acc2 = "onAccessibilityEvent" ascii wide
 
-        // Firebase C2
-        $fb1 = "firebase" ascii wide nocase
-        $fb2 = "fcm" ascii wide nocase
+        // Firebase C2 — the exfiltration ENDPOINT, not the SDK. Matching bare
+        // "firebase"/"fcm" flagged every app that merely bundles Firebase.
+        $fb1 = "firebaseio.com" ascii wide nocase
+        $fb2 = "fcm.googleapis.com" ascii wide nocase
+        $fb3 = ".firebasedatabase.app" ascii wide nocase
 
     condition:
         filesize < 15MB
@@ -49,6 +56,7 @@ rule Android_India_UPI_Targeting {
         description = "Detects malware targeting Indian UPI payment platforms"
         author = "Agent-Sentinel"
         severity = "High"
+        category = "phishing_impersonation"
         platform = "Android"
         scope = "source"
         date = "2026-07-21"
@@ -84,6 +92,7 @@ rule Android_India_UPI_Targeting {
 
 rule Android_India_SMS_OTP_Stealer {
     meta:
+        category = "sms_intercept"
         description = "Detects SMS OTP interception targeting Indian banking OTPs"
         author = "Agent-Sentinel"
         severity = "Critical"
@@ -124,6 +133,7 @@ rule Android_India_SMS_OTP_Stealer {
 
 rule Android_India_FakeBank_App {
     meta:
+        category = "phishing_impersonation"
         description = "Detects fake Indian banking app impersonation patterns"
         author = "Agent-Sentinel"
         severity = "High"

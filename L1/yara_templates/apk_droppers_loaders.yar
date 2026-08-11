@@ -7,6 +7,8 @@
 
 rule Android_Dropper_Encrypted_Payload_Stage1 {
     meta:
+        category = "native_payload"
+        scope = "both"
         description = "Detects stage-1 droppers with encrypted payload in assets or resources"
         author = "Agent-Sentinel"
         severity = "High"
@@ -41,7 +43,7 @@ rule Android_Dropper_Encrypted_Payload_Stage1 {
 
     condition:
         filesize < 10MB
-        and uint32(0) == 0x504B0304
+        and uint32be(0) == 0x504B0304
         and (2 of ($asset*))
         and (2 of ($dec*))
         and (2 of ($write*))
@@ -52,6 +54,8 @@ rule Android_Dropper_Encrypted_Payload_Stage1 {
 
 rule Android_Dropper_Native_Library_Loader {
     meta:
+        category = "native_payload"
+        scope = "both"
         description = "Detects droppers loading native libraries for payload execution"
         author = "Agent-Sentinel"
         severity = "High"
@@ -85,7 +89,7 @@ rule Android_Dropper_Native_Library_Loader {
 
     condition:
         filesize < 15MB
-        and uint32(0) == 0x504B0304
+        and uint32be(0) == 0x504B0304
         and (2 of ($lib*))
         and (2 of ($path*))
         and (2 of ($api*))
@@ -96,6 +100,8 @@ rule Android_Dropper_Native_Library_Loader {
 
 rule Android_Dropper_Download_And_Execute {
     meta:
+        category = "native_payload"
+        scope = "both"
         description = "Detects download-and-execute payload delivery patterns"
         author = "Agent-Sentinel"
         severity = "Critical"
@@ -130,7 +136,7 @@ rule Android_Dropper_Download_And_Execute {
 
     condition:
         filesize < 10MB
-        and uint32(0) == 0x504B0304
+        and uint32be(0) == 0x504B0304
         and (1 of ($dl*))
         and (2 of ($url*))
         and (2 of ($exec*))

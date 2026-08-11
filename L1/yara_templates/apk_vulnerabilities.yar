@@ -6,6 +6,7 @@
 
 rule Android_WebView_JavascriptInterface {
     meta:
+        category = "other"
         description = "WebView exposes JavaScript bridge — potential XSS-to-RCE if untrusted content loaded"
         severity = "critical"
         scope = "source"
@@ -17,6 +18,7 @@ rule Android_WebView_JavascriptInterface {
 
 rule Android_WebView_JavaScriptEnabled {
     meta:
+        category = "other"
         description = "WebView has JavaScript enabled — increases XSS attack surface"
         severity = "high"
         scope = "source"
@@ -28,6 +30,7 @@ rule Android_WebView_JavaScriptEnabled {
 
 rule Android_SSL_TrustAll {
     meta:
+        category = "other"
         description = "Custom X509TrustManager detected — may bypass SSL validation (MITM risk)"
         severity = "critical"
         scope = "source"
@@ -40,6 +43,7 @@ rule Android_SSL_TrustAll {
 
 rule Android_Crypto_WeakAlgorithm {
     meta:
+        category = "other"
         description = "Weak or deprecated cryptographic algorithm in use"
         severity = "high"
         scope = "source"
@@ -55,6 +59,7 @@ rule Android_Crypto_WeakAlgorithm {
 
 rule Android_Crypto_StaticIV {
     meta:
+        category = "other"
         description = "IvParameterSpec usage — verify IV is not hardcoded or static"
         severity = "medium"
         scope = "source"
@@ -66,6 +71,7 @@ rule Android_Crypto_StaticIV {
 
 rule Android_Storage_WorldReadable {
     meta:
+        category = "other"
         description = "World-readable or world-writable file mode — sensitive data exposure risk"
         severity = "high"
         scope = "source"
@@ -78,6 +84,7 @@ rule Android_Storage_WorldReadable {
 
 rule Android_Dynamic_CodeLoading {
     meta:
+        category = "other"
         description = "Dynamic class loading detected — potential code injection or tampering"
         severity = "high"
         scope = "source"
@@ -91,6 +98,7 @@ rule Android_Dynamic_CodeLoading {
 
 rule Android_Secrets_Hardcoded {
     meta:
+        category = "other"
         description = "Potential hardcoded credential or secret — review for plaintext secrets"
         severity = "medium"
         scope = "source"

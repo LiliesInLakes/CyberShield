@@ -16,6 +16,28 @@ from androguard.core.apk import APK  # noqa: E402
 ZIP_PASSWORD = b"infected"
 
 
+def open_encrypted(zip_path: Path, password: bytes = ZIP_PASSWORD):
+    """Open a corpus archive, whatever it was zipped with.
+
+    ~40% of corpus members are WinZip-AES (`compress_type 99`), which the stdlib
+    cannot read at all; the rest are ZipCrypto or unencrypted. pyzipper handles
+    every case, so it leads and stdlib is only the fallback for an archive
+    pyzipper rejects outright.
+
+    The caller gets an open archive and reads members **one at a time**. This
+    function deliberately does not extract anything — `extractall` on a corpus
+    archive puts live malware on disk in bulk, which the safety rules forbid.
+    """
+    import pyzipper
+
+    try:
+        zf = pyzipper.AESZipFile(str(zip_path))
+    except Exception:  # noqa: BLE001 — fall back to the stdlib reader
+        zf = zipfile.ZipFile(str(zip_path))
+    zf.setpassword(password)
+    return zf
+
+
 def harvest_apk(apk_path: Path, out_root: Path, family: str | None = None) -> dict:
     apk_path = Path(apk_path)
     apk = APK(str(apk_path))
@@ -41,23 +63,26 @@ def harvest_apk(apk_path: Path, out_root: Path, family: str | None = None) -> di
 
 
 def unpack_and_harvest(zip_path: Path, out_root: Path, family: str | None) -> dict | None:
-    """Unzip a (AES/ZipCrypto password-protected) malware archive to a temp dir,
-    harvest the first APK's icon + metadata, then discard the extracted APK.
+    """Unzip a password-protected malware archive, harvest the first APK, discard.
+
+    ⚠ **Superseded by `tools/corpus_run.py`. Do not use it for corpus work.**
+    Three defects make it unsuitable, all of them silent:
+
+    * it `extractall`s the whole archive — bulk live malware on disk, which the
+      corpus safety rules forbid;
+    * it globs ``*.apk``, missing the **42%** of members that are extensionless;
+    * it analyses ``apks[0]`` only, dropping the other members of multi-sample
+      archives.
+
+    Kept because existing dataset-harvesting workflows call it, and it is
+    harmless on the small curated inputs it was written for.
+
     WARNING: extracted samples are live malware; run only in an isolated env.
     """
-    import pyzipper
-
     with tempfile.TemporaryDirectory() as tmp:
         try:
-            try:
-                with pyzipper.AESZipFile(zip_path) as zf:
-                    zf.extractall(tmp, pwd=ZIP_PASSWORD)
-            except (pyzipper.BadZipFile, RuntimeError):
-                with zipfile.ZipFile(zip_path) as zf:
-                    try:
-                        zf.extractall(tmp, pwd=ZIP_PASSWORD)
-                    except RuntimeError:
-                        zf.extractall(tmp)
+            with open_encrypted(Path(zip_path)) as zf:
+                zf.extractall(tmp)
         except zipfile.BadZipFile as exc:
             print(f"  [skip] {zip_path.name}: not a zip ({exc})")
             return None

@@ -7,6 +7,7 @@
 
 rule APK_Valid_Structure_Check {
     meta:
+        category = "other"
         description = "Validates basic APK file structure integrity"
         author = "Agent-Sentinel"
         severity = "Low"
@@ -37,7 +38,7 @@ rule APK_Valid_Structure_Check {
 
     condition:
         filesize < 100MB
-        and uint32(0) == 0x504B0304
+        and uint32be(0) == 0x504B0304
         and $manifest
         and $classes
         and $resources
@@ -51,6 +52,7 @@ rule APK_Valid_Structure_Check {
 
 rule APK_Anomalous_No_Certificate {
     meta:
+        category = "other"
         description = "Detects APK files missing digital signature (untrusted source)"
         author = "Agent-Sentinel"
         severity = "High"
@@ -73,7 +75,7 @@ rule APK_Anomalous_No_Certificate {
 
     condition:
         filesize < 100MB
-        and uint32(0) == 0x504B0304
+        and uint32be(0) == 0x504B0304
         and $manifest
         and $classes
         and $hex_apk at 0
@@ -84,6 +86,7 @@ rule APK_Anomalous_No_Certificate {
 
 rule APK_Anomalous_Multiple_DEX_Files {
     meta:
+        category = "other"
         description = "Detects APKs with multiple DEX files (possible multidex or packing)"
         author = "Agent-Sentinel"
         severity = "Medium"
@@ -102,7 +105,7 @@ rule APK_Anomalous_Multiple_DEX_Files {
 
     condition:
         filesize < 100MB
-        and uint32(0) == 0x504B0304
+        and uint32be(0) == 0x504B0304
         and $dex1
         and (1 of ($dex2, $dex3, $dex4))
         and #hex_dex >= 2
