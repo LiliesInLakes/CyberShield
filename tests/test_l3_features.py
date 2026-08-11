@@ -164,3 +164,48 @@ def test_skipped_prediction_records_why():
 def test_l3_is_not_an_evidence_layer():
     import spine
     assert "l3" not in spine.EVIDENCE_LAYERS
+
+
+# --------------------------------------------------------------------------
+# Trainer contracts
+# --------------------------------------------------------------------------
+
+def test_year_matrices_are_float32_because_lightgbm_rejects_ints():
+    """Regression: load_year() built int8 sparse matrices and every test passed,
+    because they only checked shape and density. LightGBM's CSR path raises
+    'Expected np.float32 or np.float64, met type(int8)' the moment you fit."""
+    import os
+    from pathlib import Path
+    from L3.train import LAMDA_BASELINE, load_year
+
+    if not LAMDA_BASELINE.is_dir():
+        pytest.skip("LAMDA not fetched")
+    years = sorted(int(p.name) for p in LAMDA_BASELINE.iterdir()
+                   if p.is_dir() and p.name.isdigit())
+    d = load_year(years[-1], "test")
+    if d is None:
+        pytest.skip("no test split for that year")
+    assert d.X.dtype == np.float32
+
+
+def test_a_tiny_fit_actually_runs():
+    """The loader test above cannot catch a dtype LightGBM dislikes; only
+    fitting can. Kept deliberately small so it costs a second."""
+    lgb = pytest.importorskip("lightgbm")
+    from scipy import sparse
+    rng = np.random.default_rng(0)
+    X = sparse.csr_matrix((rng.random((200, 30)) > 0.9).astype(np.int8),
+                          dtype=np.float32)
+    y = (X.toarray()[:, 0] > 0).astype(int)
+    y[:5] = 1
+    y[5:10] = 0
+    lgb.LGBMClassifier(n_estimators=5, verbose=-1, n_jobs=1).fit(X, y)
+
+
+def test_auroc_and_ece_agree_with_hand_values():
+    from L3.train import auroc, expected_calibration_error
+    assert auroc(np.array([0, 0, 1, 1]), np.array([.1, .4, .35, .8])) == pytest.approx(0.75)
+    # Perfectly calibrated: predicted probability equals observed frequency.
+    y = np.array([0, 1] * 50)
+    p = np.full(100, 0.5)
+    assert expected_calibration_error(y, p) == pytest.approx(0.0, abs=1e-9)
