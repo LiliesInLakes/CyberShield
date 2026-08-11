@@ -77,6 +77,9 @@ $SENTINEL_PYTHON tools/corpus_run.py --dry-run
 $SENTINEL_PYTHON tools/corpus_run.py --match novTargetedIndianBanks
 $SENTINEL_PYTHON tools/corpus_run.py                 # everything; re-run to resume
 $SENTINEL_PYTHON tools/corpus_summary.py             # newest run's report
+
+# Disk. corpus_run disposes of jadx_src itself; direct l1.py runs do not (T18).
+$SENTINEL_PYTHON tools/reclaim_disk.py --dry-run
 ```
 
 ---
@@ -162,7 +165,7 @@ Each of these cost real time. Do not rediscover them.
 | **T15** | **A metric defined in prose and re-implemented in code will drift.** `MALWARE_CATEGORIES` was rewritten with 14 categories against a criterion of 9, silently redefining every recorded before/after number. It is now pinned by a test. Widening it requires a re-baseline, not a commit. |
 | **T16** | **An artifact directory is not a source of truth unless you check its provenance.** The malware `L0/artifacts/` are pre-A6 and still read `verdict: unknown` on all 8 India samples. Anything derived from them records a picture that was already known to be wrong. Check mtimes, or regenerate. |
 | **T17** | **A green "ready" banner over a broken environment is worse than a red one.** `source_env.sh` fell through to a dependency-less `python3` and printed success; the failure surfaced much later as a confusing `ModuleNotFoundError`. It now warns. Dependencies live in `env/`, not in a system interpreter. |
-| **T18** | **jadx output, not samples, is what fills the disk.** ~112 MB of `jadx_src` per sample vs a ~2 MB APK — ~78 GB projected over the corpus, against ~13 GB free. `corpus_run.py --keep-decompiled none` reclaims it per sample. A disposal policy aimed at the samples protects 1.45 GB and ignores 78. |
+| **T18** | **jadx output, not samples, is what fills the disk.** ~112 MB of `jadx_src` per sample vs a ~2 MB APK — ~78 GB projected over the corpus, against ~13 GB free. `corpus_run.py --keep-decompiled none` reclaims it per sample. A disposal policy aimed at the samples protects 1.45 GB and ignores 78. **The corpus runner is not the leak** — it disposes correctly. Running `L1/l1.py <apk>` *directly* has no disposal policy (deliberately: a manual run is one you want the sources for), and eight such runs on the test apps had quietly accumulated 904 MB. Sweep with `tools/reclaim_disk.py`. |
 | **T19** | **Never estimate a rate from the hand-picked set.** "4 of 8 banking trojans undetected" (50%) became **92%** at corpus scale. Eight samples chosen because they were interesting are not a sample of anything. |
 | **T20** | **A member is not the container.** Behaviour rules gated on `uint32be(0) == 0x504B0304` can never match a `classes.dex` (`dex\n035`), and the container itself is deflated — so the gate made the scanner blind to the one place the app's strings live in plaintext. `scan_apk` uses a **separate member ruleset** with container gates stripped. |
 | **T21** | **A dex is the whole app concatenated — scan it per class.** Whole-dex scanning is T2's batch-blob bug one level down: it made an expense tracker match an OTP stealer *and* a ransomware rule. Conjunction only means something inside one class. |
