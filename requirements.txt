@@ -21,3 +21,10 @@ uvicorn>=0.30
 python-multipart>=0.0.9
 stix2>=3.0
 Jinja2>=3.1
+
+# L3 — maliciousness prior trained on LAMDA
+scikit-learn>=1.5
+lightgbm>=4.3
+pyarrow>=16
+huggingface_hub>=0.24
+joblib>=1.4
