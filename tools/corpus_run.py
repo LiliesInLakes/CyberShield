@@ -328,6 +328,46 @@ def analyse_one(sample: Sample, args: argparse.Namespace) -> dict[str, Any]:
 # Driver
 # ---------------------------------------------------------------------------
 
+def preflight() -> int:
+    """Refuse to start when the toolchain cannot possibly work.
+
+    Learned the expensive way: a run launched without ``source source_env.sh``
+    leaves ``JADX_DIR`` at a default path that does not exist, so every sample
+    fails with "Could not find or load main class jadx.cli.JadxCLI" — 600 of
+    them, in four minutes, each one overwriting a good spine's L1 block with a
+    failure. The environment was broken before the first sample; nothing about
+    that needed 600 attempts to discover.
+
+    This is T17 one level up: a run that proceeds over a broken environment is
+    worse than one that refuses, because it manufactures plausible-looking
+    results.
+    """
+    problems: list[str] = []
+
+    jadx_jar = Path(os.environ.get("JADX_DIR", "")) / "lib" / "jadx-1.5.6-all.jar"
+    if not os.environ.get("JADX_DIR"):
+        problems.append("JADX_DIR is unset")
+    elif not jadx_jar.is_file():
+        problems.append(f"jadx jar not found at {jadx_jar}")
+
+    java = Path(os.environ.get("JDK17_HOME", "")) / "bin" / "java"
+    if not os.environ.get("JDK17_HOME"):
+        problems.append("JDK17_HOME is unset")
+    elif not java.is_file():
+        problems.append(f"java not found at {java}")
+
+    if problems:
+        print("[corpus] REFUSING TO START — the toolchain is not usable:",
+              file=sys.stderr)
+        for p in problems:
+            print(f"           {p}", file=sys.stderr)
+        print("\n         Run `source source_env.sh` first, or every sample will "
+              "fail\n         identically and overwrite good results with failures.",
+              file=sys.stderr)
+        return 2
+    return 0
+
+
 def corpus_root(args: argparse.Namespace) -> Path:
     return Path(getattr(args, "corpus_root", None) or RAW)
 
@@ -407,6 +447,9 @@ def main(argv: list[str]) -> int:
     if not root.exists():
         print(f"[corpus] no corpus at {root}", file=sys.stderr)
         return 1
+
+    if not args.dry_run and (rc := preflight()):
+        return rc
 
     samples = collect(args)
     index = load_index(idx_path) if not args.force else {}

@@ -1,0 +1,177 @@
+# L5 scoring policy — the only place a number lives.
+#
+# Versioned deliberately. A score is only auditable if the rules that produced
+# it can be pinned to a revision, so every ScoreResult records policy_version,
+# weights_version and ruleset_version, and refuses to mix generations.
+#
+# The proposal's 0.45*rules + 0.30*ml + 0.25*llm blend is NOT implemented and
+# will not be: it sums incommensurable units with weights that were never fit
+# to anything. This is an additive log-odds scheme whose weights are computed
+# by tools/rule_firing_report.py from measured counts.
+
+policy_version: "l5-0.1"
+
+# Produced by A4. L5 refuses to load one whose ruleset_version differs from the
+# current ruleset, and refuses to arm gates when its support stamp is
+# "unsupported" — see validate_policy.py.
+weights_file: "weights/rule_weights_latest.json"
+require_supported_weights: true
+
+scoring:
+  # Below this a signal is priced at 0 and reported as 'negligible'. It is a
+  # noise floor, not a blocklist.
+  min_abs_weight: 0.2
+  # Rules measured as firing on nearly everything in both classes are priced at
+  # 0 -- by measurement, not by a hand-maintained list of names.
+  exclude_degenerate: true
+
+# Redundancy control. Naive addition double-counts correlated evidence: three
+# SMS rules firing on one class is close to one fact, not three. Within a
+# family, contributions are sorted by |w| and discounted geometrically, then
+# the family total is capped.
+families:
+  sms:
+    decay: 0.5
+    cap: 4.0
+    members: ["yara:Android_BFSI_SMS_*", "yara:*SMS*", "l0:sms_trifecta", "cat:sms_intercept"]
+  overlay:
+    decay: 0.5
+    cap: 3.0
+    members: ["yara:*Overlay*", "cat:overlay_attack"]
+  accessibility:
+    decay: 0.5
+    cap: 3.0
+    members: ["yara:*Accessibility*", "cat:accessibility_abuse"]
+  c2_exfil:
+    decay: 0.5
+    cap: 3.0
+    members: ["cat:c2_communication", "cat:data_exfiltration", "cat:messaging_c2"]
+  dropper:
+    decay: 0.5
+    cap: 3.0
+    members: ["yara:Android_Dropper_*", "yara:*DexClassLoader*", "yara:*Dynamic_CodeLoading*"]
+  cert:
+    decay: 0.7
+    cap: 3.0
+    members: ["l0:cert_anomaly:*"]
+  brand:
+    decay: 1.0
+    cap: 4.0
+    members: ["l0:brand_claim", "cat:phishing_impersonation"]
+  # Generic app-hygiene findings. Real, but they describe sloppy engineering
+  # rather than malice, and they fire on benign software constantly.
+  hygiene:
+    decay: 0.25
+    cap: 1.0
+    members: ["yara:Android_Crypto_*", "yara:Android_SSL_*", "yara:Android_Secrets_*",
+              "yara:APK_Valid_*", "yara:Android_WebView_*", "yara:Android_Storage_*"]
+
+# Unbounded log-odds -> bounded 0..100.
+#
+#   score = round(100 * sigmoid((S - s0) / T))
+#
+# Two free parameters, both with an operational definition:
+#   s0  the 50-point anchor: the log-odds at which the empirical posterior
+#       P(malware | S) crosses 0.5. "Score 50" therefore *means* "as likely
+#       malicious as benign given this evidence".
+#   T   set by the 85-point anchor: T = (S_fp1% - s0) / 1.7346, where S_fp1%
+#       is the log-odds at which the benign false-positive rate reaches 1%.
+#
+# status: declared  -> the values below are asserted, and every score is
+#                      stamped unsupported with confidence capped.
+# status: fitted    -> produced by tools/fit_calibration.py against labelled
+#                      data; fitted_on records what it was fitted against.
+calibration:
+  method: sigmoid
+  s0: 3.0
+  temperature: 2.0
+  status: declared
+  fitted_on: null
+
+bands:
+  - [0,  24, "Informational"]
+  - [25, 49, "Low"]
+  - [50, 69, "Medium"]
+  - [70, 84, "High"]
+  - [85, 100, "Critical"]
+
+# L3's contribution. Bounded to +/-10 points and unable to reach Critical on
+# its own: LAMDA is ~99.6% non-banking, so it must never make a banking claim.
+ml:
+  enabled: false
+  max_delta: 10
+  may_reach_critical: false
+
+# Named rule groups the gates reference. A rule may only appear here if
+# validate_policy.py can show, from the weights file, that its benign-rate 95%
+# upper bound is under gate_constraints.max_benign_rate_upper_ci.
+gate_rule_lists:
+  credential_ui_rules:
+    - Android_Banking_Generic_OverlayEngine
+    - Android_BFSI_Overlay_Device_Profiling
+  sms_intercept_rules:
+    - Android_BFSI_SMS_Suppression
+    - Android_BFSI_SMS_Mailbox_Harvest
+    - Android_BFSI_SMS_Intercept_And_Forward
+  exfil_rules:
+    - Android_Telegram_WhatsApp_C2
+    - Android_Suspicious_Network_Communication
+
+gate_constraints:
+  # A gate sets a Critical floor. Any rule inside one must be measurably
+  # specific -- this is what makes a T7-class false positive impossible to ship
+  # rather than merely unlikely.
+  max_benign_rate_upper_ci: 0.02
+  require_supported: true
+
+# The four smoking-gun combinations. Primary mechanism, not an override bolted
+# onto a blend. Each is evaluated ternary: a gate whose input is missing because
+# coverage failed is 'indeterminate', never 'false' -- otherwise a failed
+# analysis reads as a clean one.
+gates:
+  G1_bank_impersonation_credential_ui:
+    enabled: true
+    floor: 85
+    require_distinct_evidence: true
+    description: "bank impersonation + credential-harvesting UI"
+  G2_sms_intercept_exfil:
+    enabled: true
+    floor: 85
+    require_distinct_evidence: true
+    description: "SMS interception + exfiltration to an external C2"
+  G3_accessibility_overlay_bank_target:
+    enabled: false
+    floor: 85
+    require_distinct_evidence: true
+    blocked_on: "no evidence source for 'targets a known bank package' (A5 target-list rule)"
+    description: "accessibility abuse + overlay on a known bank package"
+  G4_dropper_embedded_apk:
+    enabled: false
+    floor: 70
+    require_distinct_evidence: true
+    blocked_on: "L0 does not yet record REQUEST_INSTALL_PACKAGES or embedded payloads"
+    description: "dropper permission + embedded secondary APK in assets"
+
+# Confidence is a SEPARATE axis and never touches the score. It is what lets a
+# failed detonation be reported honestly as reduced confidence rather than as a
+# silent hole in the evidence.
+confidence:
+  start: 1.0
+  penalties:
+    detonation_not_attempted: 0.25
+    decompilation_partial: 0.15
+    l1_failed: 0.35
+    l1_engine_failed: 0.35
+    l0_failed: 0.40
+    manifest_not_parsed: 0.40
+    certificate_not_parsed: 0.10
+    icon_not_extracted: 0.05
+    # Applied only when the sample actually has native libraries -- otherwise
+    # 149 samples take a penalty for a gap that is not a gap.
+    ghidra_unavailable: 0.05
+    gate_indeterminate: 0.10
+  unsupported_weights_cap: 0.5
+  bands:
+    - [0.0,  0.39, "low"]
+    - [0.40, 0.74, "moderate"]
+    - [0.75, 1.0,  "high"]

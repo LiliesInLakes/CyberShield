@@ -1480,3 +1480,41 @@ produced by a hosted model. `LocalProvider` raises rather than falling back, so 
 gap cannot be mistaken for a working feature. The React dashboard claim was likewise
 corrected to the FastAPI + no-build-toolchain dashboard actually being built.
 
+## 6.6 L5 built, and a prediction recorded before the benign corpus lands
+
+`L5/{policy.yaml,score.py,gates.py,confidence.py,promote.py,l5.py,validate_policy.py}`,
+27 tests. Additive log-odds with per-family redundancy decay → sigmoid map with two
+operationally-defined anchors → L3 bounded to ±10 → gates as **floors**, never overrides.
+
+**`validate_policy.py` refuses to arm a gate whose rules are not measurably specific.**
+Against the B=4 weights it reports 15 problems and blocks both enabled gates, because
+every rule's benign-rate 95% upper bound is 0.445 against a limit of 0.02. This is I14
+enforced in code rather than in prose: **no gate can fire until the benign corpus lands.**
+
+Running L5 against the current weights on the SBI Quick Support trojan
+(`8f05ecbb…`, `com.sbi.complaintregister`, a confirmed India banking trojan):
+
+```
+score 18 (Informational)   confidence 0.50 (moderate)
+  brand    -1.90  l0:brand_claim               F001
+  hygiene  +2.85  yara:APK_Valid_Structure_Check F005
+  (ungrp)  -2.00  l0:verdict:impersonation_likely
+```
+
+**A confirmed banking trojan scores 18 out of 100.** This is the machinery working
+correctly and the weights being worthless: L5 faithfully reports what A4 measured,
+and stamps the whole result `unsupported`. It is the clearest single demonstration
+of B30 that this project has.
+
+📉 **Falsifiable predictions, recorded now, to be checked after the benign corpus:**
+
+| # | Prediction |
+|---|---|
+| P1 | SBI Quick Support moves from **Informational (18)** to **High or Critical** |
+| P2 | `l0:brand_claim` flips from −1.90 to **positive** |
+| P3 | `APK_Valid_Structure_Check` becomes **degenerate** and is priced at 0 |
+| P4 | ≥20 of the 32 negative signals flip positive |
+| P5 | `validate_policy.py` passes, and G1/G2 become armable |
+| P6 | Some benign apps **will** fire malware-category rules — the 0/4 FP rate will not survive 600 apps |
+| P7 | `Android_Secrets_Hardcoded` gets `ben_rate > 0.5` and stays priced ≤ 0 |
+
