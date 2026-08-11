@@ -1,0 +1,1149 @@
+{
+  "corpus": {
+    "label_counts": {
+      "benign": 4,
+      "excluded": 4,
+      "malware": 640
+    },
+    "labels_file": "labels.json",
+    "n_benign": 4,
+    "n_excluded": 4,
+    "n_malware": 640,
+    "n_spines": 648,
+    "n_unlabelled": 0
+  },
+  "dead_rules": {
+    "Android_Banking_Ankara_Stealer": {
+      "class": "self_match",
+      "declared_category": "data_exfiltration",
+      "declared_severity": "high",
+      "file": "apk_banking_trojans.yar"
+    },
+    "Android_Banking_TaxiSpy_RAT": {
+      "class": "self_match",
+      "declared_category": "data_exfiltration",
+      "declared_severity": "critical",
+      "file": "apk_banking_trojans.yar"
+    },
+    "Android_Banking_Zanubis_AccessibilityOverlay": {
+      "class": "self_match",
+      "declared_category": "accessibility_abuse",
+      "declared_severity": "critical",
+      "file": "apk_banking_trojans.yar"
+    },
+    "Android_Dropper_Native_Library_Loader": {
+      "class": "self_match",
+      "declared_category": "native_payload",
+      "declared_severity": "high",
+      "file": "apk_droppers_loaders.yar"
+    },
+    "Android_Evasion_Anti_Analysis_VirtualMachine": {
+      "class": "self_match",
+      "declared_category": "evasion",
+      "declared_severity": "medium",
+      "file": "apk_persistence_evasion.yar"
+    },
+    "Android_Fraud_Click_Jacking_Tapjacking": {
+      "class": "self_match",
+      "declared_category": "overlay_attack",
+      "declared_severity": "high",
+      "file": "apk_adware_fraud.yar"
+    },
+    "Android_Fraud_SMS_Subscription_Abuse": {
+      "class": "self_match",
+      "declared_category": "sms_intercept",
+      "declared_severity": "high",
+      "file": "apk_adware_fraud.yar"
+    },
+    "Android_India_Drinik_ITR_Impersonation": {
+      "class": "self_match",
+      "declared_category": "phishing_impersonation",
+      "declared_severity": "critical",
+      "file": "apk_india_banking.yar"
+    },
+    "Android_India_FakeBank_App": {
+      "class": "self_match",
+      "declared_category": "phishing_impersonation",
+      "declared_severity": "high",
+      "file": "apk_india_banking.yar"
+    },
+    "Android_India_SMS_OTP_Stealer": {
+      "class": "self_match",
+      "declared_category": "sms_intercept",
+      "declared_severity": "critical",
+      "file": "apk_india_banking.yar"
+    },
+    "Android_India_UPI_Targeting": {
+      "class": "self_match",
+      "declared_category": "phishing_impersonation",
+      "declared_severity": "high",
+      "file": "apk_india_banking.yar"
+    },
+    "Android_Ransomware_Generic_File_Encryption": {
+      "class": "self_match",
+      "declared_category": "ransomware",
+      "declared_severity": "critical",
+      "file": "apk_ransomware.yar"
+    },
+    "Android_Ransomware_Locker_Screen": {
+      "class": "self_match",
+      "declared_category": "ransomware",
+      "declared_severity": "critical",
+      "file": "apk_ransomware.yar"
+    },
+    "Android_Spyware_Generic_GPS_Surveillance": {
+      "class": "self_match",
+      "declared_category": "data_exfiltration",
+      "declared_severity": "high",
+      "file": "apk_spyware_stalkware.yar"
+    },
+    "Android_Spyware_Keylogger_Credential_Theft": {
+      "class": "self_match",
+      "declared_category": "data_exfiltration",
+      "declared_severity": "critical",
+      "file": "apk_spyware_stalkware.yar"
+    },
+    "Android_Spyware_SMS_Call_Log_Harvester": {
+      "class": "self_match",
+      "declared_category": "sms_intercept",
+      "declared_severity": "high",
+      "file": "apk_spyware_stalkware.yar"
+    },
+    "Android_Suspicious_Command_Execution": {
+      "class": "self_match",
+      "declared_category": "privilege_escalation",
+      "declared_severity": "critical",
+      "file": "apk_suspicious_behaviors.yar"
+    },
+    "Android_Suspicious_Package_Installer_Abuse": {
+      "class": "self_match",
+      "declared_category": "native_payload",
+      "declared_severity": "high",
+      "file": "apk_suspicious_behaviors.yar"
+    }
+  },
+  "generated_at": "2026-08-11T12:08:50.199533+00:00",
+  "generator": "tools/rule_firing_report.py",
+  "method": {
+    "clip": 3.0,
+    "denominator": "scope_eligible",
+    "note": "log ODDS RATIO used as an evidence-only additive term; absent signals contribute 0",
+    "smoothing": 0.5,
+    "weight": "jeffreys_log_odds_ratio"
+  },
+  "ruleset_version": "d3777011c971",
+  "schema_version": "apk-sentinel-weights-1",
+  "signal_schema": "apk-sentinel-signals-1",
+  "support": {
+    "min_benign": 30,
+    "min_malware": 30,
+    "reason": "n_benign=4",
+    "status": "unsupported"
+  },
+  "weights": {
+    "l0:brand_claim": {
+      "B": 4,
+      "M": 640,
+      "b": 0,
+      "ben_rate": 0.0,
+      "ben_rate_ci95": [
+        0.0,
+        0.4448
+      ],
+      "benign_needed_for_positive_weight": 30,
+      "category": "phishing_impersonation",
+      "degenerate": false,
+      "discrimination": 0.0156,
+      "m": 10,
+      "mal_rate": 0.0156,
+      "scopes": {},
+      "support": "unsupported",
+      "w": -1.8979,
+      "w_raw": -1.8979
+    },
+    "l0:cert_anomaly:absurd_validity": {
+      "B": 4,
+      "M": 640,
+      "b": 0,
+      "ben_rate": 0.0,
+      "ben_rate_ci95": [
+        0.0,
+        0.4448
+      ],
+      "benign_needed_for_positive_weight": 9,
+      "category": "certificate_anomaly",
+      "degenerate": false,
+      "discrimination": 0.05,
+      "m": 32,
+      "mal_rate": 0.05,
+      "scopes": {},
+      "support": "unsupported",
+      "w": -0.7325,
+      "w_raw": -0.7325
+    },
+    "l0:cert_anomaly:aosp_test_key": {
+      "B": 4,
+      "M": 640,
+      "b": 0,
+      "ben_rate": 0.0,
+      "ben_rate_ci95": [
+        0.0,
+        0.4448
+      ],
+      "benign_needed_for_positive_weight": 2,
+      "category": "certificate_anomaly",
+      "degenerate": false,
+      "discrimination": 0.2094,
+      "m": 134,
+      "mal_rate": 0.2094,
+      "scopes": {},
+      "support": "unsupported",
+      "w": 0.8713,
+      "w_raw": 0.8713
+    },
+    "l0:cert_anomaly:debug_keystore": {
+      "B": 4,
+      "M": 640,
+      "b": 0,
+      "ben_rate": 0.0,
+      "ben_rate_ci95": [
+        0.0,
+        0.4448
+      ],
+      "benign_needed_for_positive_weight": 4,
+      "category": "certificate_anomaly",
+      "degenerate": true,
+      "discrimination": 0.1,
+      "m": 64,
+      "mal_rate": 0.1,
+      "scopes": {},
+      "support": "unsupported",
+      "w": 0.0069,
+      "w_raw": 0.0069
+    },
+    "l0:cert_anomaly:empty_dn": {
+      "B": 4,
+      "M": 640,
+      "b": 0,
+      "ben_rate": 0.0,
+      "ben_rate_ci95": [
+        0.0,
+        0.4448
+      ],
+      "benign_needed_for_positive_weight": 30,
+      "category": "certificate_anomaly",
+      "degenerate": false,
+      "discrimination": 0.0156,
+      "m": 10,
+      "mal_rate": 0.0156,
+      "scopes": {},
+      "support": "unsupported",
+      "w": -1.8979,
+      "w_raw": -1.8979
+    },
+    "l0:cert_anomaly:placeholder_dn": {
+      "B": 4,
+      "M": 640,
+      "b": 0,
+      "ben_rate": 0.0,
+      "ben_rate_ci95": [
+        0.0,
+        0.4448
+      ],
+      "benign_needed_for_positive_weight": 14,
+      "category": "certificate_anomaly",
+      "degenerate": false,
+      "discrimination": 0.0344,
+      "m": 22,
+      "mal_rate": 0.0344,
+      "scopes": {},
+      "support": "unsupported",
+      "w": -1.1166,
+      "w_raw": -1.1166
+    },
+    "l0:cert_anomaly:vendor_claiming_dn": {
+      "B": 4,
+      "M": 640,
+      "b": 0,
+      "ben_rate": 0.0,
+      "ben_rate_ci95": [
+        0.0,
+        0.4448
+      ],
+      "benign_needed_for_positive_weight": 2,
+      "category": "certificate_anomaly",
+      "degenerate": false,
+      "discrimination": 0.2422,
+      "m": 155,
+      "mal_rate": 0.2422,
+      "scopes": {},
+      "support": "unsupported",
+      "w": 1.0587,
+      "w_raw": 1.0587
+    },
+    "l0:sms_trifecta": {
+      "B": 4,
+      "M": 640,
+      "b": 0,
+      "ben_rate": 0.0,
+      "ben_rate_ci95": [
+        0.0,
+        0.4448
+      ],
+      "benign_needed_for_positive_weight": 1,
+      "category": "sms_intercept",
+      "degenerate": false,
+      "discrimination": 0.3641,
+      "m": 233,
+      "mal_rate": 0.3641,
+      "scopes": {},
+      "support": "unsupported",
+      "w": 1.6404,
+      "w_raw": 1.6404
+    },
+    "l0:verdict:impersonation_likely": {
+      "B": 4,
+      "M": 640,
+      "b": 0,
+      "ben_rate": 0.0,
+      "ben_rate_ci95": [
+        0.0,
+        0.4448
+      ],
+      "benign_needed_for_positive_weight": 33,
+      "category": "other",
+      "degenerate": false,
+      "discrimination": 0.0141,
+      "m": 9,
+      "mal_rate": 0.0141,
+      "scopes": {},
+      "support": "unsupported",
+      "w": -1.9996,
+      "w_raw": -1.9996
+    },
+    "l0:verdict:impersonation_suspected": {
+      "B": 4,
+      "M": 640,
+      "b": 0,
+      "ben_rate": 0.0,
+      "ben_rate_ci95": [
+        0.0,
+        0.4448
+      ],
+      "benign_needed_for_positive_weight": 4,
+      "category": "other",
+      "degenerate": true,
+      "discrimination": 0.1031,
+      "m": 66,
+      "mal_rate": 0.1031,
+      "scopes": {},
+      "support": "unsupported",
+      "w": 0.0409,
+      "w_raw": 0.0409
+    },
+    "l0:verdict:suspicious": {
+      "B": 4,
+      "M": 640,
+      "b": 0,
+      "ben_rate": 0.0,
+      "ben_rate_ci95": [
+        0.0,
+        0.4448
+      ],
+      "benign_needed_for_positive_weight": 1,
+      "category": "other",
+      "degenerate": false,
+      "discrimination": 0.4266,
+      "m": 273,
+      "mal_rate": 0.4266,
+      "scopes": {},
+      "support": "unsupported",
+      "w": 1.9018,
+      "w_raw": 1.9018
+    },
+    "l0:verdict:unknown": {
+      "B": 4,
+      "M": 640,
+      "b": 4,
+      "ben_rate": 1.0,
+      "ben_rate_ci95": [
+        0.5552,
+        1.0
+      ],
+      "benign_needed_for_positive_weight": 1,
+      "category": "other",
+      "degenerate": false,
+      "discrimination": -0.5437,
+      "m": 292,
+      "mal_rate": 0.4562,
+      "scopes": {},
+      "support": "unsupported",
+      "w": -2.3724,
+      "w_raw": -2.3724
+    },
+    "yara:APK_Anomalous_Multiple_DEX_Files": {
+      "B": 4,
+      "M": 640,
+      "b": 2,
+      "ben_rate": 0.5,
+      "ben_rate_ci95": [
+        0.1228,
+        0.8772
+      ],
+      "benign_needed_for_positive_weight": 58,
+      "category": "other",
+      "degenerate": false,
+      "discrimination": -0.4922,
+      "m": 5,
+      "mal_rate": 0.0078,
+      "scopes": {
+        "apk_member": 2,
+        "container": 3,
+        "dex_class": 2
+      },
+      "support": "unsupported",
+      "w": -3.0,
+      "w_raw": -4.7497
+    },
+    "yara:APK_Anomalous_No_Certificate": {
+      "B": 4,
+      "M": 640,
+      "b": 0,
+      "ben_rate": 0.0,
+      "ben_rate_ci95": [
+        0.0,
+        0.4448
+      ],
+      "benign_needed_for_positive_weight": 71,
+      "category": "other",
+      "degenerate": false,
+      "discrimination": 0.0063,
+      "m": 4,
+      "mal_rate": 0.0063,
+      "scopes": {
+        "apk_member": 1,
+        "container": 2,
+        "dex_class": 1
+      },
+      "support": "unsupported",
+      "w": -2.7547,
+      "w_raw": -2.7547
+    },
+    "yara:APK_Valid_Structure_Check": {
+      "B": 4,
+      "M": 640,
+      "b": 3,
+      "ben_rate": 0.75,
+      "ben_rate_ci95": [
+        0.2838,
+        0.9715
+      ],
+      "benign_needed_for_positive_weight": 0,
+      "category": "other",
+      "degenerate": false,
+      "discrimination": 0.2266,
+      "m": 625,
+      "mal_rate": 0.9766,
+      "scopes": {
+        "apk_member": 38,
+        "container": 632
+      },
+      "support": "unsupported",
+      "w": 2.8504,
+      "w_raw": 2.8504
+    },
+    "yara:Android_Adware_Aggressive_Ad_Injection": {
+      "B": 4,
+      "M": 640,
+      "b": 0,
+      "ben_rate": 0.0,
+      "ben_rate_ci95": [
+        0.0,
+        0.4448
+      ],
+      "benign_needed_for_positive_weight": 91,
+      "category": "overlay_attack",
+      "degenerate": false,
+      "discrimination": 0.0047,
+      "m": 3,
+      "mal_rate": 0.0047,
+      "scopes": {
+        "apk_member": 1,
+        "source": 2
+      },
+      "support": "unsupported",
+      "w": -3.0,
+      "w_raw": -3.0076
+    },
+    "yara:Android_BFSI_Accessibility_Driven_Exfil": {
+      "B": 4,
+      "M": 640,
+      "b": 0,
+      "ben_rate": 0.0,
+      "ben_rate_ci95": [
+        0.0,
+        0.4448
+      ],
+      "benign_needed_for_positive_weight": 16,
+      "category": "accessibility_abuse",
+      "degenerate": false,
+      "discrimination": 0.0297,
+      "m": 19,
+      "mal_rate": 0.0297,
+      "scopes": {
+        "apk_member": 15,
+        "dex_class": 2,
+        "source": 4
+      },
+      "support": "unsupported",
+      "w": -1.2645,
+      "w_raw": -1.2645
+    },
+    "yara:Android_BFSI_Accessibility_Overlay_Control": {
+      "B": 4,
+      "M": 640,
+      "b": 0,
+      "ben_rate": 0.0,
+      "ben_rate_ci95": [
+        0.0,
+        0.4448
+      ],
+      "benign_needed_for_positive_weight": 42,
+      "category": "accessibility_abuse",
+      "degenerate": false,
+      "discrimination": 0.0109,
+      "m": 7,
+      "mal_rate": 0.0109,
+      "scopes": {
+        "dex_class": 7,
+        "source": 7
+      },
+      "support": "unsupported",
+      "w": -2.2391,
+      "w_raw": -2.2391
+    },
+    "yara:Android_BFSI_Installed_App_Targeting": {
+      "B": 4,
+      "M": 640,
+      "b": 0,
+      "ben_rate": 0.0,
+      "ben_rate_ci95": [
+        0.0,
+        0.4448
+      ],
+      "benign_needed_for_positive_weight": 2,
+      "category": "evasion",
+      "degenerate": false,
+      "discrimination": 0.175,
+      "m": 112,
+      "mal_rate": 0.175,
+      "scopes": {
+        "apk_member": 17,
+        "dex_class": 81,
+        "source": 103
+      },
+      "support": "unsupported",
+      "w": 0.6501,
+      "w_raw": 0.6501
+    },
+    "yara:Android_BFSI_Notification_OTP_Harvest": {
+      "B": 4,
+      "M": 640,
+      "b": 0,
+      "ben_rate": 0.0,
+      "ben_rate_ci95": [
+        0.0,
+        0.4448
+      ],
+      "benign_needed_for_positive_weight": 23,
+      "category": "notification_abuse",
+      "degenerate": false,
+      "discrimination": 0.0203,
+      "m": 13,
+      "mal_rate": 0.0203,
+      "scopes": {
+        "apk_member": 3,
+        "dex_class": 1,
+        "source": 10
+      },
+      "support": "unsupported",
+      "w": -1.6418,
+      "w_raw": -1.6418
+    },
+    "yara:Android_BFSI_Overlay_Device_Profiling": {
+      "B": 4,
+      "M": 640,
+      "b": 0,
+      "ben_rate": 0.0,
+      "ben_rate_ci95": [
+        0.0,
+        0.4448
+      ],
+      "benign_needed_for_positive_weight": 91,
+      "category": "overlay_attack",
+      "degenerate": false,
+      "discrimination": 0.0047,
+      "m": 3,
+      "mal_rate": 0.0047,
+      "scopes": {
+        "dex_class": 3,
+        "source": 3
+      },
+      "support": "unsupported",
+      "w": -3.0,
+      "w_raw": -3.0076
+    },
+    "yara:Android_BFSI_SMS_Intercept_And_Forward": {
+      "B": 4,
+      "M": 640,
+      "b": 0,
+      "ben_rate": 0.0,
+      "ben_rate_ci95": [
+        0.0,
+        0.4448
+      ],
+      "benign_needed_for_positive_weight": 3,
+      "category": "sms_intercept",
+      "degenerate": false,
+      "discrimination": 0.1281,
+      "m": 82,
+      "mal_rate": 0.1281,
+      "scopes": {
+        "dex_class": 72,
+        "source": 81
+      },
+      "support": "unsupported",
+      "w": 0.2848,
+      "w_raw": 0.2848
+    },
+    "yara:Android_BFSI_SMS_Mailbox_Harvest": {
+      "B": 4,
+      "M": 640,
+      "b": 0,
+      "ben_rate": 0.0,
+      "ben_rate_ci95": [
+        0.0,
+        0.4448
+      ],
+      "benign_needed_for_positive_weight": 4,
+      "category": "sms_intercept",
+      "degenerate": true,
+      "discrimination": 0.1172,
+      "m": 75,
+      "mal_rate": 0.1172,
+      "scopes": {
+        "dex_class": 65,
+        "source": 60
+      },
+      "support": "unsupported",
+      "w": 0.1836,
+      "w_raw": 0.1836
+    },
+    "yara:Android_BFSI_SMS_Suppression": {
+      "B": 4,
+      "M": 640,
+      "b": 0,
+      "ben_rate": 0.0,
+      "ben_rate_ci95": [
+        0.0,
+        0.4448
+      ],
+      "benign_needed_for_positive_weight": 2,
+      "category": "sms_intercept",
+      "degenerate": false,
+      "discrimination": 0.1953,
+      "m": 125,
+      "mal_rate": 0.1953,
+      "scopes": {
+        "dex_class": 125,
+        "source": 125
+      },
+      "support": "unsupported",
+      "w": 0.7844,
+      "w_raw": 0.7844
+    },
+    "yara:Android_Banking_Generic_OverlayEngine": {
+      "B": 4,
+      "M": 640,
+      "b": 0,
+      "ben_rate": 0.0,
+      "ben_rate_ci95": [
+        0.0,
+        0.4448
+      ],
+      "benign_needed_for_positive_weight": 71,
+      "category": "overlay_attack",
+      "degenerate": false,
+      "discrimination": 0.0063,
+      "m": 4,
+      "mal_rate": 0.0063,
+      "scopes": {
+        "source": 4
+      },
+      "support": "unsupported",
+      "w": -2.7547,
+      "w_raw": -2.7547
+    },
+    "yara:Android_Clipboard_Hijacker": {
+      "B": 4,
+      "M": 640,
+      "b": 0,
+      "ben_rate": 0.0,
+      "ben_rate_ci95": [
+        0.0,
+        0.4448
+      ],
+      "benign_needed_for_positive_weight": 49,
+      "category": "clipboard_hijack",
+      "degenerate": false,
+      "discrimination": 0.0094,
+      "m": 6,
+      "mal_rate": 0.0094,
+      "scopes": {
+        "apk_member": 2,
+        "dex_class": 4,
+        "source": 4
+      },
+      "support": "unsupported",
+      "w": -2.3838,
+      "w_raw": -2.3838
+    },
+    "yara:Android_Crypto_StaticIV": {
+      "B": 4,
+      "M": 640,
+      "b": 1,
+      "ben_rate": 0.25,
+      "ben_rate_ci95": [
+        0.0285,
+        0.7162
+      ],
+      "benign_needed_for_positive_weight": 1,
+      "category": "other",
+      "degenerate": false,
+      "discrimination": 0.0,
+      "m": 160,
+      "mal_rate": 0.25,
+      "scopes": {
+        "source": 163
+      },
+      "support": "unsupported",
+      "w": -0.2492,
+      "w_raw": -0.2492
+    },
+    "yara:Android_Crypto_WeakAlgorithm": {
+      "B": 4,
+      "M": 640,
+      "b": 1,
+      "ben_rate": 0.25,
+      "ben_rate_ci95": [
+        0.0285,
+        0.7162
+      ],
+      "benign_needed_for_positive_weight": 4,
+      "category": "other",
+      "degenerate": false,
+      "discrimination": -0.1469,
+      "m": 66,
+      "mal_rate": 0.1031,
+      "scopes": {
+        "apk_member": 1,
+        "dex_class": 64,
+        "source": 66
+      },
+      "support": "unsupported",
+      "w": -1.309,
+      "w_raw": -1.309
+    },
+    "yara:Android_Dropper_Download_And_Execute": {
+      "B": 4,
+      "M": 640,
+      "b": 0,
+      "ben_rate": 0.0,
+      "ben_rate_ci95": [
+        0.0,
+        0.4448
+      ],
+      "benign_needed_for_positive_weight": 33,
+      "category": "native_payload",
+      "degenerate": false,
+      "discrimination": 0.0141,
+      "m": 9,
+      "mal_rate": 0.0141,
+      "scopes": {
+        "source": 9
+      },
+      "support": "unsupported",
+      "w": -1.9996,
+      "w_raw": -1.9996
+    },
+    "yara:Android_Dropper_Encrypted_Payload_Stage1": {
+      "B": 4,
+      "M": 640,
+      "b": 0,
+      "ben_rate": 0.0,
+      "ben_rate_ci95": [
+        0.0,
+        0.4448
+      ],
+      "benign_needed_for_positive_weight": 213,
+      "category": "native_payload",
+      "degenerate": false,
+      "discrimination": 0.0016,
+      "m": 1,
+      "mal_rate": 0.0016,
+      "scopes": {
+        "apk_member": 1
+      },
+      "support": "unsupported",
+      "w": -3.0,
+      "w_raw": -3.858
+    },
+    "yara:Android_Dynamic_CodeLoading": {
+      "B": 4,
+      "M": 640,
+      "b": 0,
+      "ben_rate": 0.0,
+      "ben_rate_ci95": [
+        0.0,
+        0.4448
+      ],
+      "benign_needed_for_positive_weight": 1,
+      "category": "other",
+      "degenerate": false,
+      "discrimination": 0.2625,
+      "m": 168,
+      "mal_rate": 0.2625,
+      "scopes": {
+        "apk_member": 17,
+        "dex_class": 165,
+        "source": 166
+      },
+      "support": "unsupported",
+      "w": 1.1661,
+      "w_raw": 1.1661
+    },
+    "yara:Android_Evasion_Dynamic_Loading_DexClassLoader": {
+      "B": 4,
+      "M": 640,
+      "b": 0,
+      "ben_rate": 0.0,
+      "ben_rate_ci95": [
+        0.0,
+        0.4448
+      ],
+      "benign_needed_for_positive_weight": 42,
+      "category": "evasion",
+      "degenerate": false,
+      "discrimination": 0.0109,
+      "m": 7,
+      "mal_rate": 0.0109,
+      "scopes": {
+        "source": 7
+      },
+      "support": "unsupported",
+      "w": -2.2391,
+      "w_raw": -2.2391
+    },
+    "yara:Android_Evasion_Root_Detection_Bypass": {
+      "B": 4,
+      "M": 640,
+      "b": 0,
+      "ben_rate": 0.0,
+      "ben_rate_ci95": [
+        0.0,
+        0.4448
+      ],
+      "benign_needed_for_positive_weight": 213,
+      "category": "evasion",
+      "degenerate": false,
+      "discrimination": 0.0016,
+      "m": 1,
+      "mal_rate": 0.0016,
+      "scopes": {
+        "dex_class": 1,
+        "source": 1
+      },
+      "support": "unsupported",
+      "w": -3.0,
+      "w_raw": -3.858
+    },
+    "yara:Android_Evasion_String_Obfuscation_Encryption": {
+      "B": 4,
+      "M": 640,
+      "b": 0,
+      "ben_rate": 0.0,
+      "ben_rate_ci95": [
+        0.0,
+        0.4448
+      ],
+      "benign_needed_for_positive_weight": 213,
+      "category": "packing_obfuscation",
+      "degenerate": false,
+      "discrimination": 0.0016,
+      "m": 1,
+      "mal_rate": 0.0016,
+      "scopes": {
+        "source": 1
+      },
+      "support": "unsupported",
+      "w": -3.0,
+      "w_raw": -3.858
+    },
+    "yara:Android_Notification_Listener_Abuse": {
+      "B": 4,
+      "M": 640,
+      "b": 0,
+      "ben_rate": 0.0,
+      "ben_rate_ci95": [
+        0.0,
+        0.4448
+      ],
+      "benign_needed_for_positive_weight": 128,
+      "category": "notification_abuse",
+      "degenerate": false,
+      "discrimination": 0.0031,
+      "m": 2,
+      "mal_rate": 0.0031,
+      "scopes": {
+        "dex_class": 1,
+        "source": 2
+      },
+      "support": "unsupported",
+      "w": -3.0,
+      "w_raw": -3.3456
+    },
+    "yara:Android_SSL_TrustAll": {
+      "B": 4,
+      "M": 640,
+      "b": 1,
+      "ben_rate": 0.25,
+      "ben_rate_ci95": [
+        0.0285,
+        0.7162
+      ],
+      "benign_needed_for_positive_weight": 2,
+      "category": "other",
+      "degenerate": false,
+      "discrimination": -0.0391,
+      "m": 135,
+      "mal_rate": 0.2109,
+      "scopes": {
+        "dex_class": 69,
+        "source": 137
+      },
+      "support": "unsupported",
+      "w": -0.4693,
+      "w_raw": -0.4693
+    },
+    "yara:Android_Screen_Recording_RAT": {
+      "B": 4,
+      "M": 640,
+      "b": 0,
+      "ben_rate": 0.0,
+      "ben_rate_ci95": [
+        0.0,
+        0.4448
+      ],
+      "benign_needed_for_positive_weight": 10,
+      "category": "screen_capture",
+      "degenerate": false,
+      "discrimination": 0.0453,
+      "m": 29,
+      "mal_rate": 0.0453,
+      "scopes": {
+        "dex_class": 29,
+        "source": 29
+      },
+      "support": "unsupported",
+      "w": -0.8343,
+      "w_raw": -0.8343
+    },
+    "yara:Android_Secrets_Hardcoded": {
+      "B": 4,
+      "M": 640,
+      "b": 4,
+      "ben_rate": 1.0,
+      "ben_rate_ci95": [
+        0.5552,
+        1.0
+      ],
+      "benign_needed_for_positive_weight": 0,
+      "category": "other",
+      "degenerate": false,
+      "discrimination": -0.4187,
+      "m": 372,
+      "mal_rate": 0.5813,
+      "scopes": {
+        "apk_member": 34,
+        "dex_class": 70,
+        "source": 371
+      },
+      "support": "unsupported",
+      "w": -1.8698,
+      "w_raw": -1.8698
+    },
+    "yara:Android_Spyware_Microphone_Camera_Access": {
+      "B": 4,
+      "M": 640,
+      "b": 0,
+      "ben_rate": 0.0,
+      "ben_rate_ci95": [
+        0.0,
+        0.4448
+      ],
+      "benign_needed_for_positive_weight": 27,
+      "category": "data_exfiltration",
+      "degenerate": false,
+      "discrimination": 0.0172,
+      "m": 11,
+      "mal_rate": 0.0172,
+      "scopes": {
+        "dex_class": 11,
+        "source": 11
+      },
+      "support": "unsupported",
+      "w": -1.8054,
+      "w_raw": -1.8054
+    },
+    "yara:Android_Storage_WorldReadable": {
+      "B": 4,
+      "M": 640,
+      "b": 0,
+      "ben_rate": 0.0,
+      "ben_rate_ci95": [
+        0.0,
+        0.4448
+      ],
+      "benign_needed_for_positive_weight": 71,
+      "category": "other",
+      "degenerate": false,
+      "discrimination": 0.0063,
+      "m": 4,
+      "mal_rate": 0.0063,
+      "scopes": {
+        "dex_class": 3,
+        "source": 4
+      },
+      "support": "unsupported",
+      "w": -2.7547,
+      "w_raw": -2.7547
+    },
+    "yara:Android_Suspicious_Dangerous_Permissions_Cluster": {
+      "B": 4,
+      "M": 640,
+      "b": 0,
+      "ben_rate": 0.0,
+      "ben_rate_ci95": [
+        0.0,
+        0.4448
+      ],
+      "benign_needed_for_positive_weight": 2,
+      "category": "other",
+      "degenerate": false,
+      "discrimination": 0.2484,
+      "m": 159,
+      "mal_rate": 0.2484,
+      "scopes": {
+        "apk_member": 151,
+        "dex_class": 19,
+        "source": 33
+      },
+      "support": "unsupported",
+      "w": 1.0924,
+      "w_raw": 1.0924
+    },
+    "yara:Android_Suspicious_Network_Communication": {
+      "B": 4,
+      "M": 640,
+      "b": 0,
+      "ben_rate": 0.0,
+      "ben_rate_ci95": [
+        0.0,
+        0.4448
+      ],
+      "benign_needed_for_positive_weight": 213,
+      "category": "c2_communication",
+      "degenerate": false,
+      "discrimination": 0.0016,
+      "m": 1,
+      "mal_rate": 0.0016,
+      "scopes": {
+        "source": 1
+      },
+      "support": "unsupported",
+      "w": -3.0,
+      "w_raw": -3.858
+    },
+    "yara:Android_Telegram_WhatsApp_C2": {
+      "B": 4,
+      "M": 640,
+      "b": 0,
+      "ben_rate": 0.0,
+      "ben_rate_ci95": [
+        0.0,
+        0.4448
+      ],
+      "benign_needed_for_positive_weight": 71,
+      "category": "messaging_c2",
+      "degenerate": false,
+      "discrimination": 0.0063,
+      "m": 4,
+      "mal_rate": 0.0063,
+      "scopes": {
+        "apk_member": 1,
+        "dex_class": 3
+      },
+      "support": "unsupported",
+      "w": -2.7547,
+      "w_raw": -2.7547
+    },
+    "yara:Android_WebView_JavaScriptEnabled": {
+      "B": 4,
+      "M": 640,
+      "b": 3,
+      "ben_rate": 0.75,
+      "ben_rate_ci95": [
+        0.2838,
+        0.9715
+      ],
+      "benign_needed_for_positive_weight": 1,
+      "category": "other",
+      "degenerate": false,
+      "discrimination": -0.3109,
+      "m": 281,
+      "mal_rate": 0.4391,
+      "scopes": {
+        "apk_member": 15,
+        "dex_class": 284,
+        "source": 286
+      },
+      "support": "unsupported",
+      "w": -1.0919,
+      "w_raw": -1.0919
+    },
+    "yara:Android_WebView_JavascriptInterface": {
+      "B": 4,
+      "M": 640,
+      "b": 2,
+      "ben_rate": 0.5,
+      "ben_rate_ci95": [
+        0.1228,
+        0.8772
+      ],
+      "benign_needed_for_positive_weight": 1,
+      "category": "other",
+      "degenerate": false,
+      "discrimination": -0.2375,
+      "m": 168,
+      "mal_rate": 0.2625,
+      "scopes": {
+        "apk_member": 29,
+        "dex_class": 154,
+        "source": 156
+      },
+      "support": "unsupported",
+      "w": -1.0311,
+      "w_raw": -1.0311
+    }
+  }
+}

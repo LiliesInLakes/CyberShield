@@ -48,3 +48,7 @@ tools/frida-server
 
 # Live malware corpus — NEVER commit. Samples stay password-zipped at rest.
 corpus/
+
+# A4 outputs are regenerable from the spines; the frozen baselines are not.
+L5/weights/
+docs/reports/
