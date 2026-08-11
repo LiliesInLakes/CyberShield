@@ -25,6 +25,8 @@ from engines.jadx_analyze import analyze as jadx_analyze  # noqa: E402
 from engines.ghidra_analyze import analyze as ghidra_analyze  # noqa: E402
 from engines.combo_analyze import analyze as combo_analyze  # noqa: E402
 from engines.yara_scan import scan_apk, merge_findings, ruleset_version  # noqa: E402
+from engines.ioc_extract import extract_from_apk as extract_iocs  # noqa: E402
+from engines.ioc_extract import summarise as ioc_summary  # noqa: E402
 import spine  # noqa: E402
 
 ARTIFACTS = L1_DIR / "artifacts"
@@ -86,6 +88,18 @@ def dispatch(apk_path: str | Path, l0_artifacts: Path | None = None,
     report.summary["categories"] = sorted({f.category.value for f in report.findings})
     report.summary["ruleset_version"] = ruleset_version()
 
+    # Blockable indicators. Deliberately NOT findings: an IOC is not a detection.
+    # A benign app contacting a domain is normal, so these never contribute to
+    # `counts.*` or to a score — they are what L6 exports once a sample has
+    # already been judged, and what the LLM is forbidden to invent (main.tex §3.3).
+    try:
+        iocs = extract_iocs(apk_path)
+    except Exception as exc:  # noqa: BLE001
+        iocs = []
+        report.summary["ioc_error"] = f"{type(exc).__name__}: {str(exc)[:120]}"
+    report.artifacts["iocs"] = [i.to_dict() for i in iocs]
+    report.summary.update(ioc_summary(iocs))
+
     out = artifacts_root / sha / "analysis.json"
     report.write(out)
 
@@ -113,6 +127,8 @@ def dispatch(apk_path: str | Path, l0_artifacts: Path | None = None,
             "ghidra_available": report.summary.get("ghidra_available", False),
             "ghidra_attempted": report.summary.get("ghidra_attempted", False),
             "ghidra_ok": report.summary.get("ghidra_ok", False),
+            "ioc_count": report.summary.get("ioc_count", 0),
+            "ioc_types": report.summary.get("ioc_types", {}),
         },
         gaps=gaps,
         artifact=out,
