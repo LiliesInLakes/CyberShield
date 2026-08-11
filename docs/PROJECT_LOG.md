@@ -1518,3 +1518,65 @@ of B30 that this project has.
 | P6 | Some benign apps **will** fire malware-category rules — the 0/4 FP rate will not survive 600 apps |
 | P7 | `Android_Secrets_Hardcoded` gets `ben_rate > 0.5` and stays priced ≤ 0 |
 
+## 6.7 The evaluation harness, and two more measurements of B30
+
+`tools/evaluate.py` — score distributions, AUROC with a bootstrap interval,
+per-band operating points with Jeffreys intervals, k-fold cross-validation that
+**refits A4's weights on each training fold**, and the proposal's four-way ablation.
+
+Run against the corpus as it stands (640 malware, 4 benign), it produced two
+findings that sharpen B30 considerably.
+
+### B32 — at B = 4 the weights overfit badly, and only cross-validation shows it
+
+```
+AUROC in-sample       0.9695   95% CI [0.9293, 0.9945]
+AUROC cross-validated 0.8270   95% CI [0.6898, 0.9594]
+gap                  +0.1425
+```
+
+A4 fits its weights on the same corpus L5 is evaluated on, so an in-sample
+AUROC partly measures how well the weights memorised which rules fired on which
+malware families. **0.97 is not a result; it is the absence of a holdout.** Any
+future report that quotes an in-sample figure alone is quoting this artefact.
+The harness now prints both, always, and flags a gap above 0.05 explicitly.
+
+### B33 🔴 — the India samples currently score *worse* than generic malware
+
+```
+class                n   median      IQR
+benign               4      3.0   [ 2.0,  5.5]
+india_malware       14     16.0   [11.2, 17.5]
+malware            626     35.5   [17.0, 66.5]
+```
+
+The 14 India-targeted samples — the entire differentiator, the thing a judge
+asks to see — sit at **half** the median of generic malware. The cause is
+mechanical and already known: `l0:brand_claim` is priced at −1.90 (B30), so a
+sample carrying bank impersonation is *penalised* for it, and the India set is
+exactly the population that carries it. The differentiator is currently
+anti-correlated with the score.
+
+This is the most legible statement of why I14 blocks everything downstream.
+
+### A denominator bug, caught by writing the test
+
+The first version of this harness reported a benign denominator of **8**
+against a real one of 4: `y = 1 if malware else 0` swept the four
+intentionally-vulnerable training apps (InsecureBankv2, PIVAA, UnCrackable
+L1/L2) into the negative class. `corpus_labels.py` classifies them `excluded`
+precisely to prevent this, and the harness folded them back in.
+
+A false-positive rate is a statement about what you divided by, so doubling the
+denominator halves every FPR — silently, and in the flattering direction. They
+are now scored separately as negative controls, where the question is
+"does a deliberately insecure but non-malicious app get flagged?", and a High
+there is a defect regardless of what the benign FPR says.
+
+📉 **Two more predictions for the post-corpus re-run**, added to §6.6's list:
+
+| # | Prediction |
+|---|---|
+| P8 | `india_malware` median rises **above** the general malware median |
+| P9 | the in-sample/cross-validated AUROC gap falls below 0.05 |
+
