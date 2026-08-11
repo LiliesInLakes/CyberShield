@@ -82,6 +82,16 @@ class Bundleable:
         return self.identity.get("package") or ""
 
 
+def spine_exists(sha256: str) -> bool:
+    """Is there a real evidence record for this hash?
+
+    ``spine.load_spine`` returns a *skeleton* when the file is absent -- all
+    seven layers present with status ``not_attempted`` -- so truth-testing the
+    returned document reports every unknown hash as found. Ask the filesystem.
+    """
+    return spine.spine_path(sha256).is_file()
+
+
 def load_iocs(doc: dict[str, Any]) -> list[dict[str, Any]]:
     """Indicators live in the L1 artifact, not the spine.
 
@@ -430,10 +440,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--validate", action="store_true", help="parse STIX back")
     args = ap.parse_args(argv)
 
-    doc = spine.load_spine(args.sha256)
-    if not doc.get("layers"):
+    if not spine_exists(args.sha256):
         print(f"no spine for {args.sha256}", file=sys.stderr)
         return 1
+    doc = spine.load_spine(args.sha256)
     b = gather(doc)
 
     formats = [f.strip() for f in args.format.split(",") if f.strip() in FORMATS]

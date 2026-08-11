@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>APK Sentinel</title>
+<style>
+:root{
+  --bg:#f6f7f9; --panel:#fff; --line:#dfe3e8; --ink:#17212b; --dim:#5b6b7c;
+  --crit:#b3261e; --high:#c25a00; --med:#8a6d00; --low:#2c6e49; --info:#40566b;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#12171d; --panel:#1a2029; --line:#2c3642; --ink:#e6edf3; --dim:#93a1b0;
+  --crit:#f2645a; --high:#e08c3e; --med:#d4b036; --low:#5fbf87; --info:#8fa5bb;}}
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.55 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+     background:var(--bg);color:var(--ink)}
+header{padding:1.25rem 1.5rem;border-bottom:1px solid var(--line);background:var(--panel);
+       display:flex;align-items:baseline;gap:1rem;flex-wrap:wrap}
+h1{font-size:1.15rem;margin:0;letter-spacing:-.01em}
+.tag{font-size:.75rem;color:var(--dim)}
+main{max-width:1180px;margin:0 auto;padding:1.5rem}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+       padding:1.1rem 1.25rem;margin-bottom:1.25rem}
+h2{font-size:.95rem;margin:0 0 .8rem;color:var(--dim);text-transform:uppercase;
+   letter-spacing:.06em}
+#drop{border:2px dashed var(--line);border-radius:10px;padding:2rem;text-align:center;
+      color:var(--dim);cursor:pointer;transition:border-color .15s,background .15s}
+#drop.over{border-color:var(--info);background:color-mix(in srgb,var(--info) 8%,transparent)}
+#drop strong{color:var(--ink)}
+.steps{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:1rem}
+.step{flex:1;min-width:150px;border:1px solid var(--line);border-radius:8px;padding:.6rem .75rem}
+.step .n{font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;color:var(--dim)}
+.step .d{font-size:.85rem;margin-top:.2rem}
+.step[data-state=running]{border-color:var(--info)}
+.step[data-state=done]{border-color:var(--low)}
+.step[data-state=failed]{border-color:var(--crit)}
+.banner{background:color-mix(in srgb,var(--high) 12%,transparent);
+        border:1px solid var(--high);border-left-width:4px;border-radius:8px;
+        padding:.7rem .9rem;margin-bottom:1rem;font-size:.88rem}
+table{border-collapse:collapse;width:100%;font-size:.86rem}
+th,td{text-align:left;padding:.45rem .55rem;border-bottom:1px solid var(--line)}
+th{font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--dim)}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:color-mix(in srgb,var(--info) 8%,transparent)}
+.band{font-size:.68rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+      color:#fff;padding:.15rem .45rem;border-radius:999px}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.82em}
+.dim{color:var(--dim)}
+a.btn{display:inline-block;border:1px solid var(--line);border-radius:7px;
+      padding:.35rem .7rem;margin:.2rem .3rem .2rem 0;text-decoration:none;
+      color:var(--ink);font-size:.82rem}
+a.btn:hover{border-color:var(--info)}
+input[type=file]{display:none}
+</style>
+</head>
+<body>
+<header>
+  <h1>APK Sentinel</h1>
+  <span class="tag" id="health">…</span>
+</header>
+<main>
+  <div class="panel">
+    <h2>Analyse an APK</h2>
+    <label id="drop" for="f">
+      <strong>Drop an APK here</strong> or click to choose.<br>
+      <span class="tag">Static analysis only — nothing is executed.</span>
+    </label>
+    <input type="file" id="f" accept=".apk,application/vnd.android.package-archive">
+    <div class="steps" id="steps" hidden></div>
+    <div id="verdict"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Scored samples</h2>
+    <div id="unsupported"></div>
+    <table>
+      <thead><tr><th>Score</th><th>Band</th><th>Application</th><th>Package</th>
+        <th>Impersonates</th><th class="num">Findings</th></tr></thead>
+      <tbody id="rows"><tr><td colspan="6" class="dim">loading…</td></tr></tbody>
+    </table>
+  </div>
+</main>
+
+<script>
+const BAND = {Critical:'--crit',High:'--high',Medium:'--med',Low:'--low',Informational:'--info'};
+const el = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function bandPill(band){
+  if(!band) return '<span class="dim">—</span>';
+  const v = `var(${BAND[band] || '--info'})`;
+  return `<span class="band" style="background:${v}">${esc(band)}</span>`;
+}
+
+async function health(){
+  try{
+    const h = await (await fetch('/api/health')).json();
+    const w = h.weights || {};
+    el('health').textContent =
+      `${h.spines} evidence records · weights ${w.version || '—'}` +
+      (w.supported === false ? ' · UNSUPPORTED' : '');
+    if(w.supported === false){
+      el('unsupported').innerHTML = '<div class="banner"><strong>Scores are not '
+        + 'usable as evidence.</strong> The scoring weights were computed against a '
+        + 'benign corpus too small to support them. Findings are real; the numbers '
+        + 'are provisional.</div>';
+    }
+  }catch(e){ el('health').textContent = 'offline'; }
+}
+
+async function loadSamples(){
+  try{
+    const rows = await (await fetch('/api/samples?limit=200')).json();
+    el('rows').innerHTML = rows.length ? rows.map(r => `
+      <tr onclick="window.open('/api/report/${r.sha256}','_blank')">
+        <td class="num">${r.score ?? '<span class="dim">—</span>'}</td>
+        <td>${bandPill(r.band)}</td>
+        <td>${esc(r.app_label || '—')}</td>
+        <td class="mono dim">${esc(r.package || '—')}</td>
+        <td>${esc(r.impersonates || '')}</td>
+        <td class="num">${r.findings}</td>
+      </tr>`).join('') : '<tr><td colspan="6" class="dim">none yet</td></tr>';
+  }catch(e){
+    el('rows').innerHTML = '<tr><td colspan="6" class="dim">failed to load</td></tr>';
+  }
+}
+
+function renderSteps(job){
+  const known = ['triage','static','scoring'];
+  const byName = Object.fromEntries((job.steps||[]).map(s=>[s.name,s]));
+  el('steps').hidden = false;
+  el('steps').innerHTML = known.map(n=>{
+    const s = byName[n] || {state:'pending',detail:''};
+    const label = {triage:'L0 triage',static:'L1 static',scoring:'L5 scoring'}[n];
+    return `<div class="step" data-state="${s.state}">
+      <div class="n">${label}</div>
+      <div class="d">${esc(s.detail || s.state)}</div></div>`;
+  }).join('');
+}
+
+async function poll(jobId){
+  for(;;){
+    const job = await (await fetch('/api/job/'+jobId)).json();
+    renderSteps(job);
+    if(job.done){
+      if(job.error){
+        el('verdict').innerHTML = `<div class="banner">Analysis failed: ${esc(job.error)}</div>`;
+      }else{
+        el('verdict').innerHTML = `
+          <div style="margin-top:1rem">
+            <a class="btn" href="/api/report/${job.sha256}" target="_blank">Full report</a>
+            <a class="btn" href="/api/export/${job.sha256}/stix">STIX 2.1</a>
+            <a class="btn" href="/api/export/${job.sha256}/csv">CSV</a>
+            <a class="btn" href="/api/export/${job.sha256}/yara">YARA</a>
+            <a class="btn" href="/api/export/${job.sha256}/sigma">Sigma</a>
+          </div>`;
+        loadSamples();
+      }
+      return;
+    }
+    await new Promise(r=>setTimeout(r,700));
+  }
+}
+
+async function upload(file){
+  el('verdict').innerHTML = '';
+  const fd = new FormData();
+  fd.append('file', file);
+  const res = await fetch('/api/analyze', {method:'POST', body:fd});
+  if(!res.ok){
+    el('verdict').innerHTML =
+      `<div class="banner">${esc((await res.json()).detail || res.statusText)}</div>`;
+    return;
+  }
+  poll((await res.json()).job_id);
+}
+
+el('f').addEventListener('change', e => e.target.files[0] && upload(e.target.files[0]));
+const drop = el('drop');
+['dragenter','dragover'].forEach(t => drop.addEventListener(t, e => {
+  e.preventDefault(); drop.classList.add('over');
+}));
+['dragleave','drop'].forEach(t => drop.addEventListener(t, e => {
+  e.preventDefault(); drop.classList.remove('over');
+}));
+drop.addEventListener('drop', e => e.dataTransfer.files[0] && upload(e.dataTransfer.files[0]));
+
+health(); loadSamples();
+</script>
+</body>
+</html>

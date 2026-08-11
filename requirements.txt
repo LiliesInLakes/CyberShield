@@ -14,3 +14,10 @@ pyyaml>=6.0
 pyzipper>=0.4
 dataset>=2.0
 SQLAlchemy>=2.0
+
+# L6 — analyst service, reports and exports
+fastapi>=0.115
+uvicorn>=0.30
+python-multipart>=0.0.9
+stix2>=3.0
+Jinja2>=3.1

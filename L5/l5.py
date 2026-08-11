@@ -125,10 +125,10 @@ def main(argv: list[str] | None = None) -> int:
               file=sys.stderr)
 
     if args.sha256:
-        doc = spine.load_spine(args.sha256)
-        if not doc.get("findings") and not doc.get("layers"):
+        if not spine.spine_path(args.sha256).is_file():
             print(f"no spine for {args.sha256}", file=sys.stderr)
             return 1
+        doc = spine.load_spine(args.sha256)
         result = score_spine(doc, policy)
         write_layer(result, args.dry_run)
         print(render_explain(doc, result, policy) if args.explain
