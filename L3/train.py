@@ -90,11 +90,16 @@ def load_year(year: int, split: str, root: Path = LAMDA_BASELINE) -> YearData | 
     y = np.asarray(table.column("label").to_numpy(), dtype=np.int8)
     families = np.asarray(table.column("family").to_pylist(), dtype=object)
 
+    # Built dense as int8 (the parquet's own type, 4.5x smaller than float32
+    # while materialising a year), then converted straight to sparse float32.
+    # LightGBM's CSR path rejects integer dtypes outright — _c_float_array
+    # raises "Expected np.float32 or np.float64, met type(int8)" — so the cast
+    # has to happen somewhere, and doing it here keeps the dense peak low.
     dense = np.empty((table.num_rows, len(feat_cols)), dtype=np.int8)
     for i, col in enumerate(feat_cols):
         dense[:, i] = table.column(col).to_numpy(zero_copy_only=False)
     del table
-    X = sparse.csr_matrix(dense)
+    X = sparse.csr_matrix(dense, dtype=np.float32)
     del dense
     return YearData(year=year, X=X, y=y, families=families)
 
