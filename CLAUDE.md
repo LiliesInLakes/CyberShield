@@ -24,7 +24,7 @@ Seven layers, glued by a single evidence record:
 | **Spine** | Merged `artifacts/<sha256>/evidence.json`, stable evidence IDs | ✅ works (L0+L1 wired) |
 | **L2** Dynamic analysis | Emulator detonation, Frida hooks, mitmproxy | ❌ **non-functional** |
 | **L3** ML classifier | Calibrated maliciousness prior | ❌ not built |
-| **L4** GenAI reasoning | Verified deobfuscation + report generation | ❌ not built |
+| **L4** GenAI reasoning | Verified deobfuscation + report generation | ⚠️ provider only (`L4/provider.py`, OpenRouter free tier) |
 | **L5** Hybrid scoring | Auditable additive score + override gates | ❌ not built |
 | **L6** Output & UX | Dashboard, PDF, IOC export | ❌ not built |
 
@@ -77,6 +77,15 @@ $SENTINEL_PYTHON tools/corpus_run.py --dry-run
 $SENTINEL_PYTHON tools/corpus_run.py --match novTargetedIndianBanks
 $SENTINEL_PYTHON tools/corpus_run.py                 # everything; re-run to resume
 $SENTINEL_PYTHON tools/corpus_summary.py             # newest run's report
+
+# Benign corpus (I14) and the weights L5 spends
+$SENTINEL_PYTHON tools/fdroid_fetch.py select --n 600 && \
+$SENTINEL_PYTHON tools/fdroid_fetch.py download
+$SENTINEL_PYTHON tools/corpus_run.py --corpus-root "$SENTINEL_DATA_ROOT/fdroid/apks" \
+                                     --source loose --label benign_fdroid
+$SENTINEL_PYTHON tools/corpus_labels.py build --benign-root "$SENTINEL_DATA_ROOT/fdroid/apks" \
+                                              --benign-id benign_fdroid
+$SENTINEL_PYTHON tools/rule_firing_report.py         # A4 — read the support stamp (T24)
 
 # Disk. corpus_run disposes of jadx_src itself; direct l1.py runs do not (T18).
 $SENTINEL_PYTHON tools/reclaim_disk.py --dry-run
@@ -171,6 +180,10 @@ Each of these cost real time. Do not rediscover them.
 | **T21** | **A dex is the whole app concatenated — scan it per class.** Whole-dex scanning is T2's batch-blob bug one level down: it made an expense tracker match an OTP stealer *and* a ransomware rule. Conjunction only means something inside one class. |
 | **T22** | **A dex stores API calls as invoke operands, not string literals.** A per-class buffer of names + `const-string` only found **0 of 4** SMS APIs in a confirmed SMS trojan; adding invoke/field operands found all four. |
 | **T23** | **`AccessibilityService` is a ~100% base-rate token** — present in 4/4 benign apps, exactly like `self_signed` (T6). Never key an accessibility rule on it alone; require a combination. |
+| **T24** | 🔴 **At `n_benign = 4` the computed weights are sign-inverted, not merely imprecise.** A4 prices **32 of 45 signals negative** — as evidence of being *benign* — including `l0:brand_claim`, the differentiator, at **−1.90**. The top-weighted signal in the system is `APK_Valid_Structure_Check` (+2.85), i.e. "is a well-formed ZIP". The Jeffreys 95% upper bound on 0/4 is **0.445**, so every historical "0/4 benign false positives" claim means "somewhere between 0% and 44%". The requirement is closed-form: with `b=0`, `w>0` iff `B > 0.5·(M−m+0.5)/(m+0.5) − 0.5`, so **B ≥ 213**. Never quote a weight without its support stamp. |
+| **T25** | **A dead rule that self-matches is not broken.** Compile a rule alone against a buffer of its own declared strings: if it fires, its condition is fine and the *corpus* lacks the vocabulary co-located in one class. All 18 dead rules pass this test (B31), refuting the "stripped/malformed" hypothesis. Conflating "rule is wrong" with "behaviour is absent here" sends you rewriting rules that were never wrong. |
+| **T26** | **The LLM will confidently mis-decode a string, and RAG cannot catch it.** In model selection, `north-mini-code` decoded `aHR0cDovLzE5Mi4xNjguMS4xMDAvZ2F0ZS5waHA=` as `.../get.php`; it is `gate.php`. Retrieval grounds claims about the *threat landscape*, not about *this sample*. Anything a decoder, parser or hash can settle must be verified mechanically before it reaches a report. |
+| **T27** | **F-Droid cannot validate the accessibility or BFSI rule classes.** Measured across all 4178 packages: **5** declare an accessibility service, **79** declare any SMS permission, and **zero** are commercial banking apps. It is also entirely F-Droid/developer-signed, so `certificate_anomaly` is ~0 by construction and any cert weight measured against it is an **upper bound**. Growing B fixes the arithmetic (T24); it does not make these rule classes tested. |
 
 ---
 

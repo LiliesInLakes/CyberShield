@@ -1326,4 +1326,157 @@ Ranked by (value ÷ cost). Items are promoted into a phase plan when picked up.
 
 ---
 
-_Last updated: 2026-08-09_
+
+# Part 6 — Workstream A4, pricing the signals (2026-08-11)
+
+Build order from §1.6 is `A4 → L5 + L6-minimal → L3 → L2 → L4`. This part covers
+Phase 0 (foundations), A4 itself, and the benign-corpus work A4 turned out to
+require *before* its numbers mean anything.
+
+## 6.0 Foundations
+
+- **Baseline frozen.** The entire A1/A2/A3/A5/A6/B1 body of work had accumulated
+  untracked — `spine.py`, all of `tests/`, `L0/{certinfo,impersonation,promote}.py`,
+  `apk_bfsi_primitives.yar`, both corpus tools, `CLAUDE.md`, `docs/plans/`. Committed
+  as-is on branch `pipeline-l2-l6`, tagged `baseline-post-B1`. The working agreement
+  says *freeze a baseline before touching a detector*; there was nothing to diff against.
+  Also caught: `tools/android-sdk/` (8.7 GB) and `tools/frida-server` (107 MB) were
+  untracked **and** unignored.
+- **897 MB reclaimed**, and T18 re-attributed. `corpus_run.py`'s disposal is not the
+  leak — it reclaims correctly and the 703-sample run left no residue. The residue is
+  from running `L1/l1.py` directly, which has no disposal policy *by design*: a manual
+  run is usually one you want the sources for. Fix is `tools/reclaim_disk.py`, a sweeper
+  you point at the residue, not a behaviour change that would sabotage debugging.
+- **`SENTINEL_DATA_ROOT`** → `/mnt/SharedData` (276 GB free, vs 14 GB on `/`).
+  Benchmarked before adopting, because ntfs-3g runs through FUSE: androguard full-parse
+  of a 46 MB APK is **1.22× ext4**. Negligible.
+
+## 6.1 🔴 Finding B30 — at n_benign = 4, the weights are not merely weak, they are inverted
+
+A4 (`tools/rule_firing_report.py`) was run at the corpus as it stood: **640 malware,
+4 benign**. The result is not "wide error bars". It is a sign error across most of
+the ruleset.
+
+| weight | m/M | b/B | signal |
+|---:|---:|---:|---|
+| **+2.85** | 625/640 | 3/4 | `yara:APK_Valid_Structure_Check` |
+| +1.90 | 273/640 | 0/4 | `l0:verdict:suspicious` |
+| +1.64 | 233/640 | 0/4 | `l0:sms_trifecta` |
+| … | | | |
+| −1.26 | 19/640 | 0/4 | `yara:Android_BFSI_Accessibility_Driven_Exfil` |
+| **−1.90** | 10/640 | 0/4 | **`l0:brand_claim`** |
+| −2.38 | 6/640 | 0/4 | `yara:Android_Clipboard_Hijacker` |
+| −3.00 (raw −3.86) | 1/640 | 0/4 | `yara:Android_Dropper_Encrypted_Payload_Stage1` |
+
+**32 of 45 signals are priced negative** — as evidence of being *benign*. The
+highest-weighted signal in the entire system is "is a well-formed ZIP". And
+`l0:brand_claim` — the bank-impersonation signal that is this project's whole
+differentiator — prices at **−1.90**.
+
+This is not a defect in the formula; it is the formula reporting, correctly, that
+the benign denominator carries no information. The Jeffreys 95% upper bound on a
+benign rate of 0/4 is **0.445**: *"zero false positives"* over four apps is
+statistically consistent with a rule that fires on 44% of benign software. Every
+previous claim of `0/4 benign false positives` in this log should be read with
+that interval attached.
+
+**The size requirement is closed-form, not a guess.** With `b = 0`, the weight is
+positive iff
+
+```
+B  >  0.5 · (M − m + 0.5)/(m + 0.5) − 0.5
+```
+
+| rule prevalence `m` (of M = 640) | benign apps needed |
+|---|---:|
+| m = 125 (`SMS_Suppression`) | 2 |
+| m = 19 (`Accessibility_Driven_Exfil`) | 16 |
+| m = 6 (`Clipboard_Hijacker`) | 49 |
+| m = 1 (`Dropper_Encrypted_Payload_Stage1`) | **213** |
+
+**B ≥ 213 makes every currently-negative signal sign-correct.** Backlog item I14
+is therefore not "low priority polish" as recorded — it is a hard prerequisite for
+L5, and it has a number.
+
+Frozen as `tests/baseline/pre_I14/` so the benign corpus's effect is a diff.
+
+## 6.2 Finding B31 — none of the 18 dead rules is structurally broken
+
+The standing hypothesis (B29, and the A4 plan) was that dead rules might be
+malformed or filtered out of the ruleset they needed to be in. **Refuted, mechanically.**
+
+Each rule was compiled alone and matched against a buffer built from its own
+declared string literals. A rule that cannot match a buffer containing all of its
+own strings has a broken condition. **All 18 dead rules self-match.**
+
+So they are not broken; the corpus does not contain their vocabulary co-located in
+one class. That is a different problem with a different fix, and conflating the two
+would have sent I15 rewriting rules that were never wrong.
+
+## 6.3 The shared signal namespace
+
+`signals.py` — A4 prices signals, L5 spends them. If each derived "what signals does
+this spine carry" independently, they would drift the moment either changed, and a
+weight applied to the wrong signal is undetectable by inspection. Both import it;
+12 tests pin the vocabulary. `self_signed` is filtered defensively as well as
+upstream (T6).
+
+`corpus/labels.json` (`tools/corpus_labels.py`) — spines are keyed by sha256 and
+carry no class. Conflicts fail loudly rather than resolving silently. The four
+`vuln` apps are `excluded`, not `benign`: intentionally-vulnerable training apps
+are neither malicious nor benign-representative, and folding them into B would
+corrupt the denominator.
+
+## 6.4 The benign corpus (I14)
+
+`tools/fdroid_fetch.py`, targeting ~600 apps against the B ≥ 213 requirement.
+
+**Stratified on declared permissions, which is the point.** `index-v2.json` carries
+`manifest.usesPermission` per version, so the apps most likely to produce a false
+positive are selected *before* downloading anything. A uniform sample would be
+mostly offline utilities no banking rule could match, and 0 FPs against that would
+measure nothing.
+
+🔴 **Measured limits of this corpus, to be carried into every report derived from it:**
+
+| Limit | Consequence |
+|---|---|
+| Only **5** of 4178 F-Droid packages declare an accessibility service | `accessibility_abuse` rules stay thinly validated regardless of corpus size |
+| Only **79** declare any SMS permission | the 197-sample `sms_intercept` signal is tested against a small panel |
+| Every app is F-Droid- or developer-signed | `certificate_anomaly` ≈ 0 by construction; any cert weight is an **upper bound** |
+| Ad-SDK and tracker free by policy | packing/obfuscation/secret base rates far below a Play Store population |
+| **No commercial banking apps exist on F-Droid** | the benign set contains **none** of the app class most likely to trip a bank-impersonation rule |
+| Benign 2024–2026 vs malware 2020–2022 | part of every weight measures *era*, not malice — not separable on this corpus |
+
+The named mitigation for row 5 is a separate hard-negative panel of real BFSI APKs,
+reported separately and never merged into B. Not in scope here; recorded so the gap
+is visible rather than implied.
+
+## 6.5 L4 unblocked, and a hallucination worth keeping
+
+The proposal's LLM layer now has a working provider (`L4/provider.py`). Model chosen
+by measurement: four free models were given the same obfuscated SMS-interceptor class.
+
+| model | result |
+|---|---|
+| `nemotron-3-ultra-550b:free` | decoded the Base64 C2 URL correctly (`.../gate.php`), 7 behaviour tags, valid JSON, 30 s |
+| `north-mini-code:free` | faster (17 s), decoded the same string as `get.php` — **wrong** |
+| `gemma-4-31b-it:free` | HTTP 429, rate-limited upstream |
+| `gpt-oss-20b:free` | HTTP 400, reasoning cannot be disabled |
+
+**That `get.php` is the single most useful result of the exercise.** The model
+asserted a decoded value that `base64.b64decode` refutes in a microsecond, and no
+amount of RAG grounding would have caught it, because the claim is about *the sample*
+rather than about the threat landscape. `main.tex` §3.3 has been rewritten
+accordingly: the primary anti-hallucination control is **mechanical verification**,
+with retrieval second.
+
+**Claim discipline applied to `main.tex`.** The proposal's headline commitment was
+*"an open-weights LLM option ensures no live malware sample ever leaves the bank's
+perimeter"*. That is now false for this build: decompiled sample code goes to a
+hosted API. Rewritten to state the provider is pluggable, that the on-premise
+backend is **specified but not implemented**, and that every LLM result reported was
+produced by a hosted model. `LocalProvider` raises rather than falling back, so the
+gap cannot be mistaken for a working feature. The React dashboard claim was likewise
+corrected to the FastAPI + no-build-toolchain dashboard actually being built.
+
