@@ -38,6 +38,7 @@ rejection is recorded with a reason rather than skipped in silence.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import shutil
@@ -244,7 +245,10 @@ def analyse_one(sample: Sample, args: argparse.Namespace) -> dict[str, Any]:
         "started_at": datetime.now(timezone.utc).isoformat(),
     }
     started = time.monotonic()
-    work_dir = WORK / f"s{abs(hash(sample.key)) % 10**12}"
+    # sha1, not hash(): str.__hash__ is salted per process (PYTHONHASHSEED), so
+    # two runs pick different work dirs for the same sample and two concurrent
+    # runs can collide on one. A content-derived name is stable and unique.
+    work_dir = WORK / f"s{hashlib.sha1(sample.key.encode()).hexdigest()[:12]}"
     apk_path: Path | None = None
     sha: str | None = None
 
@@ -324,12 +328,36 @@ def analyse_one(sample: Sample, args: argparse.Namespace) -> dict[str, Any]:
 # Driver
 # ---------------------------------------------------------------------------
 
+def corpus_root(args: argparse.Namespace) -> Path:
+    return Path(getattr(args, "corpus_root", None) or RAW)
+
+
+def index_path(args: argparse.Namespace) -> Path:
+    """Resume index for this corpus.
+
+    A second corpus needs a second index: sharing one would let a benign run's
+    entries mask a malware sample with the same key, and resume would silently
+    skip it. The malware corpus keeps the original filename so existing runs
+    resume unchanged.
+    """
+    if getattr(args, "index", None):
+        return Path(args.index)
+    root = corpus_root(args).resolve()
+    if root == RAW.resolve():
+        return INDEX_PATH
+    # Prefer the label: a directory called "apks" says nothing about which
+    # corpus it holds, and these files outlive the shell that created them.
+    stem = getattr(args, "label", None) or root.name
+    return CORPUS / f"run_index_{stem}.json"
+
+
 def collect(args: argparse.Namespace) -> list[Sample]:
     samples: list[Sample] = []
+    root = corpus_root(args)
     if args.source in ("all", "zips"):
-        samples.extend(iter_zip_members(RAW))
+        samples.extend(iter_zip_members(root))
     if args.source in ("all", "loose"):
-        samples.extend(iter_loose(RAW))
+        samples.extend(iter_loose(root))
     if args.match:
         samples = [s for s in samples if args.match.lower() in s.display.lower()]
     return samples
@@ -338,6 +366,12 @@ def collect(args: argparse.Namespace) -> list[Sample]:
 def main(argv: list[str]) -> int:
     p = argparse.ArgumentParser(
         description="Batch L0+L1 over the malware corpus (safe, resumable).")
+    p.add_argument("--corpus-root", default=None,
+                   help="corpus directory to run over (default: corpus/malware_raw)")
+    p.add_argument("--index", default=None,
+                   help="resume index (default: derived from --corpus-root)")
+    p.add_argument("--label", default=None,
+                   help="class label recorded per sample; read by tools/corpus_labels.py")
     p.add_argument("--source", choices=("all", "zips", "loose"), default="all",
                    help="which population to run (default: all)")
     p.add_argument("--match", default=None,
@@ -368,12 +402,14 @@ def main(argv: list[str]) -> int:
     except Exception:  # noqa: BLE001
         pass
 
-    if not RAW.exists():
-        print(f"[corpus] no corpus at {RAW}", file=sys.stderr)
+    root = corpus_root(args)
+    idx_path = index_path(args)
+    if not root.exists():
+        print(f"[corpus] no corpus at {root}", file=sys.stderr)
         return 1
 
     samples = collect(args)
-    index = load_index(INDEX_PATH) if not args.force else {}
+    index = load_index(idx_path) if not args.force else {}
 
     import spine
     from engines.yara_scan import ruleset_version
@@ -395,6 +431,8 @@ def main(argv: list[str]) -> int:
 
     print(f"[corpus] candidates={len(samples)}  already done={done}  "
           f"remaining={remaining}  running now={len(pending)}  ruleset={rules_v}")
+    print(f"[corpus] root={root}  index={idx_path.name}"
+          + (f"  label={args.label}" if args.label else ""))
     print(f"[corpus] free disk={free_gb(REPO_ROOT):.1f} GB  keep-decompiled={args.keep_decompiled}  "
           f"jadx-timeout={args.jadx_timeout}s")
 
@@ -427,6 +465,8 @@ def main(argv: list[str]) -> int:
 
             record = analyse_one(sample, args)
             record["ruleset_version"] = rules_v
+            if args.label:
+                record["label"] = args.label
             log.write(record)
             index[sample.key] = {
                 "status": record.get("status"),
@@ -436,8 +476,13 @@ def main(argv: list[str]) -> int:
                 "compress_size": sample.compress_size,
                 "completed_at": datetime.now(timezone.utc).isoformat(),
             }
+            if args.label:
+                # The runner already knows which corpus it is running, so this
+                # is the cheapest honest source of a class label — no inference,
+                # no "everything not known benign is malware" default.
+                index[sample.key]["label"] = args.label
             if i % 10 == 0 or i == len(pending):
-                save_index(INDEX_PATH, index)
+                save_index(idx_path, index)
 
             status = record.get("status", "?")
             stats[status] = stats.get(status, 0) + 1
@@ -454,7 +499,7 @@ def main(argv: list[str]) -> int:
         interrupted = True
         print("\n[corpus] interrupted — progress saved, re-run to resume", file=sys.stderr)
     finally:
-        save_index(INDEX_PATH, index)
+        save_index(idx_path, index)
         log.close()
         shutil.rmtree(WORK, ignore_errors=True)
 
