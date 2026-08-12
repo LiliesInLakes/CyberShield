@@ -209,25 +209,59 @@ Each of these cost real time. Do not rediscover them.
 
 ---
 
-## 6.5 🔄 Work in flight (2026-08-12) — read this before starting anything
+## 6.5 ⏸️ PAUSED mid-re-measurement (2026-08-12 ~17:35) — resume here
 
-A **detached re-measurement pipeline** is running: `tools/rerun_pipeline.sh`, launched with
-`nohup`, own process group, survives a terminated session. It waits for the in-flight corpus
-run, then does benign re-run → labels → A4 → calibration → policy validation → score → evaluate,
-stopping the chain if any step fails.
+Everything was stopped **cleanly** for a reboot. Nothing is running. To pick up:
 
 ```bash
-tail -f "$SENTINEL_DATA_ROOT"/pipeline_*.log      # progress
-pgrep -f rerun_pipeline.sh                        # still alive?
+source source_env.sh
+nohup tools/rerun_pipeline.sh > "$SENTINEL_DATA_ROOT/pipeline_driver.log" 2>&1 &
+tail -f "$SENTINEL_DATA_ROOT"/pipeline_*.log
 ```
 
-**Do not start a corpus run, rebuild labels, or re-run A4 while it is alive** — the steps are
-ordered because each invalidates the next, and two writers on `corpus/labels.json` or the
-weights file will produce a measurement that describes neither state.
+That single command does the rest: benign re-run → labels → A4 → calibration → policy
+validation → score → evaluate, each step gated on the previous succeeding, ending with a
+headline block.
 
-Why it exists: `ruleset_version` moved `d3777011c971 → 26f6f6f1d646` when behaviour rules were
-stopped from matching the raw ZIP container (T28). Every number recorded before that bump was
-computed over spines containing container-scope false positives.
+### State at the pause
+
+| | |
+|---|---|
+| Malware corpus | ✅ **re-run complete** under `26f6f6f1d646` — 652 ok, findings identical to before (the predicted null result) |
+| Benign corpus | ⏸️ **71 / 600 done**, saved in `corpus/run_index_benign_fdroid.json` |
+| Everything downstream | not yet run — labels, A4, calibration, scores and evaluation are all still from *before* the T28 fix |
+
+🔴 **Resume without `--force`.** The pipeline script omits it for exactly this reason: the
+resume index already holds 71 completed samples at the right `ruleset_version`, and `--force`
+would discard them and restart from zero. The corpus runner was stopped with SIGINT precisely
+so that index flushed.
+
+### Why the re-measurement exists
+
+`ruleset_version` moved `d3777011c971 → 26f6f6f1d646` when behaviour rules were stopped from
+matching the raw ZIP container (T28). Every number currently in `docs/` and `README.md` was
+computed over spines containing container-scope false positives, so they are **stale but not
+wrong-in-kind** — malware is unaffected (verified, B38), and the change lands entirely on the
+benign side.
+
+### The comparison points are frozen, so the result will be a diff
+
+- `tests/baseline/pre_I14/` — A4 at `n_benign = 4` (32 of 45 signals negative)
+- `tests/baseline/pre_T28/` — A4 and evaluation at `B = 604`, **before** the container fix
+
+```bash
+$SENTINEL_PYTHON tools/compare_measurements.py weights \
+    tests/baseline/pre_T28/rule_weights_B604_precontainerfix.json \
+    L5/weights/rule_weights_<new>.json
+$SENTINEL_PYTHON tools/compare_measurements.py eval \
+    tests/baseline/pre_T28/evaluation_B604_precontainerfix.json \
+    docs/reports/evaluation_<new>.json
+```
+
+**Predictions recorded before the re-run** (check them, report misses):
+`accessibility_abuse` benign hits fall from 100/604 toward ~a quarter; the 34% benign
+malware-category rate falls with it; `Android_BFSI_Accessibility_Driven_Exfil` goes from −1.47
+to roughly non-negative; malware-side numbers do not move at all.
 
 ### 🔴 A decision waiting, not a task
 
