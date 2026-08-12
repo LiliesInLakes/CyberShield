@@ -1,0 +1,109 @@
+{
+  "source": "CICMalDroid 2020, APKs/Banking.tar.gz",
+  "n_apks": 2505,
+  "filename_hash_matches_content": 2413,
+  "mismatches": 92,
+  "note": "Filenames are SHA-256 but some do not match file content. Labels are bound to the COMPUTED hash, never the filename, so this cannot mislabel a sample -- but it means the dataset's own identifiers cannot be used to cross-reference other corpora.",
+  "examples": [
+    {
+      "filename_sha": "01576d7a2a47e63d6b2c977475c850f980d91e22b144de8348065c6389185be6",
+      "actual_sha": "6b769501d742157177db4784d5ed3c66834cffe891caf699faefefcc2e610597",
+      "size": 14797
+    },
+    {
+      "filename_sha": "028b9ac5a13037e4a964f7aed78464a3a923a38334a5e25ddabc176390afe1af",
+      "actual_sha": "fbd86f9261a56d07bdf015eccc463da28b1326054418e84861dca5dadf2c8d60",
+      "size": 14797
+    },
+    {
+      "filename_sha": "03767cf834df7b50898732d7eece35cf82708cc7e83fca277c5f51786f7d2812",
+      "actual_sha": "0095352c8dc1e8be577ac251d370e692d2f33965c4db038dbdd8d91b219c938a",
+      "size": 14567
+    },
+    {
+      "filename_sha": "049e8b3228024dca4cfdc26fd9dae76e01f147f7c413e99b2b94e6b9044f0234",
+      "actual_sha": "ff2be6aa9c76f265b01d37becaf81661b1736a056780d40d8b246c371e8c581b",
+      "size": 14792
+    },
+    {
+      "filename_sha": "0561f67d81d477d4ef3a3b2a7c52ffe48cfce11c37f5f54bc9b26efd714c8e30",
+      "actual_sha": "ffe64c04d97cf22ce30a3d43df9bfff084834f1b2cbaf4890f96153264a9997e",
+      "size": 206081
+    },
+    {
+      "filename_sha": "068108f3356019cf54b0bbfd916df61fc8d8a1b61c02e6c5862deec63f5bad76",
+      "actual_sha": "2305941b6f95d659d579aa05663da32468a6f261774f287000ef2b514abba73a",
+      "size": 14797
+    },
+    {
+      "filename_sha": "072cd2d9dea3fbbb378ec4207dd75195266774b71bfaea567028d935968c2139",
+      "actual_sha": "301b729fea34a56d9c62a5023dd6f1419061ff58ca46a227ce3d2301d9ca8275",
+      "size": 220764
+    },
+    {
+      "filename_sha": "0755086e94d0e11dea086684ba253eca459a88deb4e5b92f9a316ae6afb7e4d6",
+      "actual_sha": "daab373663240e785d8f7e238eb53332cf2b538f082bf49862d54d7b10388efd",
+      "size": 1377769
+    },
+    {
+      "filename_sha": "0845f3bc2a1f4244de595814ac1912fd964251e30e9a4dfdbfe5f1d64eea424c",
+      "actual_sha": "c9d6430bd278164df259d595f8c4009bc5af9f74b94cf5c1a29ce85d35f2f2d2",
+      "size": 14797
+    },
+    {
+      "filename_sha": "0880633ba23f5ad66d9f67444383f71e878661e967f0c92fe3713e53937fd734",
+      "actual_sha": "9e61722288bcc0e5a8adabb7fb73688af527d7217bf1e635832d48470068df57",
+      "size": 219999
+    },
+    {
+      "filename_sha": "08f2ef39a2073c308d57c1f467f2094b8493746b43b86c3b6891eafd4766b2f5",
+      "actual_sha": "a771539f3e3fbe1f77e855d1bcb80e86822737b680db4517f6405c3415f211bb",
+      "size": 14574
+    },
+    {
+      "filename_sha": "09a02b4e17cd871c2a5ddbed1f71b83edd46f870197e2ef503cff628a5edef33",
+      "actual_sha": "487bc139c13512971abe58687a504bdebf19b1ce437535ae0f48b192442d0718",
+      "size": 14319
+    },
+    {
+      "filename_sha": "0a984e39faffcac80cd592885b03d9d68596e4cdeee499e097377d439a1a3a40",
+      "actual_sha": "84e2437416df5329bfb26327ba9f5dbbf7af957ac7e98e91835b70a1a9b401fb",
+      "size": 14797
+    },
+    {
+      "filename_sha": "0e30b433e208791e90ea6643b684b1c8858aa5f8e999e56032be48404d4d9d23",
+      "actual_sha": "4c7ea8c907928e0751e35f22715046ffb2e20395024acc70260a692775c21727",
+      "size": 14797
+    },
+    {
+      "filename_sha": "0e3db840f3628f21b4f64539c5cf0a5ec4cd1407efcc858ad156541743d6d55b",
+      "actual_sha": "72b71891a222c619dd7f1ed9b68d3ce94a295d0fb4b9f685d65e5409b6ebee46",
+      "size": 14792
+    },
+    {
+      "filename_sha": "0f031d8a2ed2eaf70eb6fffedb9374fe897de74958d4de77d6dac8a439fd344d",
+      "actual_sha": "229748b4b8fc414df7979d966bb0bc04894ca3a1224756c0fe2788dbf6032f2a",
+      "size": 220764
+    },
+    {
+      "filename_sha": "10066f546db013018a715e09f0118a35eddbd54e6d13db48356424d3afae0ad4",
+      "actual_sha": "3bf399e9fa2a51533f9d67e090953f0efed5010b22d478e436b94e17619e2d87",
+      "size": 216974
+    },
+    {
+      "filename_sha": "1016f21beda44ccb2c2a85a5a2db8bc638c0a942854b54bbbb9614153d43e416",
+      "actual_sha": "5f5cf64bcaf2d04277ff174ed313113da9f665e04e215851e10de7be440c97d8",
+      "size": 219999
+    },
+    {
+      "filename_sha": "10d612a27cb5d65f4e435534cf0dc0750018099d263a5a4e2272cc02fcf2e3e3",
+      "actual_sha": "ffe64c04d97cf22ce30a3d43df9bfff084834f1b2cbaf4890f96153264a9997e",
+      "size": 206081
+    },
+    {
+      "filename_sha": "10ebd314effdbf6aca5777593039c430a1c1c477a34080bd55f63df20c3a4ac6",
+      "actual_sha": "27e7dfc386f6b84431b919394001974625f96dc3c28df2315fffa7c08887ef54",
+      "size": 14797
+    }
+  ]
+}

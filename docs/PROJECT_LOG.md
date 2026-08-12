@@ -1774,3 +1774,32 @@ The benign re-run is where the effect will land — `accessibility_abuse` should
 100/604 benign toward roughly a quarter of that, and the 34% benign malware-category rate
 should drop with it. Recorded before measuring.
 
+## 7.8 CICMalDroid banking set acquired — and 3.7% of it is mislabelled at the filename (B39)
+
+`APKs/Banking.tar.gz`, 3.62 GB, **2,505 APKs** plus one stray `.sh`. Filenames are SHA-256,
+which offers a free integrity check — so it was taken.
+
+```
+filename matches content : 2,413  (96.3%)
+filename does NOT match  :    92  ( 3.7%)
+mismatched sizes: 11 KB … 11.3 MB, median 206 KB
+```
+
+All 92 are valid ZIPs beginning `PK\x03\x04`, the transfer exited 0 and the tar extracted
+cleanly, so this is **provenance drift in the dataset, not a damaged download**.
+
+It costs us nothing, because `tools/corpus_labels.py:claims_from_labelled_root` hashes each
+file and binds the label to *computed content* — the filename is never trusted. That was
+written for a different reason (a label must describe the bytes, not the path) and happens to
+make this a non-event.
+
+It is not a non-event for anyone else. A pipeline that labelled by filename would carry 3.7%
+wrong labels, and those 92 samples cannot be cross-referenced against MalRadar or AndroZoo by
+the hash the dataset states. Audit written to `docs/data/cicmaldroid_hash_audit.json`.
+
+Overlap with our existing corpus: **1 sample**, already labelled `malware` — consistent, so the
+conflict check stays at zero.
+
+**Not yet registered or analysed.** The re-measurement pipeline is mid-chain; adding a corpus
+now would leave it out of the label rebuild and produce a measurement describing neither state.
+
