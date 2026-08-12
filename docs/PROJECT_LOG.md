@@ -1682,3 +1682,66 @@ were computed under the current definition.
 P5 is a corpus fact, not an error: F-Droid apps use WebViews less than a Play
 Store population would, which is T27 again.
 
+## 7.5 L3 trained, and it transfers better than expected (B36)
+
+LAMDA `Baseline`, 860,937 rows (2013–2022), LightGBM, isotonic calibration on a slice held
+out of the training years. Fitted in 93 s, 225 MB of sparse nonzeros.
+
+**The drift exhibit** — each later year scored as a held-out future:
+
+| year | n | AUROC | ECE |
+|---|---:|---:|---:|
+| 2023 | 54,354 | 0.9709 | 0.030 |
+| 2024 | 48,427 | 0.9131 | 0.006 |
+| 2025 | 44,663 | 0.8686 | 0.006 |
+
+A decay of 0.10 across three years is the concept drift LAMDA exists to expose. A model still
+at 0.97 in 2025 would mean the temporal split had leaked.
+
+**The test that actually matters** (`tools/l3_on_our_corpus.py`) — 146 of our malware and 146
+of our benign apps, features computed by our own bridge:
+
+```
+AUROC on OUR corpus   0.9115   95% CI [0.8752, 0.9454]
+  median p   malware 0.6922    benign 0.0198
+  density    malware 0.0159    benign 0.0105   (LAMDA mean 0.0254)
+```
+
+**It transfers better to our corpus than to LAMDA's own newest year.** I expected the opposite
+and said so in advance: our malware is GitHub-sourced 2020–2022, our benign is 2024–2026
+F-Droid, and the feature-vocabulary overlap is under half LAMDA's own density. The commitment
+recorded beforehand was to report weakness rather than tune around it; the result did not
+require that, which is worth stating explicitly so the commitment is not read as retrospective.
+
+**This does not license a banking claim.** LAMDA is ~99.6% non-banking, so a high probability
+means "resembles Android malware in general". The ±10 bound stays.
+
+## 7.6 Dataset research — the answer was "not for L3" (B37)
+
+Surveying training data for L3 produced a conclusion that redirected the work.
+
+| source | verdict |
+|---|---|
+| **LAMDA** | already have it; measured above; sufficient for a generic prior |
+| HuggingFace | exactly **one** ungated Android malware dataset exists, and it is LAMDA |
+| **CICMalDroid 2020** | 17,341 samples, **2,100 banking**, **raw APKs** — best fit; form-gated |
+| **MalRadar** | 4,534 expert-verified, 121 families incl. bank-stealing; Zenodo request; ⚠️ **13.3 TB** of APKs — take only `sample-info.csv` |
+| **AndroZoo** | ~25M APKs, 500k/6-month quota; **institutional email mandatory** |
+| CCCS-CIC-AndMal-2020 | 400K apps but only 887 trojan-banker, and features rather than APKs |
+| Drebin | 2014; predates every modern banking family |
+| MalwareBazaar | re-confirms R3: 1 apk + 5 xapk of 1,156 — not an Android source |
+
+**Raw APKs are the discriminator between a usable source and a dead end.** A dataset shipping
+extracted features locks a model into someone else's feature space; the L3 bridge exists
+precisely because LAMDA's vocabulary happened to be published. CICMalDroid ships APKs, so its
+samples flow through our own L0/L1/A4 path and become spines like any other.
+
+**MalRadar + AndroZoo are complementary, not alternatives.** MalRadar's CSV is a few MB of
+hashes, package names and expert family labels; AndroZoo downloads by hash. The CSV is a
+shopping list, and that combination fetches only the bank-stealing families without the
+13.3 TB.
+
+Decision: **leave L3 as it is** and build a *separate* banking classifier on the acquired data,
+with family-disjoint splits — banking families are small and tightly clustered, so a random
+split trains and tests on variants of one family and reports an AUROC that means nothing.
+
