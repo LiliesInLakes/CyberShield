@@ -1803,3 +1803,27 @@ conflict check stays at zero.
 **Not yet registered or analysed.** The re-measurement pipeline is mid-chain; adding a corpus
 now would leave it out of the label rebuild and produce a measurement describing neither state.
 
+## 7.9 CICMalDroid has no family labels — the banking classifier's split depends on MalRadar (B40)
+
+Phase C requires **family-disjoint** splits: banking families are small and tightly clustered,
+so a random split trains and tests on variants of one family and reports an AUROC that means
+nothing. The plan assumed CICMalDroid could supply the family labels. It cannot.
+
+Checked its `CSVs/CSV.zip` (7.5 MB compressed, 622 MB expanded, four files):
+
+- the only label column is `Class`, holding the **five categories** — 1 adware, 2 banking,
+  3 SMS, 4 riskware, 5 benign — and nothing finer;
+- there is **no hash, sha256, md5 or filename column in any of the four files**, so the rows
+  cannot be joined back to the APKs at all.
+
+Row counts by class match the documented set (2,100 banking), so the CSVs are internally
+consistent — they are simply not addressable. Deleted; they can add nothing we cannot compute
+ourselves from the APKs, which is why the raw archive was the right thing to take.
+
+**Consequence:** the banking classifier can be *trained* on CICMalDroid, but it cannot be
+*honestly evaluated* until family labels exist. MalRadar (121 expert-verified families,
+including bank-stealing) is the only obtainable source of them, and it is still with its access
+queue. Until then, any AUROC for a banking classifier must be reported as
+`random-split, family-disjointness unverified`, which is a weaker claim than this project
+should be making.
+
