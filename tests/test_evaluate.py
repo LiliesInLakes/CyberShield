@@ -87,3 +87,36 @@ def test_recall_and_fpr_move_in_the_expected_direction():
     fprs = [r["benign_fpr"] for r in rows]
     assert recalls == sorted(recalls, reverse=True)
     assert fprs == sorted(fprs, reverse=True)
+
+
+# --------------------------------------------------------------------------
+# Labelled-corpus import (acquired banking datasets)
+# --------------------------------------------------------------------------
+
+def test_labelled_root_carries_subclass_and_rejects_non_apks(tmp_path):
+    """`banking` is the whole reason to acquire these corpora: it lets A4 and
+    the evaluation split malware into 'after a bank' and 'not'."""
+    from tools.corpus_labels import CLASS_MALWARE, claims_from_labelled_root
+
+    (tmp_path / "real.apk").write_bytes(b"PK\x03\x04" + b"\x00" * 64)
+    (tmp_path / "fake.apk").write_bytes(b"definitely not a zip")
+    claims, src = claims_from_labelled_root(tmp_path, "cicmaldroid_banking",
+                                            CLASS_MALWARE, subclass="banking")
+    assert len(claims) == 1
+    assert claims[0].subclass == "banking"
+    assert src.cls == CLASS_MALWARE and src.n == 1
+
+
+def test_a_sample_claimed_by_two_classes_becomes_conflicted(tmp_path):
+    """An acquired corpus overlapping our benign set is plausible, and silently
+    picking a winner would corrupt the denominator the project rests on."""
+    from tools.corpus_labels import CLASS_BENIGN, CLASS_MALWARE, Claim, merge
+
+    sha = "d" * 64
+    labels, conflicts = merge([
+        Claim(sha, CLASS_MALWARE, "cicmaldroid_banking", "x.apk", subclass="banking"),
+        Claim(sha, CLASS_BENIGN, "benign_fdroid", "x.apk"),
+    ])
+    assert labels[sha]["class"] == "conflicted"
+    assert conflicts == [sha]
+    assert sorted(labels[sha]["conflicting_classes"]) == ["benign", "malware"]

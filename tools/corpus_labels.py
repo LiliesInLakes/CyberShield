@@ -199,6 +199,41 @@ def claims_from_benign_root(root: Path, source_id: str) -> tuple[list[Claim], So
     return claims, src
 
 
+def claims_from_labelled_root(root: Path, source_id: str, cls: str,
+                              subclass: str | None = None,
+                              caveats: list[str] | None = None
+                              ) -> tuple[list[Claim], Source]:
+    """Loose APKs in a directory whose class is known from its provenance.
+
+    Used for acquired corpora that arrive pre-labelled — CICMalDroid's banking
+    split, an AndroZoo pull filtered by AVClass family — where the label comes
+    from the source's own curation rather than from anything we inferred.
+
+    ``subclass`` is what makes these worth acquiring: ``banking`` lets A4 and
+    the evaluation split malware into "after a bank" and "not", which is the
+    distinction the whole project turns on and which our own corpus can only
+    make for 14 samples.
+    """
+    src = Source(id=source_id, cls=cls, evidence=f"directory listing of {root}",
+                 root=str(root), caveats=list(caveats or []))
+    claims: list[Claim] = []
+    if not root.is_dir():
+        return claims, src
+    for path in sorted(root.rglob("*")):
+        if not path.is_file():
+            continue
+        try:
+            with path.open("rb") as fh:
+                if fh.read(4) != APK_MAGIC:
+                    continue
+        except OSError:
+            continue
+        claims.append(Claim(_sha256_file(path), cls, source_id,
+                            str(path.relative_to(root)), subclass=subclass))
+    src.n = len({c.sha256 for c in claims})
+    return claims, src
+
+
 def merge(claims: list[Claim]) -> tuple[dict[str, dict[str, Any]], list[str]]:
     """Fold claims into one entry per sha256. Disagreement becomes ``conflicted``."""
     by_sha: dict[str, list[Claim]] = {}
@@ -236,6 +271,7 @@ def merge(claims: list[Claim]) -> tuple[dict[str, dict[str, Any]], list[str]]:
 
 
 def build(benign_roots: list[tuple[Path, str]] | None = None,
+          labelled_roots: list[tuple[Path, str, str, str | None]] | None = None,
           out: Path = LABELS_PATH) -> int:
     all_claims: list[Claim] = []
     sources: list[Source] = []
@@ -250,6 +286,11 @@ def build(benign_roots: list[tuple[Path, str]] | None = None,
 
     for root, source_id in benign_roots or []:
         c, s = claims_from_benign_root(root, source_id)
+        all_claims += c
+        sources.append(s)
+
+    for root, source_id, cls, subclass in labelled_roots or []:
+        c, s = claims_from_labelled_root(root, source_id, cls, subclass)
         all_claims += c
         sources.append(s)
 
@@ -328,6 +369,12 @@ def main(argv: list[str] | None = None) -> int:
                    help="directory of loose benign APKs (repeatable)")
     b.add_argument("--benign-id", action="append", default=[],
                    help="source id for the matching --benign-root")
+    b.add_argument("--malware-root", action="append", default=[],
+                   help="directory of loose APKs known to be malware (repeatable)")
+    b.add_argument("--malware-id", action="append", default=[],
+                   help="source id for the matching --malware-root")
+    b.add_argument("--malware-subclass", action="append", default=[],
+                   help="subclass for the matching --malware-root, e.g. 'banking'")
     b.add_argument("--out", default=str(LABELS_PATH))
 
     sub.add_parser("show", help="summarise the current labels file")
@@ -338,8 +385,16 @@ def main(argv: list[str] | None = None) -> int:
 
     if len(args.benign_root) != len(args.benign_id):
         ap.error("--benign-root and --benign-id must be given in matching pairs")
+    if len(args.malware_root) != len(args.malware_id):
+        ap.error("--malware-root and --malware-id must be given in matching pairs")
+    if args.malware_subclass and len(args.malware_subclass) != len(args.malware_root):
+        ap.error("--malware-subclass must match --malware-root one for one")
+
     roots = [(Path(r), i) for r, i in zip(args.benign_root, args.benign_id)]
-    return build(roots, Path(args.out))
+    subclasses = args.malware_subclass or [None] * len(args.malware_root)
+    labelled = [(Path(r), i, CLASS_MALWARE, s)
+                for r, i, s in zip(args.malware_root, args.malware_id, subclasses)]
+    return build(roots, labelled, Path(args.out))
 
 
 if __name__ == "__main__":
