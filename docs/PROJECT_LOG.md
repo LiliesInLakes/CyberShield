@@ -1745,3 +1745,32 @@ Decision: **leave L3 as it is** and build a *separate* banking classifier on the
 with family-disjoint splits — banking families are small and tightly clustered, so a random
 split trains and tests on variants of one family and reports an AUROC that means nothing.
 
+## 7.7 Container-scope fix verified mid-flight (B38)
+
+Re-running the malware corpus under `ruleset_version 26f6f6f1d646`, compared sample-for-sample
+against the previous run on 208 samples:
+
+```
+l1_findings       mean delta +0.00   (unchanged on all 208)
+malware_category  mean delta +0.00   (unchanged on all 208)
+with >=1 malware-category:  34.6% -> 34.6%
+```
+
+**Zero change is the correct result, not a null one.** The container-scope false positives were
+measured at **82 on benign and 0 on malware**, so malware was never expected to move. A change
+here would have meant the fix was doing something other than what was diagnosed.
+
+The fix itself is confirmed by what still matches at container scope in the fresh spines:
+
+```
+208  APK_Valid_Structure_Check           scope = "apk"
+  1  APK_Anomalous_Multiple_DEX_Files    scope = "apk"
+```
+
+Exactly the ZIP-structure rules, and no behaviour rule. Before the fix, 33 of 51 rules were
+compiled into the container ruleset.
+
+The benign re-run is where the effect will land — `accessibility_abuse` should fall from
+100/604 benign toward roughly a quarter of that, and the 34% benign malware-category rate
+should drop with it. Recorded before measuring.
+
