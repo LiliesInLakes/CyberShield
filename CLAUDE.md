@@ -22,11 +22,16 @@ Seven layers, glued by a single evidence record:
 | **L0** Ingestion & triage | Hashing, manifest, icon pHash, certificate, **bank-impersonation check**, routing | ✅ works |
 | **L1** Static analysis | jadx decompile + YARA (source, per-class dex, APK scopes); Ghidra for native | ⚠️ 37% malware-category detection (was 8%); **18 rules still dead** (B29) |
 | **Spine** | Merged `artifacts/<sha256>/evidence.json`, stable evidence IDs | ✅ works (L0+L1 wired) |
-| **L2** Dynamic analysis | Emulator detonation, Frida hooks, mitmproxy | ❌ **non-functional** |
-| **L3** ML classifier | Calibrated maliciousness prior | ❌ not built |
-| **L4** GenAI reasoning | Verified deobfuscation + report generation | ⚠️ provider only (`L4/provider.py`, OpenRouter free tier) |
-| **L5** Hybrid scoring | Auditable additive score + override gates | ❌ not built |
-| **L6** Output & UX | Dashboard, PDF, IOC export | ❌ not built |
+| **L2** Dynamic analysis | Emulator detonation, Frida hooks, mitmproxy | ❌ **non-functional**, not wired to the spine; AVD core-dumps (T14) |
+| **L3** ML classifier | Calibrated maliciousness prior, bounded ±10 | ⚠️ built + feature bridge verified; **no model trained yet** |
+| **L4** GenAI reasoning | Verified deobfuscation + report generation | ✅ works — OpenRouter free tier, execution verifier, $0.00/call |
+| **L5** Hybrid scoring | Auditable additive score + smoking-gun gates | ⚠️ built; **gates refuse to arm** while weights are unsupported (T24) |
+| **L6** Output & UX | Dashboard, report, IOC export | ✅ works — STIX 2.1 / CSV / YARA / Sigma, FastAPI, HTML report |
+
+🔴 **Every score the system currently emits is stamped `unsupported` and is not
+usable as evidence.** That is not a bug: A4 measured that at `n_benign = 4` the
+weights are sign-inverted (T24/B30), so L5 reports what it was given and refuses
+to arm a gate. The benign corpus is what changes this — see §7.
 
 **The differentiator is L0 bank-impersonation detection.** MobSF answers "is this app
 insecure?"; this answers "is this app pretending to be your bank, and how do we know?"
@@ -86,6 +91,21 @@ $SENTINEL_PYTHON tools/corpus_run.py --corpus-root "$SENTINEL_DATA_ROOT/fdroid/a
 $SENTINEL_PYTHON tools/corpus_labels.py build --benign-root "$SENTINEL_DATA_ROOT/fdroid/apks" \
                                               --benign-id benign_fdroid
 $SENTINEL_PYTHON tools/rule_firing_report.py         # A4 — read the support stamp (T24)
+
+# Scoring, calibration, evaluation
+$SENTINEL_PYTHON tools/fit_calibration.py --apply    # refuses below n_benign=100
+$SENTINEL_PYTHON L5/validate_policy.py               # blocks gates on unmeasured rules
+$SENTINEL_PYTHON L5/l5.py <sha256> --explain         # the audit trail
+$SENTINEL_PYTHON L5/l5.py --all                      # score every spine, idempotent
+$SENTINEL_PYTHON tools/evaluate.py --ablation --folds 5
+
+# L3 (needs ~6 GB), L4, L6
+$SENTINEL_PYTHON L3/fetch_lamda.py
+$SENTINEL_PYTHON L3/train.py --train-until 2022
+$SENTINEL_PYTHON L4/deobfuscate.py <sha256> --src L1/artifacts/<sha256>/jadx_src
+$SENTINEL_PYTHON L6/report.py <sha256> --out report.html
+$SENTINEL_PYTHON L6/export.py <sha256> --format stix,csv,yara,sigma --out-dir /tmp/x
+$SENTINEL_PYTHON -m uvicorn L6.api:app --host 127.0.0.1 --port 8000   # localhost only
 
 # Disk. corpus_run disposes of jadx_src itself; direct l1.py runs do not (T18).
 $SENTINEL_PYTHON tools/reclaim_disk.py --dry-run
@@ -244,12 +264,31 @@ separate member ruleset + per-class dex buffers + `L1/yara_templates/apk_bfsi_pr
    facts, and A4 must separate them before any weight it computes means anything.
 3. **3.8% of samples die at L0** on `ResParserError` (B26) — androguard vs malformed UTF-16
    in resource tables, which is a documented anti-analysis technique.
-4. **Rule-firing report (A4)** — per-rule fire rates read from the 648 spines via
-   `spine.iter_spines()`. Unblocked. Must mark every weight from `n_benign = 4` unsupported.
+4. ~~**Rule-firing report (A4)**~~ — ✅ done, `tools/rule_firing_report.py`. Its result is
+   T24/B30: 32 of 45 signals priced negative at `n_benign = 4`.
 5. **L2 emulator boot** (T14), then `dexray-intercept` + a BFSI hook pack (incoming SMS,
-   accessibility, notification listener). L2 has no spine producer yet.
+   accessibility, notification listener). L2 has no spine producer yet. **Detonation of any
+   sample is user-approved**; a go/no-go checkpoint is owed after the India-12 stage.
 6. **Stale malware `L0/artifacts/`** (pre-A6, T16) — largely superseded by the corpus run,
    but the pre-A6 files remain.
+7. 🔴 **No L3 model is trained.** The pipeline is verified end to end (a 2020-only proof run
+   gave AUROC 0.9965 in-year, 0.8978 on 2024 — the drift exhibit), but `L3/model/` is empty
+   and `l3` is `not_attempted` on every spine. The full train needs ~6 GB.
+8. **The benign corpus does not contain the class of app most likely to be a false positive**
+   (T27): F-Droid has 5 accessibility apps, 79 SMS apps and **zero** commercial banking apps
+   repo-wide. Growing B fixes the arithmetic, not the coverage. The named mitigation is a
+   separate hard-negative BFSI panel, reported separately and never merged into B.
+
+### The nine predictions, recorded before the benign corpus landed
+
+Written down in `docs/PROJECT_LOG.md` §6.6 and §6.7 so the result is a diff rather than a
+recollection. The two that decide whether B30's diagnosis was right:
+
+- **P1** SBI Quick Support moves from **Informational (18)** to High or Critical.
+- **P8** `india_malware` median rises **above** the general malware median
+  (currently 16.0 vs 35.5 — the differentiator is anti-correlated with the score).
+
+If those do not move, the diagnosis was wrong and the log says so.
 
 ### Decided direction (from a two-agent research debate; see PROJECT_LOG §1)
 
