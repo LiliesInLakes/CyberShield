@@ -203,9 +203,34 @@ Each of these cost real time. Do not rediscover them.
 | **T24** | 🔴 **At `n_benign = 4` the computed weights are sign-inverted, not merely imprecise.** A4 prices **32 of 45 signals negative** — as evidence of being *benign* — including `l0:brand_claim`, the differentiator, at **−1.90**. The top-weighted signal in the system is `APK_Valid_Structure_Check` (+2.85), i.e. "is a well-formed ZIP". The Jeffreys 95% upper bound on 0/4 is **0.445**, so every historical "0/4 benign false positives" claim means "somewhere between 0% and 44%". The requirement is closed-form: with `b=0`, `w>0` iff `B > 0.5·(M−m+0.5)/(m+0.5) − 0.5`, so **B ≥ 213**. Never quote a weight without its support stamp. |
 | **T25** | **A dead rule that self-matches is not broken.** Compile a rule alone against a buffer of its own declared strings: if it fires, its condition is fine and the *corpus* lacks the vocabulary co-located in one class. All 18 dead rules pass this test (B31), refuting the "stripped/malformed" hypothesis. Conflating "rule is wrong" with "behaviour is absent here" sends you rewriting rules that were never wrong. |
 | **T26** | **The LLM will confidently mis-decode a string, and RAG cannot catch it.** In model selection, `north-mini-code` decoded `aHR0cDovLzE5Mi4xNjguMS4xMDAvZ2F0ZS5waHA=` as `.../get.php`; it is `gate.php`. Retrieval grounds claims about the *threat landscape*, not about *this sample*. Anything a decoder, parser or hash can settle must be verified mechanically before it reaches a report. |
+| **T28** | **A behaviour rule matching the raw ZIP container proves nothing, and the container ruleset silently included 33 of 51 rules.** `scope = "both"` kept every behaviour rule in the container pass. Measured: `Android_BFSI_Accessibility_Driven_Exfil` matched **82 times at container scope on benign apps and 0 on malware**, turning +0.007 discrimination into −0.090. Benign F-Droid apps have a median 3,519 decompiled files against malware's 426, so a bigger archive simply offers more raw bytes for a coincidental hit. The container pass now takes only `scope = "apk"`. |
+| **T29** | **A scanner behaviour change that edits no `.yar` file leaves `ruleset_version` unchanged — and `corpus_run` resumes on it.** The T28 fix would have shipped while every sample was skipped as already-done. `ruleset_version()` now hashes `SCANNER_BEHAVIOUR_VERSION` too. Bump it whenever the scanner changes what a given rule set produces. |
 | **T27** | **F-Droid cannot validate the accessibility or BFSI rule classes.** Measured across all 4178 packages: **5** declare an accessibility service, **79** declare any SMS permission, and **zero** are commercial banking apps. It is also entirely F-Droid/developer-signed, so `certificate_anomaly` is ~0 by construction and any cert weight measured against it is an **upper bound**. Growing B fixes the arithmetic (T24); it does not make these rule classes tested. |
 
 ---
+
+## 6.5 🔄 Work in flight (2026-08-12) — read this before starting anything
+
+A **detached re-measurement pipeline** is running: `tools/rerun_pipeline.sh`, launched with
+`nohup`, own process group, survives a terminated session. It waits for the in-flight corpus
+run, then does benign re-run → labels → A4 → calibration → policy validation → score → evaluate,
+stopping the chain if any step fails.
+
+```bash
+tail -f "$SENTINEL_DATA_ROOT"/pipeline_*.log      # progress
+pgrep -f rerun_pipeline.sh                        # still alive?
+```
+
+**Do not start a corpus run, rebuild labels, or re-run A4 while it is alive** — the steps are
+ordered because each invalidates the next, and two writers on `corpus/labels.json` or the
+weights file will produce a measurement that describes neither state.
+
+Why it exists: `ruleset_version` moved `d3777011c971 → 26f6f6f1d646` when behaviour rules were
+stopped from matching the raw ZIP container (T28). Every number recorded before that bump was
+computed over spines containing container-scope false positives.
+
+Also downloading: `CICMalDroid Banking.tar.gz` → `$SENTINEL_DATA_ROOT/cicmaldroid/`
+(2,100 banking-labelled APKs, unzip password `CIC`). Not yet extracted or registered.
 
 ## 7. Where things stand
 
