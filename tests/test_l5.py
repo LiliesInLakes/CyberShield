@@ -356,42 +356,69 @@ def test_l5_is_a_consumer_layer_and_writes_no_gaps():
 # Policy validation
 # --------------------------------------------------------------------------
 
-def test_validator_rejects_a_gate_rule_with_a_wide_benign_interval():
-    """This is what makes a T7-class false positive un-shippable."""
+def test_a_gate_is_blocked_by_its_JOINT_benign_rate_not_its_legs():
+    """B35: bounding each leg independently blocked both gates, because
+    sms_intercept alone fires on 3.3% of benign apps. Measured end to end the
+    same gate fires on 0 of 604. The conjunction is the whole point."""
+    policy = make_policy()
+    rates = {"G2_sms_intercept_exfil": {
+        "fired_malware": 7, "fired_benign": 40, "n_benign": 604, "n_malware": 640,
+        "ben_rate": 0.066, "ben_rate_ci95": [0.048, 0.089]}}
+    problems, _warnings = validate(policy, rates)
+    assert any("fires on 40/604 benign" in p for p in problems)
+
+
+def test_a_gate_with_a_clean_joint_rate_passes():
+    policy = make_policy()
+    rates = {g: {"fired_malware": 7, "fired_benign": 0, "n_benign": 604,
+                 "n_malware": 640, "ben_rate": 0.0, "ben_rate_ci95": [0.0, 0.0041]}
+             for g in ("G1_bank_impersonation_credential_ui", "G2_sms_intercept_exfil")}
+    problems, _ = validate(policy, rates)
+    assert problems == []
+
+
+def test_a_wide_legged_rule_is_a_warning_not_a_block():
+    """Its specificity comes from the conjunction, so it is worth saying and
+    not worth blocking on."""
     policy = make_policy()
     policy.raw["gate_rule_lists"]["sms_intercept_rules"] = ["yara_wide"]
     policy.weights["yara:yara_wide"] = {
         "w": 1.0, "support": "supported", "degenerate": False,
-        "category": "sms_intercept", "b": 0, "B": 4,
-        "ben_rate_ci95": [0.0, 0.445]}
-    problems = validate(policy)
-    assert any("above the limit" in p for p in problems)
+        "category": "sms_intercept", "b": 20, "B": 604,
+        "ben_rate_ci95": [0.021, 0.050]}
+    problems, warnings = validate(policy, {})
+    assert any("exceeds" in w for w in warnings)
+    assert not any("exceeds" in p for p in problems)
 
 
-def test_validator_rejects_an_unmeasured_gate_rule():
+def test_a_gate_that_fires_on_no_malware_is_flagged_untested():
     policy = make_policy()
-    policy.raw["gate_rule_lists"]["exfil_rules"] = ["Never_Fires_Anywhere"]
-    problems = validate(policy)
-    assert any("no weight" in p for p in problems)
+    rates = {"G2_sms_intercept_exfil": {
+        "fired_malware": 0, "fired_benign": 0, "n_benign": 604, "n_malware": 640,
+        "ben_rate": 0.0, "ben_rate_ci95": [0.0, 0.0041]}}
+    _problems, warnings = validate(policy, rates)
+    assert any("fires on no malware" in w for w in warnings)
 
 
 def test_validator_rejects_an_ml_bound_above_ten():
     policy = make_policy()
     policy.raw["ml"]["max_delta"] = 25
-    assert any("max_delta" in p for p in validate(policy))
+    problems, _ = validate(policy)
+    assert any("max_delta" in p for p in problems)
 
 
 def test_validator_rejects_signal_schema_drift():
     policy = make_policy()
     policy.weights_meta["signal_schema"] = "apk-sentinel-signals-0"
-    assert any("signal schema" in p for p in validate(policy))
+    problems, _ = validate(policy)
+    assert any("signal schema" in p for p in problems)
 
 
 def test_shipped_policy_bands_tile_zero_to_hundred():
     from L5.score import load_policy
     policy = load_policy()
-    problems = [p for p in validate(policy) if "band" in p]
-    assert problems == []
+    problems, _ = validate(policy)
+    assert [p for p in problems if "band" in p] == []
 
 
 # --------------------------------------------------------------------------

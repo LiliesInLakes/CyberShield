@@ -221,8 +221,16 @@ def merge_findings(*groups: list[L1Finding]) -> list[L1Finding]:
     return sorted(by_rule.values(), key=lambda f: f.detail["yara_rule"]) + passthrough
 
 
+# Bump when the *scanner* changes what a given rule set produces, even though
+# no .yar file was edited. `corpus_run.py` resumes on ruleset_version, so a
+# behaviour change that leaves this constant alone silently reuses stale
+# findings — which is how the container-scope fix below would have shipped
+# without ever being applied to a single sample.
+SCANNER_BEHAVIOUR_VERSION = "2"   # 2: container pass restricted to scope="apk"
+
+
 def ruleset_version() -> str:
-    """Stable hash over the compiled rule corpus.
+    """Stable hash over the compiled rule corpus *and* the scanner's behaviour.
 
     Recorded in the evidence spine so it is unambiguous when a change in
     findings is due to a ruleset edit rather than a change in the sample.
@@ -231,6 +239,7 @@ def ruleset_version() -> str:
     for path in sorted(YARA_DIR.rglob("*.yar")):
         h.update(path.name.encode())
         h.update(path.read_bytes())
+    h.update(b"|scanner=" + SCANNER_BEHAVIOUR_VERSION.encode())
     return h.hexdigest()[:12]
 
 
@@ -350,22 +359,44 @@ def _rule_sources() -> list[tuple[str, str]]:
 
 
 def _compile_rules() -> yara.Rules:
-    """Compile the apk-scoped rule set.
+    """Compile the container rule set — **only** rules that reason about ZIP structure.
 
     Previously this compiled index.yar wholesale, so the raw-APK scan ran all
     rules including the `scope = "source"` ones written for decompiled Java.
     That is where the meaningless container matches came from.
+
+    🔴 It then kept every `scope = "both"` rule, which reintroduced the same
+    problem for behaviour rules. Measured over 604 benign apps and 640 malware:
+    ``Android_BFSI_Accessibility_Driven_Exfil`` matched **82 times at container
+    scope on benign apps and 0 on malware**, turning a rule with +0.007
+    discrimination into one with −0.090. Benign F-Droid apps have a median of
+    3,519 decompiled files against malware's 426, so a large archive simply
+    offers more raw bytes for a coincidental hit — and a conjunction like
+    "accessibility AND network" means nothing across a compressed archive,
+    because co-location inside one class is the entire claim (T20/T21).
+
+    So the container pass is now restricted to rules that explicitly declare
+    ``scope = "apk"``. That is T3's actual intent: the container pass exists for
+    ZIP-structure rules, and those are the only rules that can say anything
+    true about a container.
     """
-    cleaned = [_filter_scope(text, target_scope="apk") for _, text in _rule_sources()]
+    cleaned = [_filter_scope(text, target_scope="apk", strict=True)
+               for _, text in _rule_sources()]
     return yara.compile(source="\n".join(cleaned))
 
 
-def _filter_scope(text: str, target_scope: str = "source") -> str:
+def _filter_scope(text: str, target_scope: str = "source",
+                  strict: bool = False) -> str:
     """Remove rules whose scope meta does not match target_scope.
 
     Scans for 'scope = "..."' meta lines and removes the entire rule if the
     scope mismatches. Rules with no scope meta, and rules declaring
-    scope = "both", are always kept.
+    scope = "both", are normally kept.
+
+    ``strict`` drops both of those permissive cases: only rules explicitly
+    declaring ``target_scope`` survive. Used for the container pass, where a
+    "both" behaviour rule produced 82 false positives on benign apps and none
+    on malware (see _compile_rules).
     """
     if target_scope not in ("apk", "source"):
         return text
@@ -393,7 +424,11 @@ def _filter_scope(text: str, target_scope: str = "source") -> str:
                 if m:
                     scope = m.group(1)
                     break
-            if scope and scope not in (target_scope, "both"):
+            if strict:
+                keep = scope == target_scope
+            else:
+                keep = not scope or scope in (target_scope, "both")
+            if not keep:
                 # Skip this rule
                 i += 1
                 continue
