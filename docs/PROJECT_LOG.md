@@ -1580,3 +1580,105 @@ there is a defect regardless of what the benign FPR says.
 | P8 | `india_malware` median rises **above** the general malware median |
 | P9 | the in-sample/cross-validated AUROC gap falls below 0.05 |
 
+
+# Part 7 — I14 lands: the benign corpus, and what it changed (2026-08-12)
+
+600 F-Droid apps, selected stratified on declared permissions, downloaded
+sha256-verified, analysed L0+L1 in 186 minutes. **600/600 ok.** `n_benign`
+4 → 604.
+
+## 7.1 The measurement B30 predicted
+
+| | B = 4 | B = 604 |
+|---|---:|---:|
+| A4 support stamp | UNSUPPORTED | **SUPPORTED** |
+| signals priced negative | 32 / 45 | 21 / 50 |
+| `l0:brand_claim` | **−1.90** | **+3.00** |
+| `l0:verdict:impersonation_likely` | −2.00 | +2.90 |
+| `l0:cert_anomaly:debug_keystore` | +0.01 | +3.00 |
+| dead rules | 18 | **13** |
+| SBI Quick Support | **18 (Informational)** | **100 (Critical)** |
+| `india_malware` median score | 16.0 | **99.5** |
+| general malware median | 35.5 | 88.0 |
+| benign median | — | 32.0 |
+| AUROC cross-validated | 0.8270 | **0.9203** |
+| in-sample / CV gap | +0.1425 | **+0.0071** |
+
+Sixteen signals flipped sign. The differentiator went from being priced as
+*evidence of innocence* to the maximum positive weight the policy allows.
+
+**Calibration validated itself.** `T` was fitted so that score 85 sits exactly
+at a 1% benign false-positive rate. Cross-validated, the Critical band's benign
+FPR is **0.99% (6/604)**. The anchor did precisely what its definition says.
+
+| threshold | recall | benign FPR | 95% CI |
+|---:|---:|---:|---|
+| ≥25 | 0.995 | 0.603 | [0.563, 0.641] |
+| ≥50 | 0.817 | 0.111 | [0.088, 0.138] |
+| ≥70 | 0.706 | 0.043 | [0.029, 0.062] |
+| **≥85** | **0.533** | **0.0099** | [0.0042, 0.0204] |
+
+## 7.2 🔴 Finding B34 — the honest false-positive rate is 34%, not 0%
+
+**205 of 600 benign F-Droid apps carry at least one malware-category finding.**
+Every previous "0/4 benign false positives" in this log describes a denominator,
+not a detector. The rate was always somewhere in [0, 0.445]; it is 34%.
+
+Two rule classes are the cause, and one is worse than a false positive:
+
+| category | malware | benign | note |
+|---|---:|---:|---|
+| `accessibility_abuse` | 24 / 640 | **100 / 604** | fires on **16.6% of benign** vs 3.75% of malware — **anti-discriminative** |
+| `c2_communication` | **1 / 640** | **12 / 604** | fires more on benign in absolute terms |
+| `sms_intercept` | 196 / 640 | 20 / 604 | genuinely discriminative (30.6% vs 3.3%) |
+
+`accessibility_abuse` firing on a *higher proportion* of benign apps than
+malware means it is currently evidence *against* maliciousness. T23 warned that
+`AccessibilityService` is a base-rate token; this is that warning, measured.
+
+## 7.3 Finding B35 — bounding the legs of a conjunction destroys the conjunction
+
+`validate_policy.py` originally bounded each gate leg's benign rate at 2%
+independently, and blocked both enabled gates: `sms_intercept` is 3.3% benign,
+the exfiltration categories ~2%, so no leg passes.
+
+Measured end to end, **G2 fires on 7 malware and 0 of 604 benign** (95% upper
+bound 0.0041). The conjunction with distinct-evidence is doing exactly the work
+it was designed to do, and checking its parts in isolation discards precisely
+the specificity it creates.
+
+The blocking criterion is now the gate's **joint** fire rate. Per-rule rates are
+retained as warnings, because a gate resting on a rule that fires on nothing is
+*unmeasured*, not specific — and G1, which fires on 0 malware, is now flagged
+exactly that way.
+
+## 7.4 The prediction scorecard — 6 hit, 3 missed
+
+| # | prediction | result | evidence |
+|---|---|---|---|
+| P1 | SBI moves Informational → High/Critical | ✅ | 18 → 100 (Critical) |
+| P2 | `l0:brand_claim` flips positive | ✅ | −1.90 → +3.00 |
+| P3 | `APK_Valid_Structure_Check` becomes degenerate | ❌ | ben_rate 0.757, under my 0.9 test; still +2.57 |
+| P4 | ≥20 of 32 negative signals flip | ❌ | 16 flipped |
+| P5 | `WebView_JavaScriptEnabled` ben_rate > 0.3 | ❌ | 0.230 |
+| P6 | benign apps *will* fire malware-category rules | ✅ | 205/600 |
+| P7 | `Secrets_Hardcoded` ben_rate > 0.5, stays ≤ 0 | ✅ | 0.803, w −1.07 |
+| P8 | `india_malware` median rises above general malware | ✅ | 99.5 vs 88.0 |
+| P9 | AUROC gap < 0.05 | ✅ | +0.0071 |
+
+**P3 is the miss that matters.** `APK_Valid_Structure_Check` — "the file is a
+well-formed APK" — fires on 97.7% of malware and 75.7% of benign, a
+discrimination of 0.22, and still earns **+2.57**, near the clip. The odds ratio
+is sharp at the extremes, so a signal that is nearly always true on both sides
+still separates 0.977 from 0.757 by a wide log-odds. My degeneracy test requires
+*both* rates above 0.9 and therefore misses it.
+
+The policy already contains the damage: the rule sits in the `hygiene` family,
+capped at 1.0, so on the SBI sample it contributed +1.00 rather than +2.57. But
+the degeneracy criterion should key on **discrimination**, not on both rates
+being high. Recorded rather than quietly patched, because the frozen weights
+were computed under the current definition.
+
+P5 is a corpus fact, not an error: F-Droid apps use WebViews less than a Play
+Store population would, which is T27 again.
+

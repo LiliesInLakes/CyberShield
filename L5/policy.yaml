@@ -83,11 +83,10 @@ families:
 #                      data; fitted_on records what it was fitted against.
 calibration:
   method: sigmoid
-  s0: 3.0
-  temperature: 2.0
-  status: declared
-  fitted_on: null
-
+  s0: 0.1145
+  temperature: 2.2696
+  status: fitted
+  fitted_on: {"date": "2026-08-12", "n_malware": 640, "n_benign": 604, "target_fpr": 0.01, "s_at_target_fpr": 4.0514, "crossing_method": "window_sliding_interp"}
 bands:
   - [0,  24, "Informational"]
   - [25, 49, "Low"]
