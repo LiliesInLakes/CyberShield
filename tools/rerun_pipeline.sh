@@ -37,9 +37,15 @@ say "pipeline start; log: $LOG"
 # ---------------------------------------------------------------------------
 # 0. Wait for any corpus run already in flight.
 # ---------------------------------------------------------------------------
-if pgrep -f "corpus_run.py" >/dev/null; then
+# The pattern is split so this script's own command line cannot match it, and
+# so that a shell merely *mentioning* the filename is not mistaken for a run.
+# Learned the hard way: two leftover `until ! pgrep -f "corpus_run.py"` waiter
+# shells each matched the pattern their own cmdline contained, so all three
+# processes waited for each other indefinitely.
+RUNNER_PAT='corpus_'"'"'run\.py --corpus-root'
+if pgrep -f "$RUNNER_PAT" >/dev/null; then
     say "waiting for the in-flight corpus run"
-    while pgrep -f "corpus_run.py" >/dev/null; do sleep 60; done
+    while pgrep -f "$RUNNER_PAT" >/dev/null; do sleep 60; done
     say "in-flight run finished"
 fi
 
