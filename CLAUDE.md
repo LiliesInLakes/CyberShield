@@ -229,8 +229,43 @@ Why it exists: `ruleset_version` moved `d3777011c971 → 26f6f6f1d646` when beha
 stopped from matching the raw ZIP container (T28). Every number recorded before that bump was
 computed over spines containing container-scope false positives.
 
-Also downloading: `CICMalDroid Banking.tar.gz` → `$SENTINEL_DATA_ROOT/cicmaldroid/`
-(2,100 banking-labelled APKs, unzip password `CIC`). Not yet extracted or registered.
+### 🔴 A decision waiting, not a task
+
+`CICMalDroid Banking` is downloaded, extracted and audited: **2,505 banking-labelled APKs** at
+`$SENTINEL_DATA_ROOT/cicmaldroid/Banking/`. It is *not* registered or analysed, and that is
+deliberate — folding it in is a corpus-composition choice that changes every number in the
+project, so it needs a human.
+
+Adding it takes the malware set from **640 → 3,145**, of which ~80% would be banking. That
+would:
+
+- recompute every A4 weight against a different malware population;
+- make "malware" mean "mostly banking trojans", so the India-vs-general-malware comparison
+  (currently 99.5 vs 88.0 median) stops meaning what it means today;
+- cost roughly **13 hours** of analysis (2,505 × ~19 s).
+
+Three defensible options:
+
+1. **Keep it separate.** Analyse it, label `subclass: banking`, use it only to train and
+   evaluate the banking classifier. The main corpus and all headline rates stay comparable to
+   everything already recorded. *Least disruptive, and what the plan assumed.*
+2. **Fold it in.** One corpus, far more banking signal, but every prior measurement becomes
+   incomparable and the log has to say so loudly.
+3. **Sample it.** Take a few hundred to bring banking representation up without swamping the
+   population.
+
+```bash
+# whichever is chosen, this is the analysis step (13 h for the full set)
+$SENTINEL_PYTHON tools/corpus_run.py --corpus-root "$SENTINEL_DATA_ROOT/cicmaldroid/Banking" \
+                                     --source loose --label banking_cicmaldroid
+$SENTINEL_PYTHON tools/corpus_labels.py build \
+    --benign-root "$SENTINEL_DATA_ROOT/fdroid/apks" --benign-id benign_fdroid \
+    --malware-root "$SENTINEL_DATA_ROOT/cicmaldroid/Banking" \
+    --malware-id banking_cicmaldroid --malware-subclass banking
+```
+
+3.7% of its filenames do not match their content hash (B39). Harmless here — labels bind to the
+computed hash — but its stated identifiers cannot be used to cross-reference other corpora.
 
 ## 7. Where things stand
 
