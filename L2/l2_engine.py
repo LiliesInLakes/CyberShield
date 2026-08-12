@@ -25,7 +25,9 @@ from pathlib import Path
 # Resolve imports — L1 schema lives one level up
 # ---------------------------------------------------------------------------
 _REPO = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(_REPO / "L1"))
+for _p in (str(_REPO), str(_REPO / "L1")):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
 from schema import (  # noqa: E402
     L1Finding,
@@ -346,7 +348,27 @@ def process(sha256: str,
 
     out = (out_root or ARTIFACTS) / sha256 / "analysis.json"
     report.write(out)
-    print(f"[L2] wrote {out}  findings={len(all_findings)}")
+
+    # Fold L2 into the evidence spine. Until this existed, L2 could parse
+    # telemetry perfectly and still leave every spine reading
+    # `l2: {"status": "not_attempted"}` -- the layer was disconnected, not
+    # merely unused, and no consumer could tell those apart.
+    import spine
+    from L2 import promote
+
+    doc = report.to_dict()
+    spine.update_layer(
+        sha256, "l2",
+        status=spine.LayerStatus(promote.l2_status_for(doc)),
+        findings=promote.l2_findings(doc),
+        summary=promote.l2_summary(doc),
+        coverage=promote.l2_coverage(doc),
+        gaps=promote.l2_gaps(doc),
+        artifact=out,
+    )
+
+    print(f"[L2] wrote {out}  findings={len(all_findings)}  "
+          f"spine status={promote.l2_status_for(doc)}")
     return report
 
 
