@@ -9,6 +9,12 @@ This module is invoked *after* the sandbox orchestrator has finished.
 It bridges the gap between raw sandbox telemetry and the unified
 evidence spine that the scoring layers (L3+) consume.
 
+Graceful degradation: when the emulator is unavailable (T14) or no
+sandbox artifacts exist for a sample, ``process()`` writes a valid
+analysis.json with zero findings and updates the spine with status
+``skipped``, so every downstream layer sees an honest record rather
+than a crash.
+
 Usage:
     python l2_engine.py <sha256> [--sandbox-dir DIR] [--out DIR]
 """
@@ -17,6 +23,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -25,11 +32,10 @@ from pathlib import Path
 # Resolve imports — L1 schema lives one level up
 # ---------------------------------------------------------------------------
 _REPO = Path(__file__).resolve().parent.parent
-for _p in (str(_REPO), str(_REPO / "L1")):
-    if _p not in sys.path:
-        sys.path.insert(0, _p)
+if str(_REPO) not in sys.path:
+    sys.path.insert(0, str(_REPO))
 
-from schema import (  # noqa: E402
+from L1.schema import (  # noqa: E402
     L1Finding,
     L1Report,
     Category,
@@ -37,6 +43,8 @@ from schema import (  # noqa: E402
     ObservationSource,
     CATEGORY_MITRE_MAP,
 )
+
+log = logging.getLogger(__name__)
 
 L2_DIR = Path(__file__).resolve().parent
 ARTIFACTS = L2_DIR / "artifacts"
@@ -59,6 +67,16 @@ _CAT_MAP.update({
     "c2_communication": Category.C2_COMMS,
     "c2_beacon":        Category.C2_COMMS,
     "credential_exfiltration": Category.DATA_EXFIL,
+    "auth_fill":           Category.PHISHING_IMPERSONATION,
+    "auth_bypass":         Category.EVASION,
+    "auth_state":          Category.EVASION,
+    "ssl_unpin":           Category.EVASION,
+    "accessibility_abuse": Category.ACCESSIBILITY_ABUSE,
+    "bulk_exfil":          Category.DATA_EXFIL,
+    "biometric_prompt_bypass":     Category.EVASION,
+    "fingerprint_manager_bypass":  Category.EVASION,
+    "keyguard_spoof":              Category.EVASION,
+    "biometric_prompt_framework_bypass": Category.EVASION,
 })
 
 _SEV_MAP: dict[str, Severity] = {s.value: s for s in Severity}
@@ -188,6 +206,33 @@ def _parse_frida_hooks(path: Path) -> list[L1Finding]:
             raw = json.loads(line)
         except json.JSONDecodeError:
             continue
+
+        # Frida CLI wraps send() payloads as {"type": "send", "payload": {...}}
+        if raw.get("type") == "send":
+            payload = raw.get("payload")
+            if not isinstance(payload, dict):
+                continue
+            raw = payload
+
+        if raw.get("type") == "auth_state":
+            cat = _resolve_category("auth_state")
+            evidence = raw.get(
+                "evidence",
+                f"Runtime auth state forced: {raw.get('key', 'unknown')} "
+                f"{raw.get('original')!r} -> {raw.get('forced')!r} via {raw.get('method', 'unknown')}",
+            )
+            findings.append(L1Finding(
+                engine="frida",
+                category=cat,
+                severity=Severity.HIGH,
+                evidence=evidence,
+                location="runtime/frida",
+                mitre_techniques=CATEGORY_MITRE_MAP.get(cat, []),
+                observation=ObservationSource.OBSERVED,
+                detail=raw,
+            ))
+            continue
+
         # Only process structured finding payloads from dynamic_hooks.js
         if raw.get("type") != "finding":
             continue
@@ -275,35 +320,45 @@ def process(sha256: str,
     outputs are keyed by *sha256* (matching L0/L1 convention).
 
     Resolution order for raw sandbox data:
-        1. L2/artifacts/<sha256>/           (already sha256-keyed)
-        2. L2/sandbox/artifacts/<dir>/      (package-keyed, searched via dynamic.json presence)
-        3. explicit `sandbox_dir`
+        1. explicit ``sandbox_dir``
+        2. ``L2/artifacts/<sha256>/``       (already sha256-keyed)
+        3. ``L2/sandbox/artifacts/<dir>/``  (package-keyed, searched via
+           ``frida_hooks.jsonl`` presence)
+
+    **Graceful degradation:** when none of the candidate directories contain
+    any sandbox output, the function still writes a valid ``analysis.json``
+    with zero findings and updates the spine with ``status=skipped``.  This
+    means a pipeline run where the emulator never booted (T14) produces an
+    honest record ("L2 never ran") rather than a crash or a silent gap.
     """
 
     candidates: list[Path] = []
     if sandbox_dir:
         candidates.append(Path(sandbox_dir))
-    candidates.append(ARTIFACTS / sha256)
+
+    sha_dir = ARTIFACTS / sha256
+    candidates.append(sha_dir)
 
     # Also try any package-keyed dirs under sandbox/artifacts
     if SANDBOX_ARTIFACTS.exists():
-        for d in SANDBOX_ARTIFACTS.iterdir():
-            if d.is_dir() and (d / "frida_hooks.jsonl").exists():
-                candidates.append(d)
-
-    # Also check the sha256 dir itself (dynamic.json lives there)
-    sha_dir = ARTIFACTS / sha256
-    if sha_dir.exists():
-        candidates.insert(0, sha_dir)
+        try:
+            for d in sorted(SANDBOX_ARTIFACTS.iterdir()):
+                if d.is_dir() and (d / "frida_hooks.jsonl").exists():
+                    candidates.append(d)
+        except OSError as exc:
+            log.warning("failed to scan %s: %s", SANDBOX_ARTIFACTS, exc)
 
     # Aggregate findings from all candidate directories
     all_findings: list[L1Finding] = []
-    sandbox_meta: dict = {}
+    sandbox_meta: dict[str, object] = {}
 
     for cand in candidates:
         dj = cand / "dynamic.json"
         if dj.exists() and not sandbox_meta:
-            sandbox_meta = json.loads(dj.read_text())
+            try:
+                sandbox_meta = json.loads(dj.read_text())
+            except (json.JSONDecodeError, OSError) as exc:
+                log.warning("failed to parse %s: %s", dj, exc)
         all_findings.extend(_parse_dynamic_json(dj))
         all_findings.extend(_parse_frida_hooks(cand / "frida_hooks.jsonl"))
         all_findings.extend(_parse_network_evidence(cand / "network_evidence.json"))
@@ -311,17 +366,17 @@ def process(sha256: str,
     all_findings = _dedup(all_findings)
 
     # Build severity counts
-    sev_counts = {s.value: 0 for s in Severity}
+    sev_counts: dict[str, int] = {s.value: 0 for s in Severity}
     for f in all_findings:
         sev_counts[f.severity.value] += 1
-    cats = sorted({f.category.value for f in all_findings})
+    cats: list[str] = sorted({f.category.value for f in all_findings})
 
     # Build L2 summary metadata
-    sandbox_info = sandbox_meta.get("sandbox", {})
-    network_info = sandbox_meta.get("network", {})
-    confidence = sandbox_meta.get("confidence", {})
+    sandbox_info: dict[str, object] = sandbox_meta.get("sandbox", {})  # type: ignore[assignment]
+    network_info: dict[str, object] = sandbox_meta.get("network", {})  # type: ignore[assignment]
+    confidence: dict[str, object] = sandbox_meta.get("confidence", {})  # type: ignore[assignment]
 
-    summary = {
+    summary: dict[str, object] = {
         "finding_count":       len(all_findings),
         "severity_counts":     sev_counts,
         "categories":          cats,
@@ -329,7 +384,7 @@ def process(sha256: str,
         "detonation_s":        sandbox_info.get("detonation_duration_s", 0),
         "evasion_bypassed":    sandbox_info.get("evasion_checks_bypassed", 0),
         "total_http_requests": network_info.get("total_requests", 0),
-        "c2_count":            len(network_info.get("c2_endpoints", [])),
+        "c2_count":            len(network_info.get("c2_endpoints", [])),  # type: ignore[arg-type]
         "confidence":          confidence.get("confidence_level", "unknown"),
     }
 
@@ -341,7 +396,8 @@ def process(sha256: str,
         generated_at=datetime.now(timezone.utc).isoformat(),
         findings=all_findings,
         artifacts={
-            "dynamic_json": str(sha_dir / "dynamic.json") if (sha_dir / "dynamic.json").exists() else "",
+            "dynamic_json": str(sha_dir / "dynamic.json")
+            if (sha_dir / "dynamic.json").exists() else "",
         },
         summary=summary,
     )
@@ -349,27 +405,39 @@ def process(sha256: str,
     out = (out_root or ARTIFACTS) / sha256 / "analysis.json"
     report.write(out)
 
-    # Fold L2 into the evidence spine. Until this existed, L2 could parse
-    # telemetry perfectly and still leave every spine reading
-    # `l2: {"status": "not_attempted"}` -- the layer was disconnected, not
-    # merely unused, and no consumer could tell those apart.
-    import spine
+    _update_spine(sha256, report, out)
+
+    return report
+
+
+def _update_spine(sha256: str, report: L1Report, artifact: Path) -> None:
+    """Fold L2 results into the evidence spine.
+
+    Follows the same pattern as L0/L1: ``spine.update_layer`` is the single
+    writer.  Separated from ``process()`` so spine failures do not prevent
+    the analysis.json artifact from being written.
+    """
+    import spine  # local import — spine depends on nothing in L2
     from L2 import promote
 
     doc = report.to_dict()
-    spine.update_layer(
-        sha256, "l2",
-        status=spine.LayerStatus(promote.l2_status_for(doc)),
-        findings=promote.l2_findings(doc),
-        summary=promote.l2_summary(doc),
-        coverage=promote.l2_coverage(doc),
-        gaps=promote.l2_gaps(doc),
-        artifact=out,
-    )
+    status_str = promote.l2_status_for(doc)
 
-    print(f"[L2] wrote {out}  findings={len(all_findings)}  "
-          f"spine status={promote.l2_status_for(doc)}")
-    return report
+    try:
+        spine.update_layer(
+            sha256, "l2",
+            status=spine.LayerStatus(status_str),
+            findings=promote.l2_findings(doc),
+            summary=promote.l2_summary(doc),
+            coverage=promote.l2_coverage(doc),
+            gaps=promote.l2_gaps(doc),
+            artifact=artifact,
+        )
+    except Exception:
+        log.exception("spine update failed for %s", sha256)
+
+    log.info("[L2] wrote %s  findings=%d  spine status=%s",
+             artifact, len(report.findings), status_str)
 
 
 # ---------------------------------------------------------------------------
@@ -377,8 +445,13 @@ def process(sha256: str,
 # ---------------------------------------------------------------------------
 
 def main(argv: list[str]) -> int:
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(levelname)s %(name)s: %(message)s",
+    )
+
     p = argparse.ArgumentParser(
-        description="L2 Dynamic Analysis Engine — parse sandbox output into schema"
+        description="L2 Dynamic Analysis Engine -- parse sandbox output into schema"
     )
     p.add_argument("sha256", help="SHA256 of the APK (artifact directory key)")
     p.add_argument("--sandbox-dir", default=None,
@@ -386,12 +459,19 @@ def main(argv: list[str]) -> int:
     p.add_argument("--out", default=None, help="L2 artifacts output root")
     args = p.parse_args(argv[1:])
     try:
-        process(args.sha256,
-                Path(args.sandbox_dir) if args.sandbox_dir else None,
-                Path(args.out) if args.out else None)
+        report = process(
+            args.sha256,
+            Path(args.sandbox_dir) if args.sandbox_dir else None,
+            Path(args.out) if args.out else None,
+        )
+        n = len(report.findings)
+        if n == 0:
+            print("[L2] no sandbox artifacts found -- wrote skipped record "
+                  "(emulator unavailable or detonation not attempted)")
+        else:
+            print(f"[L2] {n} finding(s) parsed and written")
     except Exception as exc:
-        print(f"[L2] error: {exc}", file=sys.stderr)
-        import traceback; traceback.print_exc()
+        log.error("L2 engine failed: %s", exc, exc_info=True)
         return 1
     return 0
 

@@ -204,13 +204,36 @@ class DiskExhausted(RuntimeError):
     pass
 
 
-def check_disk(min_free_gb: float) -> None:
-    free = free_gb(REPO_ROOT)
-    if free < min_free_gb:
-        raise DiskExhausted(
-            f"only {free:.1f} GB free, below --min-free-gb {min_free_gb}. "
-            "Re-run to resume once space is reclaimed."
-        )
+#: A run writes to two filesystems and they carry very different loads. L1's
+#: artifacts root takes jadx's output — gigabytes of churn, the thing that
+#: actually fills a disk. The repo takes the spine and L0 evidence, ~50 KB per
+#: sample, so 600 samples is under 30 MB.
+#:
+#: Guarding both with one number was wrong in both directions once they were
+#: split: an 8 GB floor on the repo blocked a run whose repo writes total 30 MB,
+#: while the filesystem doing the real work had 255 GB free and was not checked
+#: at all. --min-free-gb is therefore the floor for the heavy writer; the repo
+#: gets its own smaller floor, which still has to be non-trivial because btrfs
+#: metadata needs room to breathe well before df reads zero.
+REPO_MIN_FREE_GB = 2.0
+
+
+def check_disk(min_free_gb: float, heavy_root: Path | None = None) -> None:
+    heavy = heavy_root or REPO_ROOT
+    for label, path, floor in (
+        ("L1 artifacts", heavy, min_free_gb),
+        ("repo", REPO_ROOT, REPO_MIN_FREE_GB),
+    ):
+        # Same filesystem, same check — do not report it twice.
+        if path != heavy and shutil.disk_usage(path).total == shutil.disk_usage(heavy).total:
+            continue
+        free = free_gb(path)
+        if free < floor:
+            raise DiskExhausted(
+                f"{label} filesystem ({path}) has only {free:.1f} GB free, "
+                f"below its {floor} GB floor. "
+                "Re-run to resume once space is reclaimed."
+            )
 
 
 # ---------------------------------------------------------------------------
@@ -458,6 +481,15 @@ def main(argv: list[str]) -> int:
     from engines.yara_scan import ruleset_version
     rules_v = ruleset_version()
 
+    # Ask L1 where it writes rather than re-deriving it here. A third copy of
+    # that resolution is a third thing that can drift out of step with the
+    # other two, and the symptom would be a disk floor watching the wrong
+    # filesystem — which is the bug this parameter exists to fix.
+    import l1 as _l1
+    heavy_root = _l1.ARTIFACTS
+    if not args.dry_run:  # --dry-run promises to touch nothing
+        heavy_root.mkdir(parents=True, exist_ok=True)
+
     pending = []
     for s in samples:
         prior = index.get(s.key)
@@ -476,7 +508,11 @@ def main(argv: list[str]) -> int:
           f"remaining={remaining}  running now={len(pending)}  ruleset={rules_v}")
     print(f"[corpus] root={root}  index={idx_path.name}"
           + (f"  label={args.label}" if args.label else ""))
-    print(f"[corpus] free disk={free_gb(REPO_ROOT):.1f} GB  keep-decompiled={args.keep_decompiled}  "
+    print(f"[corpus] free disk: L1 artifacts {free_gb(heavy_root):.1f} GB "
+          f"(floor {args.min_free_gb}), repo {free_gb(REPO_ROOT):.1f} GB "
+          f"(floor {REPO_MIN_FREE_GB})")
+    print(f"[corpus] L1 artifacts -> {heavy_root}")
+    print(f"[corpus] keep-decompiled={args.keep_decompiled}  "
           f"jadx-timeout={args.jadx_timeout}s")
 
     if args.dry_run:
@@ -498,12 +534,14 @@ def main(argv: list[str]) -> int:
     stats: dict[str, int] = {}
     started = time.monotonic()
     interrupted = False
+    disk_stopped = False
     try:
         for i, sample in enumerate(pending, 1):
             try:
-                check_disk(args.min_free_gb)
+                check_disk(args.min_free_gb, heavy_root)
             except DiskExhausted as exc:
                 print(f"\n[corpus] STOPPING: {exc}", file=sys.stderr)
+                disk_stopped = True
                 break
 
             record = analyse_one(sample, args)
@@ -554,6 +592,21 @@ def main(argv: list[str]) -> int:
         print(f"    {status:12s} {count}")
     print(f"[corpus] free disk now {free_gb(REPO_ROOT):.1f} GB")
     print(f"[corpus] log: {run_dir / 'run_log.jsonl'}")
+
+    # An early stop is NOT success. It used to return 0, which made a corpus that
+    # halted on the disk floor indistinguishable from one that finished -- so
+    # rerun_pipeline.sh, whose entire design is "each step gated on the previous
+    # succeeding", went on to build labels, weights, calibration and an
+    # evaluation over a corpus that was 245/604 re-measured. Exit codes:
+    #   0   every pending sample was attempted
+    #   3   stopped with work remaining (disk floor)
+    #   130 interrupted (SIGINT); resume index is flushed, re-run to continue
+    unfinished = len(pending) - done
+    if disk_stopped or (unfinished > 0 and not interrupted):
+        print(f"[corpus] INCOMPLETE: {unfinished} sample(s) never ran. "
+              f"Anything computed from this corpus now is computed from part of it.",
+              file=sys.stderr)
+        return 3
     return 130 if interrupted else 0
 
 

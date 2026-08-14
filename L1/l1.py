@@ -11,6 +11,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -29,7 +30,17 @@ from engines.ioc_extract import extract_from_apk as extract_iocs  # noqa: E402
 from engines.ioc_extract import summarise as ioc_summary  # noqa: E402
 import spine  # noqa: E402
 
-ARTIFACTS = L1_DIR / "artifacts"
+#: Where L1 writes per-sample output — including ``jadx_src``, which is the
+#: heaviest thing this project puts on disk. jadx writes and then deletes a
+#: large tree of small files per sample; across a corpus run that churn is what
+#: exhausted a fully-allocated btrfs ``/home`` mid-run (T30), stopping the
+#: benign re-measurement at 245/604. Override it to put that traffic on a
+#: roomier filesystem.
+#:
+#: The spine is unaffected by this: ``spine.update_layer`` is handed the report
+#: in memory and always writes to ``artifacts/<sha>/evidence.json`` under the
+#: repo, so everything downstream of L1 reads the same place either way.
+ARTIFACTS = Path(os.environ.get("SENTINEL_L1_ARTIFACTS") or (L1_DIR / "artifacts"))
 
 
 def _sha_of(apk_path: Path, l0: dict) -> str:

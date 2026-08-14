@@ -102,4 +102,104 @@ Java.perform(function() {
         // May fail depending on Android version/permissions
         console.log("  [~] TelephonyManager hook skipped or failed.");
     }
+
+    // 5. Sensor Spoofing (accelerometer / gyroscope)
+    // A stationary emulator reports flat/zero motion, which is itself a
+    // fingerprint. Add small jitter to SensorEvent.values so the app sees
+    // plausible physical-device noise instead of dead sensors.
+    try {
+        var SensorEvent = Java.use("android.hardware.SensorEvent");
+        var SensorListener = Java.use("android.hardware.SensorEventListener");
+        SensorListener.onSensorChanged.implementation = function(event) {
+            try {
+                var type = event.sensor.value.getType();
+                var jitter = function() { return (Math.random() - 0.5) * 0.15; };
+                // TYPE_ACCELEROMETER = 1, TYPE_GYROSCOPE = 4
+                if (type === 1) {
+                    event.values.value[0] = jitter();
+                    event.values.value[1] = jitter();
+                    event.values.value[2] = 9.81 + jitter();
+                } else if (type === 4) {
+                    event.values.value[0] = jitter();
+                    event.values.value[1] = jitter();
+                    event.values.value[2] = jitter();
+                }
+            } catch (inner) { /* best-effort */ }
+            return this.onSensorChanged(event);
+        };
+        console.log("  [✓] Hooked SensorEventListener (Accelerometer/Gyroscope jitter)");
+    } catch (e) {
+        console.log("  [~] Sensor spoofing skipped: " + e);
+    }
+
+    // 6. Battery Status Spoofing (73%, discharging)
+    try {
+        var BatteryManager = Java.use("android.os.BatteryManager");
+        BatteryManager.isCharging.implementation = function() { return false; };
+        // BATTERY_PROPERTY_CAPACITY = 4
+        BatteryManager.getIntProperty.implementation = function(id) {
+            if (id === 4) return 73;
+            return this.getIntProperty(id);
+        };
+        console.log("  [✓] Hooked BatteryManager (73%, discharging)");
+    } catch (e) {
+        console.log("  [~] BatteryManager hook skipped: " + e);
+    }
+
+    // 7. Package Manager Hiding (Magisk / Xposed / SuperSU)
+    try {
+        var PackageManager = Java.use("android.app.ApplicationPackageManager");
+        var hiddenPackages = [
+            "com.topjohnwu.magisk", "eu.chainfire.supersu", "com.noshufou.android.su",
+            "com.koushikdutta.superuser", "com.zachspong.temprootremovejb",
+            "com.amphoras.hidemyroot", "de.robv.android.xposed.installer",
+            "org.meowcat.edxposed.manager", "com.saurik.substrate",
+        ];
+        PackageManager.getPackageInfo.overload('java.lang.String', 'int').implementation = function(pkg, flags) {
+            if (hiddenPackages.indexOf(pkg) !== -1) {
+                send({ type: "evasion", action: "package_query", target: pkg, bypassed: true });
+                throw Java.use("android.content.pm.PackageManager$NameNotFoundException").$new(pkg);
+            }
+            return this.getPackageInfo(pkg, flags);
+        };
+        console.log("  [✓] Hooked PackageManager (Magisk/Xposed/SuperSU hiding)");
+    } catch (e) {
+        console.log("  [~] PackageManager hook skipped: " + e);
+    }
+
+    // 8. WiFi Info Spoofing
+    try {
+        var WifiInfo = Java.use("android.net.wifi.WifiInfo");
+        WifiInfo.getMacAddress.implementation = function() { return "8a:3c:41:5e:9b:02"; };
+        WifiInfo.getSSID.implementation = function() { return "\"JioFiber-5G\""; };
+        WifiInfo.getBSSID.implementation = function() { return "8a:3c:41:5e:9b:01"; };
+        console.log("  [✓] Hooked WifiInfo (SSID: JioFiber-5G)");
+    } catch (e) {
+        console.log("  [~] WifiInfo hook skipped: " + e);
+    }
+
+    // 9. /proc/cpuinfo Access Logging
+    // Reading cpuinfo is a common emulator-detection primitive (looking for
+    // "goldfish"/"ranchu"/QEMU vendor strings); log every attempt rather
+    // than block it, since blocking would itself be a signal to a
+    // sufficiently careful sample.
+    try {
+        var FileInputStream = Java.use("java.io.FileInputStream");
+        FileInputStream.$init.overload('java.lang.String').implementation = function(path) {
+            if (path && path.indexOf("cpuinfo") !== -1) {
+                send({ type: "evasion", action: "file_read", target: path, bypassed: false });
+            }
+            return this.$init(path);
+        };
+        FileInputStream.$init.overload('java.io.File').implementation = function(file) {
+            var path = file.getAbsolutePath();
+            if (path && path.indexOf("cpuinfo") !== -1) {
+                send({ type: "evasion", action: "file_read", target: path, bypassed: false });
+            }
+            return this.$init(file);
+        };
+        console.log("  [✓] Hooked FileInputStream (/proc/cpuinfo access logging)");
+    } catch (e) {
+        console.log("  [~] /proc/cpuinfo logging hook skipped: " + e);
+    }
 });

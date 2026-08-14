@@ -28,3 +28,11 @@ lightgbm>=4.3
 pyarrow>=16
 huggingface_hub>=0.24
 joblib>=1.4
+
+# L2 — dynamic analysis interaction engine
+# PyPI "droidbot" (1.0.0a2) is a broken, abandoned alpha with unqualified
+# imports and a shadowed stdlib `types` module. Install the maintained
+# honeynet/droidbot from git instead.
+git+https://github.com/honeynet/droidbot.git
+setuptools<81       # droidbot's pkg_resources import needs setuptools<81
+standard-telnetlib  # stdlib telnetlib was removed in Python 3.13+

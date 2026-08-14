@@ -216,3 +216,53 @@ def test_aes_members_really_do_have_zero_crc(tmp_path):
         info = zf.infolist()[0]
     assert info.compress_type == 99
     assert info.CRC == 0
+
+
+# ---------------------------------------------------------------------------
+# Disk floors
+#
+# A run writes to two filesystems with wildly different loads: L1's artifacts
+# root takes jadx's churn, the repo takes ~50 KB of spine and L0 evidence per
+# sample. One floor covering both was wrong in both directions — it halted a
+# run over the repo's 8 GB while the filesystem doing the actual writing had
+# 255 GB free and was never looked at.
+# ---------------------------------------------------------------------------
+
+def test_heavy_floor_applies_to_the_l1_root_not_the_repo(monkeypatch, tmp_path):
+    heavy = tmp_path / "l1"
+    heavy.mkdir()
+
+    def fake_usage(path):
+        # Heavy root nearly full, repo roomy.
+        free = 1 * 2**30 if str(path).startswith(str(heavy)) else 500 * 2**30
+        return type("U", (), {"free": free, "total": 900 * 2**30 + len(str(path))})()
+
+    monkeypatch.setattr(corpus_run.shutil, "disk_usage", fake_usage)
+    with pytest.raises(corpus_run.DiskExhausted) as exc:
+        corpus_run.check_disk(8.0, heavy)
+    assert "L1 artifacts" in str(exc.value)
+
+
+def test_repo_keeps_its_own_floor_even_when_the_heavy_root_is_empty(monkeypatch, tmp_path):
+    heavy = tmp_path / "l1"
+    heavy.mkdir()
+
+    def fake_usage(path):
+        free = 500 * 2**30 if str(path).startswith(str(heavy)) else 1 * 2**30
+        return type("U", (), {"free": free, "total": 900 * 2**30 + len(str(path))})()
+
+    monkeypatch.setattr(corpus_run.shutil, "disk_usage", fake_usage)
+    with pytest.raises(corpus_run.DiskExhausted) as exc:
+        corpus_run.check_disk(8.0, heavy)
+    assert "repo" in str(exc.value)
+
+
+def test_both_roomy_passes(monkeypatch, tmp_path):
+    heavy = tmp_path / "l1"
+    heavy.mkdir()
+    monkeypatch.setattr(
+        corpus_run.shutil, "disk_usage",
+        lambda path: type("U", (), {"free": 500 * 2**30,
+                                    "total": 900 * 2**30 + len(str(path))})(),
+    )
+    corpus_run.check_disk(8.0, heavy)  # must not raise

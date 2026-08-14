@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 import io
-import os
 
 import hashlib
 import json
@@ -33,7 +32,6 @@ import promote  # noqa: E402
 import spine  # noqa: E402
 WHITELIST_PATH = L0_DIR / "bank_whitelist.json"
 CACHE_PATH = L0_DIR / "threat_cache.json"
-EVIDENCE_PATH = L0_DIR / "evidence.json"
 
 
 def load_env(path: Path | None = None) -> None:
@@ -88,12 +86,12 @@ class Evidence:
     generated_at: str = ""
     source_apk: str = ""
     l0: dict[str, Any] = field(default_factory=dict)
-    l1: dict[str, Any] = field(default_factory=lambda: {"status": "pending"})
-    l2: dict[str, Any] = field(default_factory=lambda: {"status": "pending"})
-    l3: dict[str, Any] = field(default_factory=lambda: {"status": "pending"})
-    l4: dict[str, Any] = field(default_factory=lambda: {"status": "pending"})
-    l5: dict[str, Any] = field(default_factory=lambda: {"status": "pending"})
-    l6: dict[str, Any] = field(default_factory=lambda: {"status": "pending"})
+    l1: dict[str, Any] = field(default_factory=lambda: {"status": spine.LayerStatus.NOT_ATTEMPTED.value})
+    l2: dict[str, Any] = field(default_factory=lambda: {"status": spine.LayerStatus.NOT_ATTEMPTED.value})
+    l3: dict[str, Any] = field(default_factory=lambda: {"status": spine.LayerStatus.NOT_ATTEMPTED.value})
+    l4: dict[str, Any] = field(default_factory=lambda: {"status": spine.LayerStatus.NOT_ATTEMPTED.value})
+    l5: dict[str, Any] = field(default_factory=lambda: {"status": spine.LayerStatus.NOT_ATTEMPTED.value})
+    l6: dict[str, Any] = field(default_factory=lambda: {"status": spine.LayerStatus.NOT_ATTEMPTED.value})
 
 
 def compute_hashes(apk_path: Path) -> dict[str, str]:

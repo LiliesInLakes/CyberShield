@@ -47,7 +47,15 @@ fi
 # Measured before adopting it: androguard full-parse of a 46 MB APK is 1.22x
 # ext4 over ntfs-3g/fuseblk — negligible. What NTFS cannot do is exec bits,
 # symlinks and POSIX ownership, so only inert data goes here. Code, the venv
-# and artifacts/ stay on ext4.
+# and the spine at artifacts/ stay on ext4.
+#
+# L1's per-sample output moved here too (T30). Measured before that, on
+# org.kde.kdeconnect_tp_13513.apk with the APK pre-warmed into page cache:
+# 17.41 s on ntfs-3g vs 17.26 s on ext4, 6918 files written on both. The worry
+# was that FUSE would be ruinous for jadx's thousands-of-tiny-files pattern
+# rather than the single large read that 1.22x was measured on; it is not.
+# Also verified case-sensitive (a.java and A.java stay distinct), which
+# obfuscated class names depend on and which would have failed silently.
 if [ -z "${SENTINEL_DATA_ROOT:-}" ]; then
     if [ -d /mnt/SharedData ] && [ -w /mnt/SharedData ]; then
         SENTINEL_DATA_ROOT="/mnt/SharedData/cybershield-data"
@@ -59,6 +67,15 @@ if [ -z "${SENTINEL_DATA_ROOT:-}" ]; then
 fi
 export SENTINEL_DATA_ROOT
 mkdir -p "$SENTINEL_DATA_ROOT" 2>/dev/null || true
+
+# Where L1 writes per-sample output, jadx_src included. It is the heaviest
+# writer in the project and it churns: a full corpus run creates and deletes
+# millions of small files. Doing that on the repo filesystem is what exhausted
+# a fully-allocated btrfs /home mid-run and stopped the benign re-measurement
+# at 245/604 (T30). Read by L1/l1.py and tools/reclaim_disk.py, which
+# tests/test_artifacts_root.py pins together.
+export SENTINEL_L1_ARTIFACTS="${SENTINEL_L1_ARTIFACTS:-$SENTINEL_DATA_ROOT/l1_artifacts}"
+mkdir -p "$SENTINEL_L1_ARTIFACTS" 2>/dev/null || true
 
 export JADX_DIR="$SENTINEL_ROOT/tools/jadx"
 export JDK17_HOME="${JDK17_HOME:-$SENTINEL_ROOT/tools/jdk17}"

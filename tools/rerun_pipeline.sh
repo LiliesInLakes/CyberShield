@@ -51,14 +51,39 @@ fi
 
 # ---------------------------------------------------------------------------
 # 1. Benign corpus under the fixed scanner.
-#    --force because ruleset_version gates resume and we want every sample.
+#    NO --force. Resume already skips only samples recorded ok/skipped *at the
+#    current ruleset_version*, so the gate is what guarantees every sample is
+#    measured under the fixed scanner -- --force does not add that, it discards
+#    the resume index (`index = {}`) and restarts from zero. This script was
+#    stopped mid-run once with 71 benign samples banked; --force would have
+#    thrown them away.
 # ---------------------------------------------------------------------------
 BENIGN_DIR="${SENTINEL_DATA_ROOT:-$REPO}/fdroid/apks"
 if [ -d "$BENIGN_DIR" ]; then
     run "benign corpus re-run" \
         "$PY" tools/corpus_run.py --corpus-root "$BENIGN_DIR" \
-              --source loose --label benign_fdroid --force \
+              --source loose --label benign_fdroid \
               --min-free-gb 8 --keep-decompiled none
+
+    # Independent confirmation that the corpus is whole before anything measures
+    # it. --dry-run recomputes "remaining" through the same resume gate the run
+    # itself uses, so this cannot drift from it the way a reimplemented check
+    # would. Belt and braces over the exit code: the run has halted early and
+    # still reported success once, and every number downstream inherits it.
+    say "verify benign corpus is complete"
+    REMAINING=$("$PY" tools/corpus_run.py --corpus-root "$BENIGN_DIR" \
+                      --source loose --label benign_fdroid --dry-run 2>/dev/null \
+                | sed -n 's/.*remaining=\([0-9]*\).*/\1/p' | head -1)
+    if [ -z "$REMAINING" ]; then
+        say "FAILED: could not read remaining count — chain stopped"
+        exit 1
+    fi
+    if [ "$REMAINING" -ne 0 ]; then
+        say "FAILED: $REMAINING benign sample(s) still unmeasured — chain stopped."
+        say "        Downstream would measure a partial corpus. Reclaim disk, re-run."
+        exit 1
+    fi
+    say "benign corpus complete"
 else
     say "no benign corpus at $BENIGN_DIR — skipping"
 fi

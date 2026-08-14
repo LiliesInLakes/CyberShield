@@ -22,7 +22,7 @@ Seven layers, glued by a single evidence record:
 | **L0** Ingestion & triage | Hashing, manifest, icon pHash, certificate, **bank-impersonation check**, routing | ✅ works |
 | **L1** Static analysis | jadx decompile + YARA (source, per-class dex, APK scopes); Ghidra for native | ⚠️ 37% malware-category detection (was 8%); **18 rules still dead** (B29) |
 | **Spine** | Merged `artifacts/<sha256>/evidence.json`, stable evidence IDs | ✅ works (L0+L1 wired) |
-| **L2** Dynamic analysis | Emulator detonation, Frida hooks, mitmproxy | ❌ **non-functional**, not wired to the spine; AVD core-dumps (T14) |
+| **L2** Dynamic analysis | Emulator detonation, Frida hooks, mitmproxy | ⚠️ functional (22 hooks, DroidBot, SMS inject, spine-wired); **network isolation not enforced yet** |
 | **L3** ML classifier | Calibrated maliciousness prior, bounded ±10 | ⚠️ built + feature bridge verified; **no model trained yet** |
 | **L4** GenAI reasoning | Verified deobfuscation + report generation | ✅ works — OpenRouter free tier, execution verifier, $0.00/call |
 | **L5** Hybrid scoring | Auditable additive score + smoking-gun gates | ⚠️ built; **gates refuse to arm** while weights are unsupported (T24) |
@@ -205,36 +205,47 @@ Each of these cost real time. Do not rediscover them.
 | **T26** | **The LLM will confidently mis-decode a string, and RAG cannot catch it.** In model selection, `north-mini-code` decoded `aHR0cDovLzE5Mi4xNjguMS4xMDAvZ2F0ZS5waHA=` as `.../get.php`; it is `gate.php`. Retrieval grounds claims about the *threat landscape*, not about *this sample*. Anything a decoder, parser or hash can settle must be verified mechanically before it reaches a report. |
 | **T28** | **A behaviour rule matching the raw ZIP container proves nothing, and the container ruleset silently included 33 of 51 rules.** `scope = "both"` kept every behaviour rule in the container pass. Measured: `Android_BFSI_Accessibility_Driven_Exfil` matched **82 times at container scope on benign apps and 0 on malware**, turning +0.007 discrimination into −0.090. Benign F-Droid apps have a median 3,519 decompiled files against malware's 426, so a bigger archive simply offers more raw bytes for a coincidental hit. The container pass now takes only `scope = "apk"`. |
 | **T29** | **A scanner behaviour change that edits no `.yar` file leaves `ruleset_version` unchanged — and `corpus_run` resumes on it.** The T28 fix would have shipped while every sample was skipped as already-done. `ruleset_version()` now hashes `SCANNER_BEHAVIOUR_VERSION` too. Bump it whenever the scanner changes what a given rule set produces. |
+| **T30** | 🔴 **A step that stops early and exits 0 is indistinguishable from one that finished, and every number downstream inherits it.** `corpus_run` halted on its disk floor at 245/604 benign, returned 0, and `rerun_pipeline.sh` — whose entire design is "each step gated on the previous succeeding" — went on to build labels, weights, calibration, 1248 scores and an evaluation over a corpus that was **59% pre-T28 spines**. It printed a clean headline (AUROC 0.9261) and `unsupported=False`. Nothing errored. Early stop now returns **3**, and the pipeline independently re-checks `remaining=0` via `--dry-run` before measuring anything. Provenance is `l1.summary.ruleset_version`; **`l5.summary.ruleset_version` is stamped at scoring time on every spine and is not evidence that L1 was re-run.** |
+| **T31** | **The disk floor was watching the wrong filesystem.** One `--min-free-gb` guarded the repo, but the heavy writer is jadx (T18) and its output root is now `$SENTINEL_L1_ARTIFACTS` on the 276 GB NTFS partition. An 8 GB floor blocked a run whose repo writes total ~30 MB, while the filesystem doing the real work had 255 GB free and was never checked. Floors are now split: `--min-free-gb` for the L1 root, `REPO_MIN_FREE_GB = 2.0` for the repo. Measured before moving: 17.41 s on ntfs-3g vs 17.26 s on ext4 for the same APK, 6918 files either way, and the mount is case-sensitive — obfuscated `a.java`/`A.java` do not collide. |
 | **T27** | **F-Droid cannot validate the accessibility or BFSI rule classes.** Measured across all 4178 packages: **5** declare an accessibility service, **79** declare any SMS permission, and **zero** are commercial banking apps. It is also entirely F-Droid/developer-signed, so `certificate_anomaly` is ~0 by construction and any cert weight measured against it is an **upper bound**. Growing B fixes the arithmetic (T24); it does not make these rule classes tested. |
 
 ---
 
-## 6.5 ⏸️ PAUSED mid-re-measurement (2026-08-12 ~17:35) — resume here
+## 6.5 🔄 Re-measurement in flight (relaunched 2026-08-12 18:51 UTC)
 
-Everything was stopped **cleanly** for a reboot. Nothing is running. To pick up:
+To check on it, or to restart it if the machine went down:
 
 ```bash
 source source_env.sh
-nohup tools/rerun_pipeline.sh > "$SENTINEL_DATA_ROOT/pipeline_driver.log" 2>&1 &
-tail -f "$SENTINEL_DATA_ROOT"/pipeline_*.log
+tail -f "$(ls -t "$SENTINEL_DATA_ROOT"/pipeline_*.log | head -1)"   # watch
+nohup tools/rerun_pipeline.sh > "$SENTINEL_DATA_ROOT/pipeline_driver.log" 2>&1 &  # restart
 ```
 
-That single command does the rest: benign re-run → labels → A4 → calibration → policy
-validation → score → evaluate, each step gated on the previous succeeding, ending with a
-headline block.
+That single command does the rest: benign re-run → **completeness check** → labels → A4 →
+calibration → policy validation → score → evaluate, each step gated on the previous
+succeeding, ending with a headline block.
 
-### State at the pause
+### State at relaunch
 
 | | |
 |---|---|
-| Malware corpus | ✅ **re-run complete** under `26f6f6f1d646` — 652 ok, findings identical to before (the predicted null result) |
-| Benign corpus | ⏸️ **71 / 600 done**, saved in `corpus/run_index_benign_fdroid.json` |
-| Everything downstream | not yet run — labels, A4, calibration, scores and evaluation are all still from *before* the T28 fix |
+| Malware corpus | ✅ **re-run complete** under `26f6f6f1d646` — 640 ok |
+| Benign corpus | 🔄 **245 / 600 done**, 355 running; resume state in `corpus/run_index_benign_fdroid.json` |
+| Everything downstream | 🔴 **must be discarded and recomputed** — see below |
 
-🔴 **Resume without `--force`.** The pipeline script omits it for exactly this reason: the
-resume index already holds 71 completed samples at the right `ruleset_version`, and `--force`
-would discard them and restart from zero. The corpus runner was stopped with SIGINT precisely
-so that index flushed.
+🔴 **The 2026-08-12 downstream artifacts are contaminated and must not be quoted.** The first
+attempt halted at 245/604 benign and reported success anyway (T30), so
+`rule_weights_20260812.json`, `rule_firing_20260812.md`, `evaluation_20260812.json` and all
+1248 `L5/artifacts/*/score.json` were computed over a benign set that was **59% pre-T28**.
+Its headline — AUROC 0.9261, `unsupported=False`, benign median 32.0 — is not a result. The
+re-run overwrites all of them. `L5/policy.yaml` is unaffected: the re-fit landed on the same
+`s0`/`temperature`, so it is byte-identical to the last commit.
+
+🔴 **Resume without `--force`.** `--force` is `index = {}` — it discards the resume index and
+restarts from zero. The gate that makes it unnecessary is `ruleset_version`: resume skips a
+sample only when it is `ok`/`skipped` **and** stamped with the current ruleset, so every
+sample is guaranteed to be measured under the fixed scanner without it. `rerun_pipeline.sh`
+passed `--force` until 2026-08-12 while this file claimed it did not; it now genuinely omits it.
 
 ### Why the re-measurement exists
 

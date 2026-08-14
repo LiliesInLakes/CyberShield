@@ -31,6 +31,7 @@ never a sample.
 from __future__ import annotations
 
 import argparse
+import os
 import shutil
 import sys
 from dataclasses import dataclass
@@ -38,12 +39,20 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
+# Must resolve to the same place as ``L1/l1.py:ARTIFACTS``. It is duplicated
+# rather than imported so that reclaiming disk still works when L1's own
+# dependencies do not -- a broken interpreter is exactly when you need to free
+# space. tests/test_artifacts_root.py pins the two together, because if they
+# ever disagree this tool reports "nothing to reclaim" while the space it was
+# meant to find sits somewhere else.
+L1_ARTIFACTS = Path(os.environ.get("SENTINEL_L1_ARTIFACTS") or (REPO_ROOT / "L1" / "artifacts"))
+
 # Regenerable intermediate output, keyed by the layer directory that holds it.
 # Each entry is (artifacts root, directory name produced per sample).
 RECLAIMABLE: tuple[tuple[Path, str], ...] = (
-    (REPO_ROOT / "L1" / "artifacts", "jadx_src"),
-    (REPO_ROOT / "L1" / "artifacts", "ghidra_out"),
-    (REPO_ROOT / "L1" / "artifacts", "native_libs"),
+    (L1_ARTIFACTS, "jadx_src"),
+    (L1_ARTIFACTS, "ghidra_out"),
+    (L1_ARTIFACTS, "native_libs"),
 )
 
 
