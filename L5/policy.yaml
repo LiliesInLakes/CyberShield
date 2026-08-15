@@ -96,8 +96,11 @@ bands:
 
 # L3's contribution. Bounded to +/-10 points and unable to reach Critical on
 # its own: LAMDA is ~99.6% non-banking, so it must never make a banking claim.
+# The committed model transfers to this corpus (AUROC 0.9115 on 146+146, B36),
+# so the prior is spent whenever a spine carries an `l3` block (predict.py).
+# A spine without one simply contributes delta 0.
 ml:
-  enabled: false
+  enabled: true
   max_delta: 10
   may_reach_critical: false
 

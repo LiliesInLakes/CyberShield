@@ -129,12 +129,12 @@ async function loadSamples(){
 }
 
 function renderSteps(job){
-  const known = ['triage','static','scoring'];
+  const known = ['triage','static','ml','scoring'];
   const byName = Object.fromEntries((job.steps||[]).map(s=>[s.name,s]));
   el('steps').hidden = false;
   el('steps').innerHTML = known.map(n=>{
     const s = byName[n] || {state:'pending',detail:''};
-    const label = {triage:'L0 triage',static:'L1 static',scoring:'L5 scoring'}[n];
+    const label = {triage:'L0 triage',static:'L1 static',ml:'L3 prior',scoring:'L5 scoring'}[n];
     return `<div class="step" data-state="${s.state}">
       <div class="n">${label}</div>
       <div class="d">${esc(s.detail || s.state)}</div></div>`;

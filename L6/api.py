@@ -82,7 +82,7 @@ def _job_step(job_id: str, name: str, state: str, detail: str = "") -> None:
 
 
 def _run_pipeline(job_id: str, apk_path: Path) -> None:
-    """L0 -> L1 -> L5 for one uploaded sample, in a worker thread."""
+    """L0 -> L1 -> L3 -> L5 for one uploaded sample, in a worker thread."""
     try:
         from ingest import run_l0
         import l1 as l1_module
@@ -105,6 +105,24 @@ def _run_pipeline(job_id: str, apk_path: Path) -> None:
         _job_step(job_id, "static", "done",
                   f"{len(report.findings)} findings · "
                   f"{report.summary.get('ioc_count', 0)} indicators")
+
+        # L3 is a generic maliciousness prior, not a banking claim: policy caps
+        # it at +/-10 and it cannot reach Critical on its own. The model or the
+        # LAMDA vocabulary can be absent on a fresh box, so a failure here
+        # degrades to a skipped step, never a failed job.
+        _job_step(job_id, "ml", "running")
+        try:
+            from L3.predict import load_model, predict_apk
+            from L3.predict import write_layer as l3_write_layer
+            model, calibrator, metrics = load_model()
+            l3 = predict_apk(apk_path, model=model, calibrator=calibrator)
+            l3_write_layer(sha, l3, metrics)
+            prob = l3.get("prob_malicious")
+            detail = (f"p(malicious)={prob:.4f}" if prob is not None
+                      else f"skipped: {l3.get('reason')}")
+            _job_step(job_id, "ml", "done", detail)
+        except (Exception, SystemExit) as exc:  # noqa: BLE001
+            _job_step(job_id, "ml", "skipped", f"{type(exc).__name__}: {exc}")
 
         _job_step(job_id, "scoring", "running")
         from L5.l5 import write_layer
