@@ -1,9 +1,10 @@
-"""Batch L0 + L1 over the malware corpus, safely and resumably.
+"""Batch L0 + L1 (+ optional L3) over the malware corpus, safely and resumably.
 
     source source_env.sh
     $SENTINEL_PYTHON tools/corpus_run.py --dry-run
     $SENTINEL_PYTHON tools/corpus_run.py --limit 20
     $SENTINEL_PYTHON tools/corpus_run.py                # the whole corpus
+    $SENTINEL_PYTHON tools/corpus_run.py --l3           # + the L3 prior per sample
 
 Design notes live in ``docs/plans/phase_a3_amendment.md``. The five that matter
 while reading this file:
@@ -33,6 +34,14 @@ CRC-32 = 0.
 extensionless; some ``.apk``-named files are not archives at all. Acceptance is
 ZIP magic + ``AndroidManifest.xml`` + at least one ``classes*.dex``, and every
 rejection is recorded with a reason rather than skipped in silence.
+
+**``--l3`` is measured once, then remembered.** With the flag, every sample
+gets an ``l3`` layer written to its spine while its APK is still on disk, and
+the run index records ``l3_status`` plus ``l3_model`` — a short fingerprint of
+the model + vocabulary the prediction came from. Resume skips a sample only
+when that fingerprint matches the current model, so a retrained model forces
+re-prediction instead of silently shipping stale priors (the T29 failure mode).
+L3 is a consumer layer: its absence is recorded, never fatal to the run.
 """
 
 from __future__ import annotations
@@ -237,6 +246,49 @@ def check_disk(min_free_gb: float, heavy_root: Path | None = None) -> None:
 
 
 # ---------------------------------------------------------------------------
+# L3 setup — loaded once per run, never per sample
+# ---------------------------------------------------------------------------
+
+def l3_setup() -> tuple[Any, str | None, Any]:
+    """Load the L3 model, calibrator, metrics and vocabulary once.
+
+    Returns ``(bundle, fingerprint, vocab)`` where ``bundle`` is
+    ``(model, calibrator, metrics)`` from ``L3.predict.load_model``, or
+    ``(None, None, None)`` when L3 cannot run at all — missing deps, missing
+    model, missing LAMDA vocabulary. Degradation is deliberate: the caller
+    turns it into a loud refusal, not a silent corpus without the ML prior.
+
+    ``fingerprint`` is a short hash of the three files a prediction depends on
+    (model, metrics, vocabulary mapping). ``analyse_one`` stamps it into the
+    run index, and resume re-runs a sample whenever it no longer matches — a
+    retrained model changes the hash and forces re-prediction, exactly as a
+    ruleset change forces re-measurement of L1.
+    """
+    try:
+        import hashlib
+
+        from L3.features import MAPPING_PATH, Vocabulary
+        from L3.predict import MODEL_DIR, load_model
+    except Exception:  # noqa: BLE001 — L3 deps (numpy, joblib) not installed
+        return None, None, None
+
+    try:
+        bundle = load_model()
+        vocab = Vocabulary.load()
+    except (Exception, SystemExit):  # noqa: BLE001
+        # ModelMissing or a missing feature_mapping.csv (Vocabulary.load raises
+        # SystemExit). Either way L3 cannot run; the run proceeds without it.
+        return None, None, None
+
+    h = hashlib.sha256()
+    for p in (MODEL_DIR / "lamda_lgbm.joblib", MODEL_DIR / "metrics.json",
+              MAPPING_PATH):
+        if p.is_file():
+            h.update(p.read_bytes())
+    return bundle, h.hexdigest()[:12], vocab
+
+
+# ---------------------------------------------------------------------------
 # Analysis of one sample
 # ---------------------------------------------------------------------------
 
@@ -298,6 +350,7 @@ def analyse_one(sample: Sample, args: argparse.Namespace) -> dict[str, Any]:
             l0_findings=len(imp.get("findings", [])),
         )
 
+        report = None
         try:
             report = l1_module.dispatch(apk_path)
             record.update(
@@ -312,6 +365,34 @@ def analyse_one(sample: Sample, args: argparse.Namespace) -> dict[str, Any]:
             # result, not a lost sample. `dispatch` has recorded the failure.
             record.update(status="l1_failed",
                           error=f"{type(exc).__name__}: {str(exc)[:200]}")
+
+        # L3 while the APK is still on disk. A consumer layer: no verdict, no
+        # findings — L5 turns its probability into a ±10-point prior. Failure
+        # is recorded, never fatal; the run's contract is L0+L1.
+        if getattr(args, "l3", False) and sha:
+            record["l3_model"] = getattr(args, "_l3_model_fp", None)
+            bundle = getattr(args, "_l3_bundle", None)
+            if bundle is None:
+                # Unreachable through main() (--l3 refuses to start without a
+                # model); defensive for direct callers of analyse_one.
+                record.update(l3_status="skipped", l3_reason="l3_unavailable")
+            else:
+                try:
+                    from L3.predict import predict_apk, write_layer
+
+                    iocs = (report.artifacts.get("iocs")
+                            if report is not None else None)
+                    result = predict_apk(
+                        apk_path, model=bundle[0], calibrator=bundle[1],
+                        vocab=getattr(args, "_l3_vocab", None), iocs=iocs)
+                    write_layer(sha, result, bundle[2])
+                    record.update(l3_status=result.get("status"),
+                                  l3_prob=result.get("prob_malicious"),
+                                  l3_reason=result.get("reason"))
+                except Exception as exc:  # noqa: BLE001
+                    record.update(l3_status="error",
+                                  l3_error=f"{type(exc).__name__}: "
+                                           f"{str(exc)[:200]}")
 
         if sha:
             doc = spine.load_spine(sha)
@@ -391,6 +472,33 @@ def preflight() -> int:
     return 0
 
 
+def resume_skips(prior: dict[str, Any] | None, rules_v: str,
+                 l3_fp: str | None) -> bool:
+    """True when the resume index already covers this sample.
+
+    A sample is covered when it was recorded ok/skipped at the *current*
+    ruleset_version — and, when an L3 pass was requested (``l3_fp`` not None),
+    only when it is also stamped with the current model fingerprint. Without
+    the fingerprint clause, a retrained model would leave every already-"ok"
+    entry skipped and silently ship stale priors, which is T29's failure mode
+    applied to L3 instead of a ruleset.
+
+    A ``skipped`` entry is covered unconditionally: in ``analyse_one`` that
+    status means the sample was rejected at L0 (not an APK, nested zip) and
+    never got a sha256, so an L3 stamp is impossible and re-iterating it every
+    ``--l3`` run would keep ``remaining`` above zero forever and block the
+    pipeline's completeness gate.
+    """
+    if not prior or prior.get("status") not in ("ok", "skipped") \
+            or prior.get("ruleset_version") != rules_v:
+        return False
+    if l3_fp is None:
+        return True
+    if prior.get("status") == "skipped":
+        return True
+    return prior.get("l3_model") == l3_fp
+
+
 def corpus_root(args: argparse.Namespace) -> Path:
     return Path(getattr(args, "corpus_root", None) or RAW)
 
@@ -450,6 +558,8 @@ def main(argv: list[str]) -> int:
                    help="retain extracted zip members (default: none)")
     p.add_argument("--force", action="store_true",
                    help="re-run samples already recorded as done")
+    p.add_argument("--l3", action="store_true",
+                   help="also run the L3 prior per sample and write its spine layer")
     p.add_argument("--dry-run", action="store_true",
                    help="list what would run, touch nothing")
     p.add_argument("--traceback", action="store_true", help="print tracebacks on error")
@@ -477,6 +587,24 @@ def main(argv: list[str]) -> int:
     samples = collect(args)
     index = load_index(idx_path) if not args.force else {}
 
+    # L3's model + vocabulary are loaded once for the whole run. If --l3 was
+    # asked for and cannot run, refuse rather than produce a corpus that is
+    # silently missing the ML prior — the same reasoning as preflight(): a run
+    # that proceeds over a broken environment manufactures plausible-looking
+    # results (T30). A bare run without --l3 never touches the model at all.
+    args._l3_bundle, args._l3_model_fp, args._l3_vocab = (None, None, None)
+    if args.l3:
+        args._l3_bundle, args._l3_model_fp, args._l3_vocab = l3_setup()
+        if args._l3_bundle is None:
+            print("[corpus] --l3 was requested but the L3 model / LAMDA "
+                  "vocabulary could not be loaded. The corpus would be "
+                  "measured WITHOUT the ML prior, so this run refuses. "
+                  "Install the model and vocabulary first:\n"
+                  "    $SENTINEL_PYTHON L3/fetch_lamda.py\n"
+                  "    $SENTINEL_PYTHON L3/train.py --train-until 2022\n"
+                  "or drop --l3.", file=sys.stderr)
+            return 2
+
     import spine
     from engines.yara_scan import ruleset_version
     rules_v = ruleset_version()
@@ -492,11 +620,8 @@ def main(argv: list[str]) -> int:
 
     pending = []
     for s in samples:
-        prior = index.get(s.key)
-        if prior and prior.get("status") in ("ok", "skipped") \
-                and prior.get("ruleset_version") == rules_v:
-            continue
-        pending.append(s)
+        if not resume_skips(index.get(s.key), rules_v, args._l3_model_fp):
+            pending.append(s)
     # Count what resume skipped *before* --limit truncates, or the two numbers
     # become indistinguishable and a working resume looks like a broken one.
     remaining = len(pending)
@@ -514,6 +639,8 @@ def main(argv: list[str]) -> int:
     print(f"[corpus] L1 artifacts -> {heavy_root}")
     print(f"[corpus] keep-decompiled={args.keep_decompiled}  "
           f"jadx-timeout={args.jadx_timeout}s")
+    if args.l3:
+        print(f"[corpus] --l3 on: model fingerprint {args._l3_model_fp}")
 
     if args.dry_run:
         for s in pending[:40]:
@@ -553,6 +680,8 @@ def main(argv: list[str]) -> int:
                 "status": record.get("status"),
                 "sha256": record.get("sha256"),
                 "ruleset_version": rules_v,
+                "l3_status": record.get("l3_status"),
+                "l3_model": record.get("l3_model"),
                 "size": sample.size,
                 "compress_size": sample.compress_size,
                 "completed_at": datetime.now(timezone.utc).isoformat(),
@@ -572,10 +701,11 @@ def main(argv: list[str]) -> int:
                 flag = f"  ⚑ {record['l0_verdict']}"
                 if record.get("l0_entity"):
                     flag += f" -> {record['l0_entity']}"
+            l3_tag = f"  l3={record.get('l3_status', '-')}" if args.l3 else ""
             print(f"  [{i}/{len(pending)}] {status:10s} "
                   f"{record.get('spine_findings', '-'):>3} findings "
                   f"{record.get('duration_s', 0):>6.1f}s  "
-                  f"{sample.display[:52]}{flag}")
+                  f"{sample.display[:52]}{l3_tag}{flag}")
     except KeyboardInterrupt:
         interrupted = True
         print("\n[corpus] interrupted — progress saved, re-run to resume", file=sys.stderr)

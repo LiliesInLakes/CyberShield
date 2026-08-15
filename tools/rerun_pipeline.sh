@@ -57,13 +57,17 @@ fi
 #    the resume index (`index = {}`) and restarts from zero. This script was
 #    stopped mid-run once with 71 benign samples banked; --force would have
 #    thrown them away.
+#
+#    --l3 makes the same run also write each sample's l3 layer, and stamps the
+#    index with the model fingerprint. Old entries lack that stamp, so the
+#    first --l3 run re-measures everything once; afterwards resume skips them.
 # ---------------------------------------------------------------------------
 BENIGN_DIR="${SENTINEL_DATA_ROOT:-$REPO}/fdroid/apks"
 if [ -d "$BENIGN_DIR" ]; then
     run "benign corpus re-run" \
         "$PY" tools/corpus_run.py --corpus-root "$BENIGN_DIR" \
               --source loose --label benign_fdroid \
-              --min-free-gb 8 --keep-decompiled none
+              --l3 --min-free-gb 8 --keep-decompiled none
 
     # Independent confirmation that the corpus is whole before anything measures
     # it. --dry-run recomputes "remaining" through the same resume gate the run
@@ -72,7 +76,8 @@ if [ -d "$BENIGN_DIR" ]; then
     # still reported success once, and every number downstream inherits it.
     say "verify benign corpus is complete"
     REMAINING=$("$PY" tools/corpus_run.py --corpus-root "$BENIGN_DIR" \
-                      --source loose --label benign_fdroid --dry-run 2>/dev/null \
+                      --source loose --label benign_fdroid \
+                      --l3 --dry-run 2>/dev/null \
                 | sed -n 's/.*remaining=\([0-9]*\).*/\1/p' | head -1)
     if [ -z "$REMAINING" ]; then
         say "FAILED: could not read remaining count — chain stopped"
@@ -86,6 +91,37 @@ if [ -d "$BENIGN_DIR" ]; then
     say "benign corpus complete"
 else
     say "no benign corpus at $BENIGN_DIR — skipping"
+fi
+
+# ---------------------------------------------------------------------------
+# 1b. Malware corpus L3 pass. The malware re-run under the fixed scanner is
+#     already complete (640 ok), but it predates the L3 step, so its spines
+#     carry no l3 layer. --l3 re-runs only what is not stamped with the current
+#     model fingerprint, then the same dry-run gate applies. Without this the
+#     evaluation would measure a corpus whose malware half has no ML prior.
+# ---------------------------------------------------------------------------
+MALWARE_ROOT="${MALWARE_ROOT:-$REPO/corpus/malware_raw}"
+if [ -d "$MALWARE_ROOT" ]; then
+    run "malware corpus L3 pass" \
+        "$PY" tools/corpus_run.py --corpus-root "$MALWARE_ROOT" \
+              --source all --l3 --min-free-gb 8 --keep-decompiled none
+
+    say "verify malware corpus L3 coverage"
+    REMAINING=$("$PY" tools/corpus_run.py --corpus-root "$MALWARE_ROOT" \
+                      --source all --l3 --dry-run 2>/dev/null \
+                | sed -n 's/.*remaining=\([0-9]*\).*/\1/p' | head -1)
+    if [ -z "$REMAINING" ]; then
+        say "FAILED: could not read remaining count — chain stopped"
+        exit 1
+    fi
+    if [ "$REMAINING" -ne 0 ]; then
+        say "FAILED: $REMAINING malware sample(s) still lack a current L3 pass — chain stopped."
+        say "        The evaluation would measure malware without its ML prior."
+        exit 1
+    fi
+    say "malware corpus L3 coverage complete"
+else
+    say "no malware corpus at $MALWARE_ROOT — skipping"
 fi
 
 # ---------------------------------------------------------------------------

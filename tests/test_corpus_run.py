@@ -159,6 +159,49 @@ def test_unreadable_index_does_not_lose_the_corpus(tmp_path):
     assert corpus_run.load_index(path) == {}
 
 
+def _entry(status="ok", ruleset="r1", l3_model=None):
+    d = {"status": status, "ruleset_version": ruleset}
+    if l3_model is not None:
+        d["l3_model"] = l3_model
+    return d
+
+
+def test_resume_skips_a_done_sample_without_l3_pass():
+    assert corpus_run.resume_skips(_entry(), "r1", None) is True
+
+
+def test_resume_does_not_skip_when_ruleset_moved():
+    assert corpus_run.resume_skips(_entry(ruleset="r0"), "r1", None) is False
+
+
+def test_resume_does_not_skip_a_failed_sample():
+    assert corpus_run.resume_skips(_entry(status="error"), "r1", None) is False
+
+
+def test_l3_pass_reruns_entries_without_an_l3_stamp():
+    """Old ok entries predate the L3 step; --l3 must re-measure them, not treat
+    the corpus as covered. Otherwise the first --l3 run ships no priors and
+    the downstream gate -- which reads the same resume index -- reports 0."""
+    assert corpus_run.resume_skips(_entry(), "r1", "fp-a") is False
+
+
+def test_l3_pass_skips_entries_stamped_with_the_current_model():
+    assert corpus_run.resume_skips(_entry(l3_model="fp-a"), "r1", "fp-a") is True
+
+
+def test_l3_pass_reruns_entries_stamped_with_an_older_model():
+    """A retrained model changes the fingerprint; stale priors must not stand."""
+    assert corpus_run.resume_skips(_entry(l3_model="fp-old"), "r1", "fp-a") is False
+
+
+def test_l3_pass_skips_rejected_samples_without_a_stamp():
+    """A status="skipped" entry was rejected at L0 (not an APK / nested zip)
+    and has no sha256, so L3 can never apply. Re-iterating it every --l3 run
+    would keep the completeness gate's `remaining` above zero forever."""
+    assert corpus_run.resume_skips(
+        {"status": "skipped", "ruleset_version": "r1"}, "r1", "fp-a") is True
+
+
 # ---------------------------------------------------------------------------
 # Extraction safety
 # ---------------------------------------------------------------------------

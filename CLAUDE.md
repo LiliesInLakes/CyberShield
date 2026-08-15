@@ -78,16 +78,19 @@ $SENTINEL_PYTHON tools/debug/summarize_results.py <apk>
 $SENTINEL_PYTHON -m pytest tests/ -q
 
 # Corpus (safe, resumable — see §4). Full run: ~57 min, 705 samples.
+# --l3 also writes each sample's L3 prior to its spine (resume re-runs when the
+# model fingerprint changes — T29's gate applied to L3). Refuses to start if
+# the model/vocab are absent rather than silently shipping a no-ML corpus.
 $SENTINEL_PYTHON tools/corpus_run.py --dry-run
 $SENTINEL_PYTHON tools/corpus_run.py --match novTargetedIndianBanks
-$SENTINEL_PYTHON tools/corpus_run.py                 # everything; re-run to resume
+$SENTINEL_PYTHON tools/corpus_run.py --l3               # everything + L3; re-run to resume
 $SENTINEL_PYTHON tools/corpus_summary.py             # newest run's report
 
 # Benign corpus (I14) and the weights L5 spends
 $SENTINEL_PYTHON tools/fdroid_fetch.py select --n 600 && \
 $SENTINEL_PYTHON tools/fdroid_fetch.py download
 $SENTINEL_PYTHON tools/corpus_run.py --corpus-root "$SENTINEL_DATA_ROOT/fdroid/apks" \
-                                     --source loose --label benign_fdroid
+                                     --source loose --label benign_fdroid --l3
 $SENTINEL_PYTHON tools/corpus_labels.py build --benign-root "$SENTINEL_DATA_ROOT/fdroid/apks" \
                                               --benign-id benign_fdroid
 $SENTINEL_PYTHON tools/rule_firing_report.py         # A4 — read the support stamp (T24)
@@ -221,9 +224,12 @@ tail -f "$(ls -t "$SENTINEL_DATA_ROOT"/pipeline_*.log | head -1)"   # watch
 nohup tools/rerun_pipeline.sh > "$SENTINEL_DATA_ROOT/pipeline_driver.log" 2>&1 &  # restart
 ```
 
-That single command does the rest: benign re-run → **completeness check** → labels → A4 →
-calibration → policy validation → score → evaluate, each step gated on the previous
-succeeding, ending with a headline block.
+That single command does the rest: benign re-run → malware L3 pass → **completeness checks**
+(both corpora, both with `--l3`) → labels → A4 → calibration → policy validation → score →
+evaluate, each step gated on the previous succeeding, ending with a headline block. The L3
+pass matters: the malware re-run under `26f6f6f1d646` predates the L3 step, so its spines
+carry no `l3` layer until the pipeline re-measures them with `--l3`; the completeness checks
+then refuse to measure a corpus whose `ok` entries lack a current L3 stamp.
 
 ### State at relaunch
 
