@@ -19,6 +19,11 @@ fi
 
 AVD_NAME="${1:-sentinel30}"
 PORT="${2:-5554}"
+# Consume the positional args we just read so the "$@" passthrough below
+# only forwards *extra* emulator flags, not AVD_NAME/PORT a second time
+# (previously left unshifted, which duplicated them onto the emulator's
+# command line and made it reject the AVD name as a stray parameter).
+shift $(( $# < 2 ? $# : 2 ))
 
 exec "$ANDROID_SDK_ROOT/emulator/emulator" \
     -avd "$AVD_NAME" \

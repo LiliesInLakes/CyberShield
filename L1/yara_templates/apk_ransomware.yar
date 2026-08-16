@@ -29,11 +29,21 @@ rule Android_Ransomware_Generic_File_Encryption {
         $file3 = "getAbsolutePath" ascii wide
         $file4 = "Environment.getExternalStorageDirectory" ascii wide
 
-        // Ransom note patterns
+        // Ransom note patterns.
+        // "PAYMENT" and bare "DECRYPT" were removed: `Cipher.DECRYPT_MODE` puts
+        // "DECRYPT" in every class that decrypts anything, so the token carried
+        // no information in a rule that already requires the crypto APIs.
         $note1 = "YOUR FILES HAVE BEEN ENCRYPTED" ascii wide nocase
-        $note2 = "PAYMENT" ascii wide nocase
-        $note3 = "BITCOIN" ascii wide nocase
-        $note4 = "DECRYPT" ascii wide nocase
+        $note2 = "files have been encrypted" ascii wide nocase
+        $note3 = "decrypt your files" ascii wide nocase
+        // 🔴 Bare "BITCOIN" was measured firing on 2 of 99 benign apps and 0 of
+        // 89 malware in a corpus probe: F-Droid apps carry Bitcoin donation
+        // addresses, and one match landed in a Coil image-loader class. The
+        // demand phrase is what distinguishes extortion from a donate button.
+        $note4 = "bitcoin address" ascii wide nocase
+        $note5 = "ransom" ascii wide nocase
+        $note6 = "unlock your device" ascii wide nocase
+        $note7 = "all your files" ascii wide nocase
 
         // Targeted extensions
         $ext1 = ".jpg" ascii wide
@@ -44,13 +54,15 @@ rule Android_Ransomware_Generic_File_Encryption {
 
         // Hex: AES key schedule initialization
 
+    // Was: 3 of ($enc*) AND 2 of ($file*) AND 1 of ($note*) AND 2 of ($ext*) —
+    // eight co-located tokens across four groups, which fired on 0/640 malware
+    // on a corpus that contains ransomware (B29). Reduced to two groups: the
+    // ransom *intent* (a note phrase) plus any two mechanics tokens.
     condition:
         filesize < 15MB
         and uint32be(0) == 0x504B0304
-        and (3 of ($enc*))
-        and (2 of ($file*))
         and (1 of ($note*))
-        and (2 of ($ext*))
+        and (2 of ($enc*, $file*, $ext*))
 }
 
 
@@ -81,7 +93,9 @@ rule Android_Ransomware_Locker_Screen {
         $demand1 = "FBI" ascii wide
         $demand2 = "POLICE" ascii wide
         $demand3 = "ILLEGAL CONTENT" ascii wide
-        $demand4 = "FINE" ascii wide
+        // Bare "FINE" is a substring of ACCESS_FINE_LOCATION, which is in a large
+        // fraction of all apps — the phrase is what carries the extortion claim.
+        $demand4 = "pay the fine" ascii wide nocase
 
         // Payment instructions
         $pay1 = "Ukash" ascii wide
@@ -90,11 +104,13 @@ rule Android_Ransomware_Locker_Screen {
 
         // Hex: Device admin XML pattern
 
+    // Was: 3 of ($admin*) AND 2 of ($overlay*) AND 1 of ($demand*) AND
+    // 1 of ($pay*) — seven co-located tokens, 0/640 malware. Reduced to two
+    // groups: the lock mechanism, and the extortion/payment vocabulary that
+    // separates a locker from a legitimate device-admin app.
     condition:
         filesize < 10MB
         and uint32be(0) == 0x504B0304
-        and (3 of ($admin*))
-        and (2 of ($overlay*))
-        and (1 of ($demand*))
-        and (1 of ($pay*))
+        and (2 of ($admin*, $overlay*))
+        and (1 of ($demand*, $pay*))
 }

@@ -39,18 +39,51 @@ for _p in (str(REPO_ROOT), str(REPO_ROOT / "L1")):
 import spine  # noqa: E402
 from L4.provider import Completion, CostLedger, Provider, get_provider  # noqa: E402
 from L4.verify import Verdict, verify  # noqa: E402
+from L4.knowledge.retriever import KBMatch, retrieve  # noqa: E402
+from L4.network_correlation import correlate  # noqa: E402
+from L4.reasoning_trail import ReasoningTrail, build_trail  # noqa: E402
+from L4.verify_verdict import VerifierVerdict, verify_trail  # noqa: E402
+from L4.scorer import ClassScore, score_class  # noqa: E402
 
 MAX_CLASSES = 8
 MAX_CHARS_PER_CLASS = 12_000
+_STRING_LITERAL_RE = re.compile(r'"((?:[^"\\]|\\.){4,200})"')
+_SKILL_MD = REPO_ROOT / "L4" / "SKILL.md"
 
-SYSTEM = (
-    "You are a malware analyst reading decompiled Android code. Answer only "
-    "with a JSON object matching the requested schema. Never guess: if you "
-    "cannot determine something from the code shown, omit it. Every string you "
-    "claim to decode will be re-decoded mechanically and discarded if wrong."
-)
 
-SCHEMA_HINT = """Return ONLY this JSON object:
+def _extract_skill_block(markdown: str, name: str) -> str:
+    """Pull one ``<!-- BEGIN:NAME -->...<!-- END:NAME -->`` block from SKILL.md.
+
+    Per the loader contract at the bottom of ``L4/SKILL.md`` — the spec file
+    is data a prompt-builder reads, not prose duplicated in code.
+    """
+    m = re.search(rf"<!-- BEGIN:{name} -->\n(.*?)\n<!-- END:{name} -->",
+                  markdown, re.S)
+    if not m:
+        raise ValueError(f"L4/SKILL.md missing block: {name}")
+    return m.group(1).strip()
+
+
+def _load_skill() -> tuple[str, str, str]:
+    """Returns (system_message, schema_block, role_only) built from SKILL.md.
+
+    Falls back to a minimal inline spec if SKILL.md is absent (e.g. a stripped
+    deployment) rather than crashing L4 entirely — degraded, not silent: the
+    fallback lacks the extended schema fields and negative instructions.
+    """
+    if not _SKILL_MD.is_file():
+        role = ("You are a malware analyst reading decompiled Android code. "
+                "Never guess: if you cannot determine something, omit it.")
+        schema = SCHEMA_HINT_FALLBACK
+        return role, schema, role
+    text = _SKILL_MD.read_text(errors="replace")
+    role = _extract_skill_block(text, "ROLE")
+    schema = _extract_skill_block(text, "SCHEMA")
+    negatives = _extract_skill_block(text, "NEGATIVE_INSTRUCTIONS")
+    return f"{role}\n\n{negatives}", schema, role
+
+
+SCHEMA_HINT_FALLBACK = """Return ONLY this JSON object:
 {
   "purpose": "one sentence: what this class does",
   "renamed": {"<obfuscated identifier present in the code>": "<meaningful name>"},
@@ -61,6 +94,8 @@ SCHEMA_HINT = """Return ONLY this JSON object:
   "confidence": "high|medium|low"
 }"""
 
+SYSTEM, SCHEMA_HINT, _ROLE_ONLY = _load_skill()
+
 
 @dataclass
 class ClassExplanation:
@@ -70,6 +105,11 @@ class ClassExplanation:
     dropped: list[dict[str, Any]]
     model: str
     cost_usd: float
+    kb_matches: list[KBMatch] = field(default_factory=list)
+    network_correlation: list[str] = field(default_factory=list)
+    trail: ReasoningTrail | None = None
+    verifier: VerifierVerdict | None = None
+    score: ClassScore | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -79,6 +119,24 @@ class ClassExplanation:
             "dropped_claims": self.dropped,
             "model": self.model,
             "cost_usd": round(self.cost_usd, 6),
+            "kb_matches": [
+                {"kb_id": m.kb_id, "title": m.title, "similarity": round(m.similarity, 4),
+                 "mitre_techniques": m.mitre_techniques}
+                for m in self.kb_matches
+            ],
+            "network_correlation": self.network_correlation,
+            "reasoning_trail": (self.trail.steps if self.trail else []),
+            "verifier": ({
+                "status": self.verifier.status,
+                "confidence": self.verifier.confidence,
+                "counter_argument": self.verifier.counter_argument,
+                "fabricated_citations": self.verifier.fabricated_citations,
+            } if self.verifier else None),
+            "score": ({
+                "score": self.score.score,
+                "band": self.score.band,
+                "rationale": self.score.rationale,
+            } if self.score else None),
         }
 
 
@@ -117,6 +175,50 @@ def interesting_locations(doc: dict[str, Any], limit: int = MAX_CLASSES) -> list
     return [loc for loc, _ in sorted(seen.items(), key=lambda kv: (kv[1], kv[0]))][:limit]
 
 
+def package_l0_context(doc: dict[str, Any]) -> str:
+    """One line of L0 context — brand claim / cert anomaly — best-effort.
+
+    Per `L4/SKILL.md`'s INPUT_BUNDLE contract: context only, never re-derived
+    here. Spine schema is read defensively since L4 does not own L0's shape.
+    """
+    l0 = ((doc.get("layers") or {}).get("l0") or {}).get("summary") or {}
+    parts = []
+    brand = l0.get("brand_claim") or l0.get("matched_bank")
+    if brand:
+        parts.append(f"app claims to be {brand}")
+    if l0.get("certificate_anomaly") or l0.get("cert_anomaly"):
+        parts.append("certificate anomaly present")
+    return "; ".join(parts) if parts else "no L0 context available"
+
+
+def package_l2_context(doc: dict[str, Any]) -> str:
+    """One line of L2 package-level runtime context — best-effort."""
+    l2 = ((doc.get("layers") or {}).get("l2") or {}).get("summary") or {}
+    sms = bool(l2.get("sms_intercepted") or l2.get("sms_intercept"))
+    overlay = bool(l2.get("overlay_displayed") or l2.get("overlay"))
+    c2 = l2.get("c2_count", l2.get("c2_endpoints", 0))
+    c2_count = c2 if isinstance(c2, int) else len(c2 or [])
+    return (f"package behaviour: sms_intercepted={sms}, "
+            f"overlay_displayed={overlay}, c2_endpoints={c2_count}")
+
+
+def package_network_evidence(doc: dict[str, Any]) -> dict[str, Any]:
+    """The L2 network summary, whichever of the shapes documented in
+    `L4/network_correlation.py` this spine happens to carry."""
+    l2 = ((doc.get("layers") or {}).get("l2") or {}).get("summary") or {}
+    network = l2.get("network")
+    if isinstance(network, dict):
+        return network
+    return l2 if isinstance(l2, dict) else {}
+
+
+def extract_string_literals(source: str) -> list[str]:
+    """Every double-quoted string literal in a class, for retrieval queries
+    and network correlation. Not a full Java lexer — good enough for jadx
+    output, which quotes consistently."""
+    return [m.group(1) for m in _STRING_LITERAL_RE.finditer(source)]
+
+
 def read_source(src_root: Path, location: str) -> str | None:
     """Resolve a finding's location to source text, tolerating layout drift."""
     candidates = [src_root / location]
@@ -133,13 +235,41 @@ def read_source(src_root: Path, location: str) -> str | None:
 
 
 def explain_class(provider: Provider, location: str, source: str,
-                  extracted_iocs: Iterable[str]) -> tuple[ClassExplanation, Completion]:
-    prompt = (f"{SCHEMA_HINT}\n\nFile: {location}\n\n```java\n{source}\n```")
+                  extracted_iocs: Iterable[str], *,
+                  l0_context: str = "", l2_context: str = "",
+                  network_evidence: dict[str, Any] | None = None,
+                  ) -> tuple[ClassExplanation, list[Completion]]:
+    """Run the three-agent chain for one class: analyst -> mechanical verify
+    -> reasoning-trail -> adversarial verifier -> deterministic score.
+
+    Per `decisions/plan_l4_agentic_verdicts.md` §1: the analyst sees source +
+    package-level context + retrieval; the reasoning-trail agent sees only
+    what survived mechanical verification, never raw source; the verifier
+    sees source + the trail + what it cited, nothing else.
+    """
+    completions: list[Completion] = []
+    literals = extract_string_literals(source)
+
+    query_text = f"{location}\n" + "\n".join(literals[:40])
+    kb_matches = retrieve(query_text, top_k=3, min_sim=0.3)
+    net_correlation = correlate(literals, network_evidence or {})
+
+    bundle = (
+        f"{SCHEMA_HINT}\n\n"
+        f"File: {location}\n\n"
+        f"L0 context: {l0_context or 'none'}\n"
+        f"L2 context: {l2_context or 'none'}\n"
+        f"Retrieved KB matches: "
+        f"{[(m.kb_id, m.title, round(m.similarity, 2)) for m in kb_matches] or 'none (treat as novel)'}\n"
+        f"Network correlation: {net_correlation or 'none'}\n\n"
+        f"```java\n{source}\n```"
+    )
     completion = provider.complete(
         [{"role": "system", "content": SYSTEM},
-         {"role": "user", "content": prompt}],
+         {"role": "user", "content": bundle}],
         max_tokens=1500, temperature=0.0, json_object=True,
     )
+    completions.append(completion)
     try:
         claims = completion.json()
     except Exception:  # noqa: BLE001
@@ -147,11 +277,35 @@ def explain_class(provider: Provider, location: str, source: str,
         m = re.search(r"\{.*\}", completion.text, re.S)
         claims = json.loads(m.group()) if m else {}
 
-    v: Verdict = verify(claims, code=[source], extracted_iocs=extracted_iocs)
+    valid_kb_ids = [m.kb_id for m in kb_matches]
+    v: Verdict = verify(claims, code=[source], extracted_iocs=extracted_iocs,
+                        valid_kb_ids=valid_kb_ids)
+
+    trail: ReasoningTrail | None = None
+    verifier_result: VerifierVerdict | None = None
+    try:
+        trail = build_trail(v.kept, kb_matches, provider)
+        kb_index = {m.kb_id: m for m in kb_matches}
+        verifier_result = verify_trail(trail, source, kb_index, provider)
+    except Exception:  # noqa: BLE001
+        # A failed second/third call degrades to "no score signal", not a
+        # crash — the analyst's mechanically-verified claims still stand.
+        pass
+
+    score = score_class(
+        kept_claims=v.kept, dropped_claims=v.dropped, kb_matches=kb_matches,
+        verifier_result=verifier_result, suspicion=claims.get("suspicion"),
+    )
+
+    # `cost_usd` here is just the analyst call; the run-level total in
+    # `deobfuscate()` is read from `provider.ledger` so it captures the
+    # trail + verifier calls too, not just this one completion.
     return ClassExplanation(
         location=location, kept=v.kept, unverified=v.unverified,
         dropped=v.dropped, model=completion.model, cost_usd=completion.cost_usd,
-    ), completion
+        kb_matches=kb_matches, network_correlation=net_correlation,
+        trail=trail, verifier=verifier_result, score=score,
+    ), completions
 
 
 def deobfuscate(doc: dict[str, Any], src_root: Path, *,
@@ -161,40 +315,63 @@ def deobfuscate(doc: dict[str, Any], src_root: Path, *,
     provider = provider or get_provider("openrouter")
     result = DeobfuscationResult(sha256=doc.get("sha256", ""))
 
+    l0_context = package_l0_context(doc)
+    l2_context = package_l2_context(doc)
+    network_evidence = package_network_evidence(doc)
+
+    spend_before = getattr(provider, "ledger", None)
+    spend_before = spend_before.spent_usd if spend_before else 0.0
+
     for location in interesting_locations(doc, limit):
         source = read_source(src_root, location)
         if not source:
             result.errors.append(f"source not available: {location}")
             continue
         try:
-            explanation, completion = explain_class(
-                provider, location, source, extracted_iocs)
+            explanation, _completions = explain_class(
+                provider, location, source, extracted_iocs,
+                l0_context=l0_context, l2_context=l2_context,
+                network_evidence=network_evidence,
+            )
         except Exception as exc:  # noqa: BLE001
             result.errors.append(f"{location}: {type(exc).__name__}: {exc}")
             continue
         result.explanations.append(explanation)
         result.calls += 1
-        result.cost_usd += completion.cost_usd
+
+    ledger = getattr(provider, "ledger", None)
+    result.cost_usd = (ledger.spent_usd - spend_before) if ledger else sum(
+        e.cost_usd for e in result.explanations)
 
     return result
 
 
 def promote(result: DeobfuscationResult) -> dict[str, Any]:
-    """L4's spine summary. No findings, no score contribution — by design."""
+    """L4's spine summary. No findings, no score contribution to L5 — by
+    design, unchanged from before. The 0-10 scores below are for L6's ranked
+    report only (`decisions/plan_l4_agentic_verdicts.md` — the L5 edge is
+    deferred behind the benign-corpus gate, T24)."""
     verified_counts: dict[str, int] = {}
+    band_counts: dict[str, int] = {}
+    scored = [e.score for e in result.explanations if e.score is not None]
     for e in result.explanations:
         for kind, value in e.kept.items():
             verified_counts[kind] = verified_counts.get(kind, 0) + (
                 len(value) if isinstance(value, (list, dict)) else 0)
+        if e.score is not None:
+            band_counts[e.score.band] = band_counts.get(e.score.band, 0) + 1
     return {
         "classes_explained": len(result.explanations),
         "llm_calls": result.calls,
         "cost_usd": round(result.cost_usd, 6),
         "verified_claims": verified_counts,
         "dropped_claims": result.dropped_total,
+        "score_bands": band_counts,
+        "max_score": max((s.score for s in scored), default=None),
         "contributes_points": 0,
-        "note": ("explanation only; every checkable claim was re-derived from "
-                 "the artifact and discarded if it did not match"),
+        "note": ("scored for report ranking only; every checkable claim was "
+                 "re-derived from the artifact and discarded if it did not "
+                 "match; the L5 scoring edge is deferred (T24)"),
         "errors": result.errors[:5],
     }
 
@@ -249,8 +426,16 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"{len(result.explanations)} classes explained, {result.calls} calls, "
           f"${result.cost_usd:.6f}, {result.dropped_total} claims dropped")
-    for e in result.explanations:
-        print(f"\n  {e.location}")
+    ranked = sorted(result.explanations,
+                    key=lambda e: e.score.score if e.score else -1, reverse=True)
+    for e in ranked:
+        score_tag = f"[{e.score.score}/10 · {e.score.band}]" if e.score else "[unscored]"
+        print(f"\n  {score_tag} {e.location}")
+        if e.score:
+            print(f"    {e.score.rationale}")
+        if e.verifier:
+            print(f"    verifier: {e.verifier.status} ({e.verifier.confidence})"
+                  + (f" — {e.verifier.counter_argument[:160]}" if e.verifier.counter_argument else ""))
         purpose = e.unverified.get("purpose")
         if purpose:
             print(f"    purpose (unverified): {purpose}")

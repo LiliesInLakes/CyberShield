@@ -19,13 +19,21 @@ rule Android_Clipboard_Hijacker {
         $clip3 = "addPrimaryClipChangedListener" ascii wide
         $clip4 = "getPrimaryClip" ascii wide
 
-        // Crypto wallet patterns
-        $wallet1 = /[13][a-km-zA-HJ-NP-Z1-9]{25,34}/ ascii   // Bitcoin
-        $wallet2 = /0x[0-9a-fA-F]{40}/ ascii                    // Ethereum
-        $wallet3 = /T[A-Za-z1-9]{33}/ ascii                      // Tron
+        // Crypto wallet patterns — word-anchored. Unanchored, $wallet1 matched
+        // any 26–35 character alphanumeric run, which in a dex means class
+        // names, resource ids and base64 fragments.
+        $wallet1 = /\b[13][a-km-zA-HJ-NP-Z1-9]{25,34}\b/ ascii   // Bitcoin
+        $wallet2 = /\b0x[0-9a-fA-F]{40}\b/ ascii                 // Ethereum
+        $wallet3 = /\bT[A-Za-z1-9]{33}\b/ ascii                  // Tron
 
-        // UPI ID pattern (Indian specific)
-        $upi_id = /[a-zA-Z0-9._-]+@[a-zA-Z]+/ ascii
+        // UPI ID pattern (Indian specific).
+        // 🔴 Was /[a-zA-Z0-9._-]+@[a-zA-Z]+/ — that matches every e-mail address,
+        // every `name@domain` in a licence header and every Java annotation-ish
+        // token in decompiled source. Measured at A4: this rule fired on 100 of
+        // 604 benign apps against 6 of 640 malware, weight −2.97, the most
+        // anti-discriminative signal in the system. A UPI VPA is now required to
+        // end in a real PSP handle.
+        $upi_id = /\b[a-zA-Z0-9._-]{3,}@(oksbi|okaxis|okhdfcbank|okicici|ybl|ibl|axl|apl|paytm|upi|airtel|jio|fbl|idfcbank|kotak|yesbank)\b/ ascii nocase
 
     condition:
         (2 of ($clip*))

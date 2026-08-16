@@ -84,12 +84,16 @@ rule Android_Evasion_Anti_Analysis_VirtualMachine {
 
         // Hex: QEMU-specific property
 
+    // Was: 3 of ($build*) AND 2 of ($vm*) AND 1 of ($debug*) — six co-located
+    // tokens across three groups, 0/640 malware (B29). A real emulator check
+    // reads one or two Build fields and tests one QEMU path. Reduced to two
+    // groups: a VM/emulator artefact path (the discriminating half), plus any
+    // Build-property or debugger check.
     condition:
         filesize < 15MB
         and uint32be(0) == 0x504B0304
-        and (3 of ($build*))
-        and (2 of ($vm*))
-        and (1 of ($debug*))
+        and (1 of ($vm*))
+        and (1 of ($build*, $debug*))
 }
 
 

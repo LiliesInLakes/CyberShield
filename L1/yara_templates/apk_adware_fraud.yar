@@ -67,11 +67,14 @@ rule Android_Fraud_SMS_Subscription_Abuse {
         $sms2 = "sendTextMessage" ascii wide
         $sms3 = "sendMultipartTextMessage" ascii wide
 
-        // Premium number patterns
+        // Premium number patterns. The bare three-digit prefixes ("900", "909",
+        // "806") were removed: they match any three consecutive digits in any
+        // string, so they made the group unconditionally true rather than
+        // selective — the opposite of what a "1 of" clause is for.
         $premium1 = /\+[0-9]{3,4}9[0-9]{3,6}/ ascii wide
-        $premium2 = "900" ascii wide
-        $premium3 = "909" ascii wide
-        $premium4 = "806" ascii wide
+        $premium2 = /\bsms\s?to\s?\+?[0-9]{4,6}\b/ ascii wide nocase
+        $premium3 = "shortcode" ascii wide nocase
+        $premium4 = "premium_number" ascii wide nocase
 
         // Carrier billing
         $bill1 = "carrier billing" ascii wide
@@ -85,13 +88,15 @@ rule Android_Fraud_SMS_Subscription_Abuse {
 
         // Hex: SMS PDU type SUBMIT
 
+    // Was: 2 of ($sms*) AND 1 of ($premium*) AND 1 of ($bill*) AND
+    // 1 of ($bypass*) — five co-located tokens across four groups, 0/640
+    // malware (B29). Reduced to two groups: the send primitive, plus two
+    // subscription/billing or confirmation-bypass markers.
     condition:
         filesize < 10MB
         and uint32be(0) == 0x504B0304
-        and (2 of ($sms*))
-        and (1 of ($premium*))
-        and (1 of ($bill*))
-        and (1 of ($bypass*))
+        and (1 of ($sms*))
+        and (2 of ($premium*, $bill*, $bypass*))
 }
 
 
@@ -128,11 +133,14 @@ rule Android_Fraud_Click_Jacking_Tapjacking {
         $spoof2 = "setComponent" ascii wide
         $spoof3 = "Intent.FLAG_ACTIVITY_NEW_TASK" ascii wide
 
+    // Was: 2 of ($tap*) AND 2 of ($touch*) AND 2 of ($acc*) AND 1 of ($spoof*)
+    // — seven co-located tokens across four groups, 0/640 malware (B29).
+    // Reduced to two groups: the tapjacking window flags, plus a synthetic-click
+    // or target-spoofing marker. Touch handlers alone are ordinary UI code and
+    // are folded into the second group rather than being required.
     condition:
         filesize < 10MB
         and uint32be(0) == 0x504B0304
-        and (2 of ($tap*))
-        and (2 of ($touch*))
-        and (2 of ($acc*))
-        and (1 of ($spoof*))
+        and (1 of ($tap*))
+        and (2 of ($acc*, $spoof*, $touch*))
 }

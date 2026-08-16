@@ -39,7 +39,7 @@ from dataclasses import dataclass, field
 from typing import Any, Iterable
 
 # Claim kinds that survive only if a check passes.
-CHECKABLE = ("decoded_strings", "renamed", "api_calls", "iocs")
+CHECKABLE = ("decoded_strings", "renamed", "api_calls", "iocs", "matched_pattern")
 
 
 @dataclass
@@ -224,8 +224,28 @@ def verify_iocs(claims: list[str], extracted: Iterable[str],
     return kept
 
 
+def verify_matched_pattern(claim: str | None, valid_kb_ids: Iterable[str],
+                           verdict: Verdict) -> str | None:
+    """A cited KB entry must be one the analyst was actually shown.
+
+    Mirrors ``iocs``: the model may never introduce a pattern id the
+    retrieval step did not surface (`L4/knowledge/retriever.py::retrieve`).
+    Inventing a plausible-sounding MITRE/KB id is exactly the T26 failure
+    shape one layer up — settle it mechanically, not by trusting the claim.
+    """
+    if claim is None:
+        return None
+    valid = {str(v) for v in valid_kb_ids}
+    if isinstance(claim, str) and claim in valid:
+        return claim
+    verdict.drop("matched_pattern", claim, "kb_id_not_in_retrieved_matches",
+                 expected=sorted(valid)[:5])
+    return None
+
+
 def verify(claims: dict[str, Any], *, code: list[str],
-           extracted_iocs: Iterable[str] = ()) -> Verdict:
+           extracted_iocs: Iterable[str] = (),
+           valid_kb_ids: Iterable[str] = ()) -> Verdict:
     """Check a model response against the artifact it claims to describe."""
     v = Verdict()
 
@@ -234,6 +254,8 @@ def verify(claims: dict[str, Any], *, code: list[str],
     v.kept["renamed"] = verify_renamed(claims.get("renamed") or {}, code, v)
     v.kept["api_calls"] = verify_api_calls(claims.get("api_calls") or [], code, v)
     v.kept["iocs"] = verify_iocs(claims.get("iocs") or [], extracted_iocs, v)
+    v.kept["matched_pattern"] = verify_matched_pattern(
+        claims.get("matched_pattern"), valid_kb_ids, v)
 
     # Everything else is narrative. It is kept, but marked, so a reader can see
     # exactly which sentences rest on the model's word.

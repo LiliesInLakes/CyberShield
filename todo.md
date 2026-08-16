@@ -39,19 +39,37 @@ Last updated: 2026-08-14
 
 ### YARA Rules
 - [x] Diagnose dead rules — 16 dead, 4 root causes identified (see decision_yara_improvement.md)
-- [ ] Fix 9 over-conjunctive rules: reduce to 2 token groups max (validated via mine_cooccurrence.py)
-- [ ] Add `resources.arsc` string extraction to yara_scan.py (unblocks 3 UI/resource rules)
-- [ ] Fix Clipboard Hijacker rule (anti-discriminative at -2.97, overly broad regexes)
-- [ ] Add rules for 8 new 2024-2026 techniques: ATS/ODF, VNC, MQTT C2, cookie theft, auth code theft, USSD, delayed droppers, DoH C2
-- [ ] Re-validate all fixed rules against benign corpus before merging
+- [x] **Rewrite all 16 over-conjunctive rules to 2 token groups max** (N-of-M, in place rather than split — see `decisions/l1_l4_yara_improvements_2026.md` §2). Guarded by `tests/test_yara_emerging_rules.py::test_repaired_rules_use_at_most_two_token_groups`. Also removed the tokens that made a group unconditionally true (`/[0-9]{4,6}/`, `"900"/"909"/"806"`, `"FINE"`, `"DECRYPT"`) and fixed the `$upi*`/`$upi_str*` prefix collision that silently merged two groups into one.
+- [ ] **Confirm the repair at corpus scale** — 3 of the 16 revived in an 89-malware probe (command execution, GPS surveillance, SMS/call-log harvester); the other 13 are unmeasured until `corpus_run` + `rule_firing_report` are re-run under the new `ruleset_version`. Predictions recorded in the decision doc §6.
+- [ ] **Both ransomware rules are still dead after repair** (0/88 malware) — blocked on `resources.arsc`, not on the condition. Do not re-open the condition; fix the scanner.
+- [ ] Add `resources.arsc` string extraction to yara_scan.py (unblocks the 2 ransomware rules + `Android_India_FakeBank_App`)
+- [x] Fix Clipboard Hijacker rule — wallet regexes `\b`-anchored, UPI VPA now requires a real PSP handle instead of `/[a-zA-Z0-9._-]+@[a-zA-Z]+/`. Probe: benign 3/99 → 1/99, malware unchanged. **Its A4 weight (−2.97) is not re-measured yet.**
+- [x] Add rules for 8 new 2024-2026 techniques: ATS/ODF, VNC, MQTT C2, cookie theft, auth code theft, USSD, delayed droppers, DoH C2 — `L1/yara_templates/apk_emerging_techniques_2026.yar`, two token groups each, in `index.yar`, 9 structural tests
+- [ ] **The 8 new rules are unvalidated on malware**: 5 of 8 (ATS, VNC, MQTT, USSD, DoH) fired on 0 of 89 corpus samples, which is expected — the corpus is 2020–2022 vintage and these are 2024–2026 techniques. Needs a 2024+ sample set, not a bigger run of this one.
+- [ ] Re-validate all fixed rules against the **full** benign corpus before merging — only a 99-app probe was run, and 0/99 has a 95% upper bound near 3.7%
 
 ### Testing
-- [x] Full test suite: 210/210 passing
+- [x] Full test suite: 285/285 passing (276 + 9 YARA structural tests, 2026-08-16)
 - [ ] Ensure test fixtures work with malware APKs (corpus path validation)
 - [ ] Add integration tests for L0→spine→L1→spine pipeline
 - [ ] Add L2 integration tests (emulator-dependent, skip when unavailable)
 
 ---
+
+### L4 Agentic Verdicts
+- [x] Plan (`decisions/plan_l4_agentic_verdicts.md`): 3-agent pipeline (analyst → reasoning-trail → adversarial verifier), 0-10 deterministic scorer, RAG (TF-IDF/kb.json: MITRE Mobile + YARA meta + India patterns), network string/host correlation (documented limitation: no call-stack attribution)
+- [x] `L4/knowledge/{build_kb.py,kb.json,retriever.py}` — 200-entry KB, retrieve()
+- [x] `L4/SKILL.md`, `L4/scorer.py`, `L4/network_correlation.py`
+- [x] `L4/reasoning_trail.py`, `L4/verify_verdict.py` — mechanical fabricated-citation override, not LLM self-report
+- [x] Wired into `L4/deobfuscate.py::explain_class` (analyst → verify.py incl. new matched_pattern check → trail → verifier → scorer); `L6/report.py` renders a ranked, report-only "AI-assisted code analysis" section
+- [x] 258/258 tests passing (was 219 before L2 network work, 226/248/255 after each parallel L4 agent, +3 integration tests)
+- [ ] **L5 scoring edge deferred** — `GROUNDED → L5 ±5 pts` from the plan is explicitly NOT wired; waits on `n_benign ≥ 213` (T24)
+- [ ] Live-sample smoke test against the SBI Quick Support sample (only fake-provider tests exist so far)
+
+### L2 follow-ups (found while implementing network isolation)
+- [x] `ssl_unpin.js` wired into `orchestrator.py::detonate`'s `required_scripts` — was on disk but never bundled into `combined_runner.js`, so HTTPS pinning bypass was never actually active despite the comment claiming it was. 11 new tests, `test_ssl_unpin_is_in_required_scripts` guards the regression.
+- [x] Emulator auto-launch: `L2Orchestrator._ensure_device()` now fires `tools/launch_emulator.sh` and polls `sys.boot_completed` (180s timeout) if no ADB device is attached at run start, instead of failing immediately. Opt out with `--no-auto-launch-emulator` / `auto_launch_emulator=False`.
+- [ ] Noticed, not fixed: `tools/launch_emulator.sh` passes `$@` through to `emulator` after already consuming `$1`/`$2` as `AVD_NAME`/`PORT` — calling it with two positional args re-appends them as trailing emulator flags. Harmless as invoked here (zero args, defaults apply) but latent if anyone calls it with `avd_name port` explicitly.
 
 ## Done
 

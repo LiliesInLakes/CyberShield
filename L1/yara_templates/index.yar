@@ -41,3 +41,7 @@ include "apk_clipboard_notification.yar"
 
 // BFSI banking-trojan primitives (per-class API co-occurrence, dex + source)
 include "apk_bfsi_primitives.yar"
+
+// Emerging 2024-2026 techniques: ATS, VNC, MQTT C2, cookie theft, non-SMS OTP,
+// USSD abuse, staged droppers, DoH C2 (two-group "N of M" conditions)
+include "apk_emerging_techniques_2026.yar"

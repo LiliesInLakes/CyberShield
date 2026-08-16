@@ -1,12 +1,15 @@
-"""L2 Sandbox: Transparent proxy and DNS redirection for the emulator.
+"""L2 Sandbox: System proxy setting and DNS redirection for the emulator.
 
-Standalone helper (kept separate from orchestrator.py, which another agent
-is modifying).  Two independent concerns live here because both are
-"make the emulator's network go where we want before detonation":
+Non-fail-closed extras layered on top of ``safety.py``'s DROP-all +
+DNAT, which is the security-critical piece and owns the ``nat`` table's
+``OUTPUT`` chain. This module deliberately does NOT touch iptables --
+it used to install its own NAT REDIRECT rules for the same ports, which
+duplicated ``safety.enforce_isolation()``'s DNAT rules in the same table
+(order-dependent, two owners of one firewall table). That's gone; what's
+left here is:
 
-  1. Transparent proxying -- global HTTP proxy setting plus iptables
-     REDIRECT rules so traffic that ignores the system proxy setting
-     (many bankers hardcode sockets) still lands on mitmproxy.
+  1. System HTTP proxy setting -- belt-and-suspenders for apps that honour
+     the global proxy setting and so don't even need the NAT rule.
   2. DNS redirection -- static /etc/hosts overrides for known C2
      platforms, so lookups resolve locally instead of leaking to the
      real internet even before a connection is attempted.
@@ -46,8 +49,6 @@ _HOSTS_REDIRECTS: dict[str, str] = {
 
 _HOSTS_MARKER_BEGIN = "# BEGIN sentinel-l2-dns-redirect"
 _HOSTS_MARKER_END = "# END sentinel-l2-dns-redirect"
-
-_IPTABLES_COMMENT = "sentinel-l2-transparent-proxy"
 
 
 class ProxySetupError(Exception):
@@ -91,50 +92,6 @@ class ProxyManager:
             return False
         log.info("system proxy cleared")
         return True
-
-    # ------------------------------------------------------------------
-    # iptables transparent redirect (requires root)
-    # ------------------------------------------------------------------
-
-    def _iptables(self, action: str, port: int) -> subprocess.CompletedProcess[str]:
-        # -A to add, -D to delete; both use the identical rule spec so
-        # teardown is a mechanical replay of setup.
-        return self._adb(
-            "shell", "su", "0", "iptables", "-t", "nat", action, "OUTPUT",
-            "-p", "tcp", "--dport", str(port),
-            "-m", "comment", "--comment", _IPTABLES_COMMENT,
-            "-j", "REDIRECT", "--to-port", str(HOST_PROXY_PORT),
-        )
-
-    def add_transparent_redirect(self, ports: tuple[int, ...] = (80, 443)) -> bool:
-        """Add iptables REDIRECT rules for *ports* -> mitmproxy.
-
-        Best-effort: not every emulator image ships iptables or grants
-        root via ``su 0``. Failures are logged and do not raise -- the
-        system proxy setting alone still covers apps that honour it.
-        """
-        ok = True
-        for port in ports:
-            res = self._iptables("-A", port)
-            if res.returncode != 0:
-                log.warning(
-                    "iptables redirect for port %d failed (root/iptables may be "
-                    "unavailable on this image): %s", port, res.stderr.strip(),
-                )
-                ok = False
-            else:
-                log.info("iptables: redirecting tcp/%d -> %d", port, HOST_PROXY_PORT)
-        return ok
-
-    def remove_transparent_redirect(self, ports: tuple[int, ...] = (80, 443)) -> None:
-        for port in ports:
-            res = self._iptables("-D", port)
-            if res.returncode != 0:
-                log.debug("iptables rule for port %d already absent: %s", port, res.stderr.strip())
-
-    def list_iptables_rules(self) -> str:
-        res = self._adb("shell", "su", "0", "iptables", "-t", "nat", "-L", "OUTPUT", "-n", "--line-numbers")
-        return res.stdout
 
     # ------------------------------------------------------------------
     # DNS redirection via /etc/hosts
@@ -203,16 +160,14 @@ class ProxyManager:
     # ------------------------------------------------------------------
 
     def verify(self) -> dict[str, object]:
-        """Report current proxy/DNS/iptables state for diagnostics."""
+        """Report current proxy/DNS state for diagnostics."""
         proxy_res = self._adb("shell", "settings", "get", "global", "http_proxy")
         hosts_res = self._adb("shell", "cat", "/etc/hosts")
-        iptables_rules = self.list_iptables_rules()
 
         return {
             "system_proxy": proxy_res.stdout.strip(),
             "system_proxy_active": f"{HOST_PROXY_ADDR}:{HOST_PROXY_PORT}" in proxy_res.stdout,
             "dns_redirect_active": _HOSTS_MARKER_BEGIN in hosts_res.stdout,
-            "iptables_redirect_active": _IPTABLES_COMMENT in iptables_rules,
         }
 
     # ------------------------------------------------------------------
@@ -222,13 +177,11 @@ class ProxyManager:
     def up(self) -> dict[str, bool]:
         return {
             "system_proxy": self.set_system_proxy(),
-            "transparent_redirect": self.add_transparent_redirect(),
             "dns_redirect": self.apply_dns_redirects(),
         }
 
     def down(self) -> None:
         self.clear_system_proxy()
-        self.remove_transparent_redirect()
         self.remove_dns_redirects()
 
 

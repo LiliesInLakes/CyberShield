@@ -39,12 +39,17 @@ rule Android_Banking_Zanubis_AccessibilityOverlay {
         // Hex: WebSocket handshake pattern
         $hex_ws = { 48 54 54 50 2F 31 2E 31 20 31 30 31 }  // "HTTP/1.1 101"
 
+    // Was: (all of ($acc_svc*) or all of ($ws*)) AND 2 of ($overlay*) AND
+    // (any of ($target*) or $hex_ws). `all of` is the strictest possible form
+    // and this is a family rule, so it fired on 0/640 (B29). Kept
+    // family-specific — the Zanubis strings still carry the match — but the
+    // generic half is now "N of M" rather than "all of", so a variant that
+    // renames one constant is no longer invisible.
     condition:
         filesize < 15MB
         and uint32be(0) == 0x504B0304
-        and (all of ($acc_svc*) or all of ($ws*))
-        and (2 of ($overlay*))
-        and (any of ($target*) or $hex_ws)
+        and (1 of ($target*) or $hex_ws)
+        and (2 of ($acc_svc*, $ws*, $overlay*))
 }
 
 
@@ -79,6 +84,10 @@ rule Android_Banking_TaxiSpy_RAT {
         $bank2 = "vtb24" ascii wide
         $bank3 = "alfabank" ascii wide
 
+    // Family rule: the IOC group carries it. Was additionally requiring
+    // 2 of ($rat*) AND 1 of ($bank*) co-located with the IOC, which no sample
+    // satisfies because the C2 constant and the banking overlay list live in
+    // different classes. Reduced to two groups (0/640, B29).
     condition:
         filesize < 20MB
         and uint32be(0) == 0x504B0304
@@ -86,8 +95,7 @@ rule Android_Banking_TaxiSpy_RAT {
             any of ($pkg, $c2_ip, $worker_key)
             or any of ($firebase_xor, $c2_xor)
         )
-        and (2 of ($rat*))
-        and (1 of ($bank*))
+        and (1 of ($rat*, $bank*))
 }
 
 
@@ -123,13 +131,15 @@ rule Android_Banking_Ankara_Stealer {
 
         // Hex: SMS PDU header pattern
 
+    // Was: 2 of ($sms*) AND 2 of ($web*) AND 2 of ($cred*) AND any of ($c2_*)
+    // — seven co-located tokens across four groups, 0/640 (B29). The Ankara C2
+    // paths are family-unique and are what should carry the rule; the rest is
+    // now a single "2 of M" behaviour group.
     condition:
         filesize < 10MB
         and uint32be(0) == 0x504B0304
-        and (2 of ($sms*))
-        and (2 of ($web*))
-        and (2 of ($cred*))
         and (any of ($c2_*))
+        and (2 of ($sms*, $web*, $cred*))
 }
 
 
