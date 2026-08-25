@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>APK Sentinel — Notely Voice</title><style>
+*{box-sizing:border-box}
+body{margin:0;padding:2rem;font:14px/1.55 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+     color:#17212b;background:#f6f7f9;max-width:1100px;margin-inline:auto}
+h1{font-size:1.5rem;margin:0 0 .25rem}
+h2{font-size:1.05rem;margin:2rem 0 .6rem;padding-bottom:.3rem;border-bottom:1px solid #dfe3e8}
+.sub{color:#5b6b7c;margin:0 0 1.5rem;font-size:.9rem}
+.card{background:#fff;border:1px solid #dfe3e8;border-radius:10px;padding:1.1rem 1.25rem;margin-bottom:1rem}
+.banner{background:#fff4e5;border:1px solid #e0a458;border-left-width:5px;border-radius:8px;
+        padding:.85rem 1rem;margin-bottom:1.25rem}
+.banner strong{color:#8a4b00}
+.verdict{display:flex;gap:1.5rem;align-items:center;flex-wrap:wrap}
+.score{font-size:2.6rem;font-weight:700;line-height:1;letter-spacing:-.02em}
+.band{font-size:.72rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
+      color:#fff;padding:.28rem .6rem;border-radius:999px;display:inline-block}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:.3rem 1.1rem;font-size:.88rem}
+.kv dt{color:#5b6b7c}
+.kv dd{margin:0;font-variant-numeric:tabular-nums}
+table{border-collapse:collapse;width:100%;font-size:.85rem}
+th,td{text-align:left;padding:.4rem .55rem;border-bottom:1px solid #eceff2;vertical-align:top}
+th{color:#5b6b7c;font-weight:600;font-size:.76rem;text-transform:uppercase;letter-spacing:.05em}
+td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.82em}
+details{border:1px solid #e4e8ec;border-radius:8px;margin-bottom:.5rem;background:#fff}
+details>summary{cursor:pointer;padding:.55rem .8rem;font-weight:600;font-size:.88rem;
+                display:flex;gap:.6rem;align-items:center}
+details>div{padding:0 .8rem .8rem}
+.sev{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+     color:#fff;padding:.14rem .45rem;border-radius:4px}
+.pill{background:#eef1f4;color:#41525f;border-radius:999px;padding:.13rem .5rem;
+      font-size:.75rem;margin-right:.3rem;display:inline-block}
+.gap{color:#8a4b00}
+.muted{color:#7a8894}
+.pos{color:#b3261e}.neg{color:#2c6e49}
+footer{margin-top:2.5rem;padding-top:1rem;border-top:1px solid #dfe3e8;
+       color:#7a8894;font-size:.78rem}
+@media print{body{background:#fff;padding:0;max-width:none}
+  .card,details{break-inside:avoid}details{border:none}details>summary{padding-left:0}
+  details[open]>div{padding-left:0}}
+</style></head><body>
+<h1>APK Sentinel investigation report</h1>
+<p class="sub">Notely Voice · generated 2026-08-15 21:52 UTC</p>
+
+<div class="card"><div class="verdict">
+  <div>
+    <div class="score" style="color:#40566b">17<span style="font-size:1rem;
+      color:#94a3b1;font-weight:400"> / 100</span></div>
+    <span class="band" style="background:#40566b">Informational</span>
+  </div>
+  <dl class="kv" style="flex:1;min-width:340px"><dt>Package</dt><dd class='mono'>com.module.notelycompose.android</dd><dt>Application</dt><dd class='mono'>Notely Voice</dd><dt>SHA-256</dt><dd class='mono'>ae1ce24adbf01b9b0fda2da6dfc58e643588f5e3d10b20464194c8c25b0dfb76</dd><dt>Confidence</dt><dd class='mono'>0.55 (moderate)</dd><dt>Binding constraint</dt><dd class='mono'>additive</dd></dl>
+</div></div>
+<h2>How the score was reached</h2><table><thead><tr><th>Points</th><th>Signal</th><th>Evidence</th><th>Family</th><th>Discount</th></tr></thead><tbody><tr><td class='num neg'>-2.57</td><td class='mono'>l0:verdict:unknown</td><td class='mono'>—</td><td class='muted'>—</td><td class='num muted'></td></tr><tr><td class='num neg'>-1.07</td><td class='mono'>yara:Android_Secrets_Hardcoded</td><td class='mono'>F002</td><td class='muted'>hygiene</td><td class='num muted'></td></tr><tr><td class='num pos'>+0.24</td><td class='mono'>yara:Android_WebView_JavaScriptEnabled</td><td class='mono'>F001</td><td class='muted'>hygiene</td><td class='num muted'>×0.25</td></tr></tbody></table><h3 style='font-size:.9rem;margin:1.2rem 0 .5rem;color:#5b6b7c'>Smoking-gun gates</h3><details><summary><span class='mono'>G1_bank_impersonation_credential_ui</span><span class='muted'>○ not fired</span><span class='muted' style='margin-left:auto'>floor 85</span></summary><div><table><thead><tr><th>Leg</th><th>Satisfied</th><th>Evidence</th><th>Note</th></tr></thead><tbody><tr><td>bank_impersonation</td><td>no</td><td class='mono'>—</td><td class='muted'></td></tr><tr><td>credential_ui</td><td>no</td><td class='mono'>—</td><td class='muted'></td></tr></tbody></table></div></details><details><summary><span class='mono'>G2_sms_intercept_exfil</span><span class='muted'>○ not fired</span><span class='muted' style='margin-left:auto'>floor 85</span></summary><div><table><thead><tr><th>Leg</th><th>Satisfied</th><th>Evidence</th><th>Note</th></tr></thead><tbody><tr><td>sms_intercept</td><td>no</td><td class='mono'>—</td><td class='muted'></td></tr><tr><td>exfiltration</td><td>no</td><td class='mono'>—</td><td class='muted'></td></tr></tbody></table></div></details><details><summary><span class='mono'>G3_accessibility_overlay_bank_target</span><span class='muted'>○ disabled</span><span class='muted' style='margin-left:auto'>floor 85</span></summary><div><p class='muted'>no evidence source for &#x27;targets a known bank package&#x27; (A5 target-list rule)</p></div></details><details><summary><span class='mono'>G4_dropper_embedded_apk</span><span class='muted'>○ disabled</span><span class='muted' style='margin-left:auto'>floor 70</span></summary><div><p class='muted'>L0 does not yet record REQUEST_INSTALL_PACKAGES or embedded payloads</p></div></details>
+<h2>Findings (2)</h2>
+<details><summary><span class='sev' style='background:#c25a00'>high</span><span class='mono'>F001</span><span>other</span><span class='muted' style='margin-left:auto'>yara</span></summary><div><p>[Android_WebView_JavaScriptEnabled] WebView has JavaScript enabled — increases XSS attack surface -&gt; setJavaScriptEnabled</p><p class='muted mono'>sources/com/module/notelycompose/platform/WebViewContent_androidKt.java</p><table><tr><td class='muted'>yara_rule</td><td class='mono'>Android_WebView_JavaScriptEnabled</td></tr><tr><td class='muted'>scopes</td><td class='mono'>dex_class, source</td></tr><tr><td class='muted'>match_count</td><td class='mono'>2</td></tr><tr><td class='muted'>location_count</td><td class='mono'>2</td></tr><tr><td class='muted'>match</td><td class='mono'>setJavaScriptEnabled <span class='muted'>@ sources/com/module/notelycompose/platform/WebViewContent_androidKt.java</span></td></tr><tr><td class='muted'>match</td><td class='mono'>setJavaScriptEnabled <span class='muted'>@ classes2.dex!com/module/notelycompose/platform/WebViewContent_androidKt$WebViewContent$1</span></td></tr><tr><td class='muted'>locations</td><td class='mono'>sources/com/module/notelycompose/platform/WebViewContent_androidKt.java<br>classes2.dex!com/module/notelycompose/platform/WebViewContent_androidKt$WebViewContent$1</td></tr></table></div></details><details><summary><span class='sev' style='background:#8a6d00'>medium</span><span class='mono'>F002</span><span>other</span><span class='muted' style='margin-left:auto'>yara</span></summary><div><p>[Android_Secrets_Hardcoded] Potential hardcoded credential or secret — review for plaintext secrets -&gt; .password</p><p class='muted mono'>sources/com/google/android/material/R.java</p><table><tr><td class='muted'>yara_rule</td><td class='mono'>Android_Secrets_Hardcoded</td></tr><tr><td class='muted'>scopes</td><td class='mono'>source</td></tr><tr><td class='muted'>match_count</td><td class='mono'>10</td></tr><tr><td class='muted'>location_count</td><td class='mono'>3</td></tr><tr><td class='muted'>match</td><td class='mono'>.password <span class='muted'>@ sources/com/google/android/material/R.java</span></td></tr><tr><td class='muted'>match</td><td class='mono'>.password <span class='muted'>@ sources/com/google/android/material/R.java</span></td></tr><tr><td class='muted'>match</td><td class='mono'>.password <span class='muted'>@ sources/com/google/android/material/R.java</span></td></tr><tr><td class='muted'>match</td><td class='mono'>.password <span class='muted'>@ sources/com/google/android/material/R.java</span></td></tr><tr><td class='muted'>match</td><td class='mono'>.password <span class='muted'>@ sources/com/google/android/material/R.java</span></td></tr><tr><td class='muted'>match</td><td class='mono'>.password <span class='muted'>@ sources/com/google/android/material/textfield/EndCompoundLayout.java</span></td></tr><tr><td class='muted'>locations</td><td class='mono'>sources/com/google/android/material/R.java<br>sources/com/google/android/material/textfield/EndCompoundLayout.java<br>sources/com/google/android/material/textfield/PasswordToggleEndIconDelegate.java</td></tr></table></div></details>
+<h2>Indicators (6)</h2>
+<table><thead><tr><th>Type</th><th>Indicator</th><th>Count</th><th>First location</th></tr></thead><tbody><tr><td>domain</td><td class='mono'>huggingface.co</td><td class='num'>6</td><td class='mono muted'>classes2.dex!com/module/notelycompose/modelDownloader/ModelSelection</td></tr><tr><td>domain</td><td class='mono'>dispatchers.io</td><td class='num'>3</td><td class='mono muted'>classes3.dex!kotlinx/coroutines/scheduling/DefaultIoScheduler</td></tr><tr><td>domain</td><td class='mono'>zoneid.id</td><td class='num'>1</td><td class='mono muted'>classes3.dex!kotlinx/datetime/TimeZone</td></tr><tr><td>url</td><td class='mono'>https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin</td><td class='num'>1</td><td class='mono muted'>classes2.dex!com/module/notelycompose/modelDownloader/ModelSelection</td></tr><tr><td>url</td><td class='mono'>https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin</td><td class='num'>1</td><td class='mono muted'>classes2.dex!com/module/notelycompose/modelDownloader/ModelSelection</td></tr><tr><td>url</td><td class='mono'>https://huggingface.co/khidrew/whisper-base-hindi-ggml/resolve/main/ggml-base-hi.bin</td><td class='num'>1</td><td class='mono muted'>classes2.dex!com/module/notelycompose/modelDownloader/ModelSelection</td></tr></tbody></table>
+<h2>AI-assisted code analysis (L4)</h2>
+<p class='muted' style='margin:0 0 .8rem'>Model-generated, report-only — scores rank classes for review and do not contribute to the score above or feed any gate. Every claim shown already survived mechanical re-derivation against this sample's own bytes.</p><details><summary>
+  <span class="band" style="background:#8a6d00">plausible · 5/10</span>
+  <span class="mono">sources/com/google/android/material/textfield/EndCompoundLayout.java</span>
+</summary><div>
+  <p class="muted" style="margin:.4rem 0">no KB match, 7 mechanically kept claim(s), no threat-intel grounding -&gt; 5</p>
+  <p style='margin:.4rem 0'><strong>Verifier:</strong> confirmed (high) — The reasoning trail correctly identifies that the code uses standard Android accessibility APIs (AccessibilityManager, ViewCompat.setImportantForAccessibility, AccessibilityManagerCompat.TouchExplorationStateChangeListener) and view lifecycle listeners (addOnAttachStateChangeListener) in a manner consistent with legitimate Material Design text field implementation. The cited methods are part of normal UI construction and accessibility support in the com.google.android.material.textfield package. No malicious behavior, obfuscation, or suspicious patterns are present. The absence of KB citations is appropriate because the code exhibits no indicators of compromise.</p>
+  <p style="margin:.6rem 0 .2rem"><strong>Reasoning trail</strong></p>
+  <ul style="margin:.2rem 0"><li>no KB citation: The sample calls getContext().getSystemService(&quot;accessibility&quot;) to obtain an AccessibilityManager, indicating it intends to interact with Android accessibility services.</li><li>no KB citation: It uses ViewCompat.setImportantForAccessibility and AccessibilityManagerCompat.TouchExplorationStateChangeListener, which are compatibility APIs for controlling accessibility importance and listening for touch-exploration state changes.</li><li>no KB citation: The presence of addOnAttachStateChangeListener suggests the code monitors view attachment/detachment events, possibly to enable or disable accessibility features dynamically.</li><li>no KB citation: LayoutInflater.from(getContext()), MaterialResources.getColorStateList, and ViewUtils.parseTintMode are standard UI-inflation and material-theming calls, showing normal view construction alongside the accessibility-related logic.</li><li>no KB citation: No indicators of compromise (IOCs) or decoded strings were extracted, and no threat-intelligence KB entries matched this sample, so no further malicious behavior can be inferred from the available data.</li></ul>
+  <p style='margin:.6rem 0 .2rem'><strong>Dropped claims</strong></p><ul style='margin:.2rem 0'><li class='muted'>✗ api_calls: DrawableCompat.setTintList (api_not_present_in_code)</li><li class='muted'>✗ api_calls: DrawableCompat.setTintMode (api_not_present_in_code)</li></ul>
+</div></details><details><summary>
+  <span class="band" style="background:#8a6d00">plausible · 5/10</span>
+  <span class="mono">sources/com/google/android/material/textfield/PasswordToggleEndIconDelegate.java</span>
+</summary><div>
+  <p class="muted" style="margin:.4rem 0">no KB match, 7 mechanically kept claim(s), no threat-intel grounding -&gt; 5</p>
+  <p style='margin:.4rem 0'><strong>Verifier:</strong> confirmed (high) — The reasoning trail accurately describes the code&#x27;s behavior: the onIconClickListener toggles the EditText&#x27;s transformation method between PasswordTransformationMethod and null (plain text), preserves the cursor position via getSelectionEnd/setSelection, and refreshes the icon state. This is a standard show/hide password toggle implementation with no benign alternative explanation for the observed logic.</p>
+  <p style="margin:.6rem 0 .2rem"><strong>Reasoning trail</strong></p>
+  <ul style="margin:.2rem 0"><li>no KB citation: The sample contains a method renamed to onIconClick, which suggests a UI click handler for an icon widget.</li><li>no KB citation: The code calls EditText.getTransformationMethod to retrieve the current transformation method of a text field.</li><li>no KB citation: It compares the retrieved transformation method against PasswordTransformationMethod.getInstance to determine if the field is currently masking input.</li><li>no KB citation: Based on that check, it toggles the field&#x27;s transformation method: if it is a PasswordTransformationMethod, it clears the transformation to show plain text; otherwise it sets a PasswordTransformationMethod instance to mask the input.</li><li>no KB citation: After toggling, the code obtains the current cursor position via EditText.getSelectionEnd and reapplies it with EditText.setSelection so the cursor remains at the same location.</li><li>no KB citation: The sequence implements a show/hide password toggle commonly used in login or credential-entry screens.</li></ul>
+  
+</div></details><details><summary>
+  <span class="band" style="background:#94a3b1">refuted · 0/10</span>
+  <span class="mono">sources/com/module/notelycompose/platform/WebViewContent_androidKt.java</span>
+</summary><div>
+  <p class="muted" style="margin:.4rem 0">verifier refuted the reasoning trail; dropped from the ranked list</p>
+  <p style='margin:.4rem 0'><strong>Verifier:</strong> refuted (high) — The trail overstates risk by treating standard WebView configuration as inherently suspicious. Enabling JavaScript, setting a WebViewClient, and loading a URL are normal for any app that displays web content (e.g., help pages, OAuth flows, article readers). The code shows no dynamic code loading, no JavaScript interfaces (@JavascriptInterface), no SSL error handling overrides, no file scheme access, and no evidence that the URL is attacker-controlled. Without those, the &#x27;bypassing security controls&#x27; claim is speculative. A benign explanation — rendering trusted first-party content — fits the observed code at least as well.</p>
+  <p style="margin:.6rem 0 .2rem"><strong>Reasoning trail</strong></p>
+  <ul style="margin:.2rem 0"><li>no KB citation: The sample uses android.webkit.WebView.loadUrl to load a URL inside a WebView component.</li><li>no KB citation: The sample enables JavaScript execution in the WebView via android.webkit.WebSettings.setJavaScriptEnabled.</li><li>no KB citation: The sample sets a custom WebViewClient via android.webkit.WebView.setWebViewClient, which can intercept navigation and handle SSL errors.</li><li>no KB citation: Combining a WebView with JavaScript enabled and a custom WebViewClient is a common pattern for loading remote content and potentially bypassing security controls.</li><li>no KB citation: No indicators of compromise (IOCs) or decoded strings were extracted from the sample.</li><li>no KB citation: No threat-intelligence knowledge-base entries were retrieved for this sample class, so all reasoning steps are ungrounded in external KB context.</li></ul>
+  
+</div></details>
+<h2>Analysis coverage</h2>
+<table><thead><tr><th>Layer</th><th>Status</th><th>Coverage</th></tr></thead><tbody><tr><td class='mono'>l0</td><td>complete</td><td class='muted mono'>manifest_parsed=True, icon_extracted=True, certificate_parsed=True, permission_count=10, reputation_checked=False</td></tr><tr><td class='mono'>l1</td><td>partial</td><td class='muted mono'>decompiled_files=9819, source_findings=2, apk_yara_rules=1, ghidra_available=False, ghidra_attempted=True</td></tr><tr><td class='mono'>l2</td><td>not_attempted</td><td class='muted mono'></td></tr><tr><td class='mono'>l3</td><td>not_attempted</td><td class='muted mono'></td></tr><tr><td class='mono'>l4</td><td>complete</td><td class='muted mono'>classes_seen=3, classes_unavailable=1</td></tr><tr><td class='mono'>l5</td><td>complete</td><td class='muted mono'>signals_seen=3, signals_priced=3, signals_unpriced=0, signals_negligible=0, signals_degenerate=0</td></tr><tr><td class='mono'>l6</td><td>not_attempted</td><td class='muted mono'></td></tr></tbody></table><p style='margin-top:.7rem'><strong>Declared gaps:</strong> <span class='pill gap'>decompilation_partial</span><span class='pill gap'>detonation_not_attempted</span><span class='pill gap'>ghidra_unavailable</span></p>
+<footer>
+Generated by APK Sentinel. The score, findings and indicators above derive from
+deterministic analysis layers: scoring weights are computed from measured
+rule-firing rates, indicators are extracted from the sample's own bytes, and
+technique mappings come from the findings themselves. The AI-assisted code
+analysis section is the one exception — it is model-generated, every checkable
+claim in it was mechanically re-derived and discarded if wrong, and none of it
+contributes to the score or any gate above.
+<br>Schema apk-sentinel-0.2 ·
+policy l5-0.1 ·
+weights 2026-08-13 ·
+ruleset 26f6f6f1d646
+</footer></body></html>

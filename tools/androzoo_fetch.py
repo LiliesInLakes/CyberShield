@@ -125,27 +125,47 @@ def iter_index(path: Path = INDEX_PATH) -> Iterator[Entry]:
                 continue
 
 
-def select_from_index(path: Path, *, min_vt: int = 4, max_mb: int = 40,
-                      pkg_prefixes: list[str] | None = None,
-                      since: str = "", limit: int = 2000) -> list[Entry]:
-    """Filter the index. ``min_vt`` follows LAMDA's own labelling policy.
+def select_from_index(path: Path, *, min_vt: int = 4, max_vt: int | None = None,
+                      max_mb: int = 40, pkg_prefixes: list[str] | None = None,
+                      pkg_exact: set[str] | None = None,
+                      market_substr: str = "", since: str = "",
+                      per_pkg_cap: int = 0, limit: int = 2000) -> list[Entry]:
+    """Filter the index.
 
-    Four or more VirusTotal detections is the threshold LAMDA used, so a corpus
-    built this way is labelled the same way as the data L3 trained on — which
-    keeps 'malware' meaning one thing across the project rather than two.
+    Malware default: ``min_vt=4`` follows LAMDA's own labelling policy, so a
+    corpus built this way is labelled the same as the data L3 trained on.
+
+    Benign panel: pass ``max_vt=0`` (VirusTotal-clean) with ``pkg_exact`` set to
+    a list of real bank/UPI package names — unlike a trojan's package (attacker
+    chosen, unverifiable, T8), a legitimate bank's package id is public and
+    stable, so an exact-name benign list is citable rather than invented.
+    ``per_pkg_cap`` limits how many builds of the same package are taken so one
+    popular app can't dominate the panel.
     """
     prefixes = tuple(p.lower() for p in (pkg_prefixes or []))
+    exact = {p.lower() for p in (pkg_exact or set())}
     out: list[Entry] = []
+    per_pkg: Counter[str] = Counter()
     for e in iter_index(path):
         if e.vt_detection < min_vt:
+            continue
+        if max_vt is not None and e.vt_detection > max_vt:
             continue
         if e.apk_size > max_mb * 1_000_000 or e.apk_size < 10_000:
             continue
         if since and e.dex_date < since:
             continue
-        if prefixes and not e.pkg_name.lower().startswith(prefixes):
+        if market_substr and market_substr.lower() not in e.markets.lower():
+            continue
+        pkg_l = e.pkg_name.lower()
+        if exact and pkg_l not in exact:
+            continue
+        if prefixes and not pkg_l.startswith(prefixes):
+            continue
+        if per_pkg_cap and per_pkg[pkg_l] >= per_pkg_cap:
             continue
         out.append(e)
+        per_pkg[pkg_l] += 1
         if len(out) >= limit:
             break
     return out
@@ -245,8 +265,17 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--refresh-index", action="store_true")
     ap.add_argument("--min-vt", type=int, default=4,
                     help="minimum VirusTotal detections (LAMDA's own policy)")
+    ap.add_argument("--max-vt", type=int, default=None,
+                    help="maximum VT detections; --max-vt 0 selects a VT-clean "
+                         "(benign) panel. Use --min-vt 0 with it.")
     ap.add_argument("--max-mb", type=int, default=40)
     ap.add_argument("--pkg-prefix", action="append", default=[])
+    ap.add_argument("--pkg-exact-file", default="",
+                    help="file of exact package names, one per line (benign panel)")
+    ap.add_argument("--market-substr", default="",
+                    help="require this substring in the markets column, e.g. play.google.com")
+    ap.add_argument("--per-pkg-cap", type=int, default=0,
+                    help="max builds per package (0 = no cap)")
     ap.add_argument("--since", default="", help="earliest dex_date, e.g. 2020-01-01")
     ap.add_argument("--limit", type=int, default=2000)
     ap.add_argument("--workers", type=int, default=DEFAULT_WORKERS)
@@ -255,8 +284,14 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.index:
         path = fetch_index(force=args.refresh_index)
-        entries = select_from_index(path, min_vt=args.min_vt, max_mb=args.max_mb,
-                                    pkg_prefixes=args.pkg_prefix,
+        pkg_exact = None
+        if args.pkg_exact_file:
+            pkg_exact = {l.strip() for l in Path(args.pkg_exact_file).read_text().splitlines()
+                         if l.strip() and not l.startswith("#")}
+        entries = select_from_index(path, min_vt=args.min_vt, max_vt=args.max_vt,
+                                    max_mb=args.max_mb, pkg_prefixes=args.pkg_prefix,
+                                    pkg_exact=pkg_exact, market_substr=args.market_substr,
+                                    per_pkg_cap=args.per_pkg_cap,
                                     since=args.since, limit=args.limit)
         print(f"selected {len(entries)} entries "
               f"({sum(e.apk_size for e in entries) / 1e9:.2f} GB)")

@@ -346,6 +346,31 @@ def load(path: Path = LABELS_PATH) -> dict[str, Any]:
     return doc
 
 
+# Subclasses that have been *acquired and registered* (so a dedicated tool
+# like L3b can find them) but not *folded into* the general malware
+# population A4/L5/evaluate measure against. Registering a corpus with a
+# subclass answers "can something find these samples", not "should the
+# headline numbers include them" -- those are different, human decisions
+# (CLAUDE.md's CICMalDroid section is exactly this: acquired and audited,
+# deliberately not folded in). "banking" landed here the moment
+# tools/corpus_labels.py build --malware-subclass banking is run for
+# CICMalDroid/L3b, which happens independently of that decision ever being
+# made -- so every consumer of the general population must exclude it
+# explicitly, or it leaks in silently the next time weights are regenerated.
+GENERAL_POPULATION_EXCLUDED_SUBCLASSES = frozenset({"banking"})
+
+
+def general_population(labels: dict[str, Any]) -> dict[str, Any]:
+    """``labels``, minus every entry whose subclass has been kept out of the
+    general population. Call this once, right after ``load()``, in anything
+    that computes A4 weights, L5 gate rates, or headline evaluation metrics --
+    not in tools (like L3b/dataset.py) that exist specifically to consume an
+    acquired-but-separate subclass.
+    """
+    return {sha: entry for sha, entry in labels.items()
+           if entry.get("subclass") not in GENERAL_POPULATION_EXCLUDED_SUBCLASSES}
+
+
 def show(path: Path = LABELS_PATH) -> int:
     doc = load(path)
     print(f"{path.name}  schema={doc['schema_version']}  generated={doc['generated_at']}")

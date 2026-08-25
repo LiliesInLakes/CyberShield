@@ -46,7 +46,7 @@ SCHEMA_VERSION = "apk-sentinel-0.2"
 
 #: Layer order. Also the primary sort key for finding ordinals, so an L0
 #: impersonation finding always precedes an L1 code finding.
-LAYERS: tuple[str, ...] = ("l0", "l1", "l2", "l3", "l4", "l5", "l6")
+LAYERS: tuple[str, ...] = ("l0", "l1", "l2", "l3", "l3b", "l4", "l5", "l6")
 
 #: Layers that *gather* evidence. Only these can leave a coverage gap; L3–L6
 #: consume the spine, so "L5 has not run" is a pipeline state, not a blind spot.

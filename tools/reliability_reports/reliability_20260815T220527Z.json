@@ -1,0 +1,250 @@
+{
+  "generated": "2026-08-15T22:05:27.748879+00:00",
+  "layers": [
+    "l4",
+    "l5",
+    "l6"
+  ],
+  "samples": [
+    {
+      "apk": "/home/nightwings/cybershield/CyberShield/testing_apps/good_apps/com.module.notelycompose.android_33.apk",
+      "sha256": "ae1ce24adbf01b9b0fda2da6dfc58e643588f5e3d10b20464194c8c25b0dfb76",
+      "stages": [
+        {
+          "layer": "l4",
+          "status": "pass",
+          "elapsed_s": 62.15,
+          "detail": "gh) \u2014 The trail overstates risk by treating standard WebView configuration as inherently suspicious. Enabling JavaScript, setting a WebViewClient, and loading a URL a\n    purpose (unverified): This class provides a Jetpack Compose composable that embeds an Android WebView to load and display a given URL with JavaScript enabled and default WebViewClient.\n    api_calls: [\"android.webkit.WebView.loadUrl\", \"android.webkit.WebSettings.setJavaScriptEnabled\", \"android.webkit.WebView.setWebViewClient\"]\n"
+        },
+        {
+          "layer": "l5",
+          "status": "pass",
+          "elapsed_s": 0.12,
+          "detail": "ept_exfil                   not_fired\n        sms_intercept                no   -\n        exfiltration                 no   -\n    G3_accessibility_overlay_bank_target     disabled   (no evidence source for 'targets a known bank package' (A5 target-list rule))\n    G4_dropper_embedded_apk                  disabled   (L0 does not yet record REQUEST_INSTALL_PACKAGES or embedded payloads)\n\n  CONFIDENCE\n    decompilation_partial: -0.15\n    detonation_not_attempted: -0.25\n    ghidra_unavailable: -0.05\n"
+        },
+        {
+          "layer": "l6",
+          "status": "pass",
+          "elapsed_s": 0.09,
+          "detail": "wrote /home/nightwings/cybershield/CyberShield/tools/reliability_reports/report_ae1ce24adbf0.html\n"
+        }
+      ]
+    },
+    {
+      "apk": "/home/nightwings/cybershield/CyberShield/testing_apps/good_apps/com.pennywiseai.tracker_99.apk",
+      "sha256": "1256daaa655c724f4e7e44b911b03dfcf46d860a8d1084b99830caa03d778053",
+      "stages": [
+        {
+          "layer": "l4",
+          "status": "pass",
+          "elapsed_s": 102.77,
+          "detail": "ted] sources/defpackage/hc0.java\n    no KB match, no kept claims, no unrefuted suspicion\n    verifier: confirmed (high) \u2014 The reasoning trail correctly states that no mechanically-verified claims or KB matches were provided, and therefore no specific behavioral or attribution reaso\n    purpose (unverified): Defines static sets of cryptographic algorithm and mode identifiers (e.g., DES, DESEDE, AES, ECB, CBC, PKCS5Padding, NoPadding) likely used for validating or selecting encryption parameters.\n"
+        },
+        {
+          "layer": "l5",
+          "status": "pass",
+          "elapsed_s": 0.12,
+          "detail": "ept_exfil                   not_fired\n        sms_intercept                no   -\n        exfiltration                 no   -\n    G3_accessibility_overlay_bank_target     disabled   (no evidence source for 'targets a known bank package' (A5 target-list rule))\n    G4_dropper_embedded_apk                  disabled   (L0 does not yet record REQUEST_INSTALL_PACKAGES or embedded payloads)\n\n  CONFIDENCE\n    decompilation_partial: -0.15\n    detonation_not_attempted: -0.25\n    ghidra_unavailable: -0.05\n"
+        },
+        {
+          "layer": "l6",
+          "status": "pass",
+          "elapsed_s": 0.09,
+          "detail": "wrote /home/nightwings/cybershield/CyberShield/tools/reliability_reports/report_1256daaa655c.html\n"
+        }
+      ]
+    },
+    {
+      "apk": "/home/nightwings/cybershield/CyberShield/testing_apps/good_apps/me.proton.android.lumo_50.apk",
+      "sha256": "b161760381522ffc61925c8978d633a9644a6a14b8c5f391dd90461251ec5d5f",
+      "stages": [
+        {
+          "layer": "l4",
+          "status": "pass",
+          "elapsed_s": 168.09,
+          "detail": "> 5\n    purpose (unverified): This class manages password visibility toggling for a TextView by controlling transformation methods and input filters.\n    renamed: {\"f696c\": \"textView\", \"f697d\": \"customInputFilter\", \"f698e\": \"isPasswordVisible\", \"L0\": \"updateTransformationMethod\", \"I0\": \"onVisibilityChanged\", \"J0\": \"setPas\n    api_calls: [\"android.widget.TextView.setTransformationMethod\", \"android.widget.TextView.getTransformationMethod\", \"android.widget.TextView.setFilters\", \"android.widget.Tex\n"
+        },
+        {
+          "layer": "l5",
+          "status": "pass",
+          "elapsed_s": 0.12,
+          "detail": "ept_exfil                   not_fired\n        sms_intercept                no   -\n        exfiltration                 no   -\n    G3_accessibility_overlay_bank_target     disabled   (no evidence source for 'targets a known bank package' (A5 target-list rule))\n    G4_dropper_embedded_apk                  disabled   (L0 does not yet record REQUEST_INSTALL_PACKAGES or embedded payloads)\n\n  CONFIDENCE\n    decompilation_partial: -0.15\n    detonation_not_attempted: -0.25\n    ghidra_unavailable: -0.05\n"
+        },
+        {
+          "layer": "l6",
+          "status": "pass",
+          "elapsed_s": 0.09,
+          "detail": "wrote /home/nightwings/cybershield/CyberShield/tools/reliability_reports/report_b16176038152.html\n"
+        }
+      ]
+    },
+    {
+      "apk": "/home/nightwings/cybershield/CyberShield/testing_apps/good_apps/org.diekaiju.duckassist_245.apk",
+      "sha256": "b4df57d563d3e091f0689407485f99f4bd67df423d3a3ce9b27d221d7f52b459",
+      "stages": [
+        {
+          "layer": "l4",
+          "status": "pass",
+          "elapsed_s": 116.53,
+          "detail": "0 classes explained, 0 calls, $0.000000, 0 claims dropped\n"
+        },
+        {
+          "layer": "l5",
+          "status": "pass",
+          "elapsed_s": 0.13,
+          "detail": "-\n        credential_ui                no   -\n    G2_sms_intercept_exfil                   not_fired\n        sms_intercept                no   -\n        exfiltration                 no   -\n    G3_accessibility_overlay_bank_target     disabled   (no evidence source for 'targets a known bank package' (A5 target-list rule))\n    G4_dropper_embedded_apk                  disabled   (L0 does not yet record REQUEST_INSTALL_PACKAGES or embedded payloads)\n\n  CONFIDENCE\n    detonation_not_attempted: -0.25\n"
+        },
+        {
+          "layer": "l6",
+          "status": "pass",
+          "elapsed_s": 0.09,
+          "detail": "wrote /home/nightwings/cybershield/CyberShield/tools/reliability_reports/report_b4df57d563d3.html\n"
+        }
+      ]
+    },
+    {
+      "apk": "/home/nightwings/cybershield/CyberShield/testing_apps/vuln/InsecureBankv2.apk",
+      "sha256": "b18af2a0e44d7634bbcdf93664d9c78a2695e050393fcfbb5e8b91f902d194a4",
+      "stages": [
+        {
+          "layer": "l4",
+          "status": "pass",
+          "elapsed_s": 119.63,
+          "detail": "0 classes explained, 0 calls, $0.000000, 0 claims dropped\n"
+        },
+        {
+          "layer": "l5",
+          "status": "pass",
+          "elapsed_s": 0.12,
+          "detail": "-\n        credential_ui                no   -\n    G2_sms_intercept_exfil                   not_fired\n        sms_intercept                no   -\n        exfiltration                 no   -\n    G3_accessibility_overlay_bank_target     disabled   (no evidence source for 'targets a known bank package' (A5 target-list rule))\n    G4_dropper_embedded_apk                  disabled   (L0 does not yet record REQUEST_INSTALL_PACKAGES or embedded payloads)\n\n  CONFIDENCE\n    detonation_not_attempted: -0.25\n"
+        },
+        {
+          "layer": "l6",
+          "status": "pass",
+          "elapsed_s": 0.09,
+          "detail": "wrote /home/nightwings/cybershield/CyberShield/tools/reliability_reports/report_b18af2a0e44d.html\n"
+        }
+      ]
+    },
+    {
+      "apk": "/home/nightwings/cybershield/CyberShield/testing_apps/vuln/pivaa/apks/pivaa.apk",
+      "sha256": "57887e1d1e119939eec0e929801b049f8037cf90d2accab479a48f0d4dd2c19a",
+      "stages": [
+        {
+          "layer": "l4",
+          "status": "pass",
+          "elapsed_s": 112.77,
+          "detail": "0 classes explained, 0 calls, $0.000000, 0 claims dropped\n"
+        },
+        {
+          "layer": "l5",
+          "status": "pass",
+          "elapsed_s": 0.1,
+          "detail": "-\n        credential_ui                no   -\n    G2_sms_intercept_exfil                   not_fired\n        sms_intercept                no   -\n        exfiltration                 no   -\n    G3_accessibility_overlay_bank_target     disabled   (no evidence source for 'targets a known bank package' (A5 target-list rule))\n    G4_dropper_embedded_apk                  disabled   (L0 does not yet record REQUEST_INSTALL_PACKAGES or embedded payloads)\n\n  CONFIDENCE\n    detonation_not_attempted: -0.25\n"
+        },
+        {
+          "layer": "l6",
+          "status": "pass",
+          "elapsed_s": 0.06,
+          "detail": "wrote /home/nightwings/cybershield/CyberShield/tools/reliability_reports/report_57887e1d1e11.html\n"
+        }
+      ]
+    },
+    {
+      "apk": "/home/nightwings/cybershield/CyberShield/testing_apps/vuln/pivaa.apk",
+      "sha256": "57887e1d1e119939eec0e929801b049f8037cf90d2accab479a48f0d4dd2c19a",
+      "stages": [
+        {
+          "layer": "l4",
+          "status": "pass",
+          "elapsed_s": 108.41,
+          "detail": "0 classes explained, 0 calls, $0.000000, 0 claims dropped\n"
+        },
+        {
+          "layer": "l5",
+          "status": "pass",
+          "elapsed_s": 0.08,
+          "detail": "-\n        credential_ui                no   -\n    G2_sms_intercept_exfil                   not_fired\n        sms_intercept                no   -\n        exfiltration                 no   -\n    G3_accessibility_overlay_bank_target     disabled   (no evidence source for 'targets a known bank package' (A5 target-list rule))\n    G4_dropper_embedded_apk                  disabled   (L0 does not yet record REQUEST_INSTALL_PACKAGES or embedded payloads)\n\n  CONFIDENCE\n    detonation_not_attempted: -0.25\n"
+        },
+        {
+          "layer": "l6",
+          "status": "pass",
+          "elapsed_s": 0.05,
+          "detail": "wrote /home/nightwings/cybershield/CyberShield/tools/reliability_reports/report_57887e1d1e11.html\n"
+        }
+      ]
+    },
+    {
+      "apk": "/home/nightwings/cybershield/CyberShield/testing_apps/vuln/uncrackable-level1.apk",
+      "sha256": "1da8bf57d266109f9a07c01bf7111a1975ce01f190b9d914bcd3ae3dbef96f21",
+      "stages": [
+        {
+          "layer": "l4",
+          "status": "pass",
+          "elapsed_s": 22.01,
+          "detail": "0 classes explained, 0 calls, $0.000000, 0 claims dropped\n"
+        },
+        {
+          "layer": "l5",
+          "status": "pass",
+          "elapsed_s": 0.1,
+          "detail": "-\n        credential_ui                no   -\n    G2_sms_intercept_exfil                   not_fired\n        sms_intercept                no   -\n        exfiltration                 no   -\n    G3_accessibility_overlay_bank_target     disabled   (no evidence source for 'targets a known bank package' (A5 target-list rule))\n    G4_dropper_embedded_apk                  disabled   (L0 does not yet record REQUEST_INSTALL_PACKAGES or embedded payloads)\n\n  CONFIDENCE\n    detonation_not_attempted: -0.25\n"
+        },
+        {
+          "layer": "l6",
+          "status": "pass",
+          "elapsed_s": 0.06,
+          "detail": "wrote /home/nightwings/cybershield/CyberShield/tools/reliability_reports/report_1da8bf57d266.html\n"
+        }
+      ]
+    },
+    {
+      "apk": "/home/nightwings/cybershield/CyberShield/testing_apps/vuln/uncrackable-level2.apk",
+      "sha256": "4c7980ef1f6cc29508f38417c2a5b5b7721eeb4a3d7f00a0c1a08f5192fa6ddd",
+      "stages": [
+        {
+          "layer": "l4",
+          "status": "pass",
+          "elapsed_s": 1.07,
+          "detail": "0 classes explained, 0 calls, $0.000000, 0 claims dropped\n"
+        },
+        {
+          "layer": "l5",
+          "status": "pass",
+          "elapsed_s": 0.08,
+          "detail": "         no   -\n    G2_sms_intercept_exfil                   not_fired\n        sms_intercept                no   -\n        exfiltration                 no   -\n    G3_accessibility_overlay_bank_target     disabled   (no evidence source for 'targets a known bank package' (A5 target-list rule))\n    G4_dropper_embedded_apk                  disabled   (L0 does not yet record REQUEST_INSTALL_PACKAGES or embedded payloads)\n\n  CONFIDENCE\n    detonation_not_attempted: -0.25\n    ghidra_unavailable: -0.05\n"
+        },
+        {
+          "layer": "l6",
+          "status": "pass",
+          "elapsed_s": 0.06,
+          "detail": "wrote /home/nightwings/cybershield/CyberShield/tools/reliability_reports/report_4c7980ef1f6c.html\n"
+        }
+      ]
+    },
+    {
+      "apk": "/tmp/l2_test_sample/8f05ecbb5f9fe721dfcd380669ab7ebb1dffc433ee0c4d5dce9936afa69564b0.apk",
+      "sha256": "8f05ecbb5f9fe721dfcd380669ab7ebb1dffc433ee0c4d5dce9936afa69564b0",
+      "stages": [
+        {
+          "layer": "l4",
+          "status": "pass",
+          "elapsed_s": 46.05,
+          "detail": "0 classes explained, 0 calls, $0.000000, 0 claims dropped\n"
+        },
+        {
+          "layer": "l5",
+          "status": "pass",
+          "elapsed_s": 0.08,
+          "detail": "       credential_ui                no   -\n    G2_sms_intercept_exfil                   FIRED  floor 85 -> score := 100\n        sms_intercept                yes  F003,F009,F010\n        exfiltration                 yes  F007,F008,F011,F012\n    G3_accessibility_overlay_bank_target     disabled   (no evidence source for 'targets a known bank package' (A5 target-list rule))\n    G4_dropper_embedded_apk                  disabled   (L0 does not yet record REQUEST_INSTALL_PACKAGES or embedded payloads)\n"
+        },
+        {
+          "layer": "l6",
+          "status": "pass",
+          "elapsed_s": 0.05,
+          "detail": "wrote /home/nightwings/cybershield/CyberShield/tools/reliability_reports/report_8f05ecbb5f9f.html\n"
+        }
+      ]
+    }
+  ]
+}

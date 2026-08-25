@@ -1,0 +1,471 @@
+{
+  "source": "https://github.com/BushidoUK/Android-Banking-Trojan-Nexus (Android.csv)",
+  "fetched_at": "2026-08-18",
+  "note": "Family taxonomy only -- common names, aliases, code-lineage notes and a Malpedia/vendor source link per family. Deliberately does NOT include package names or hashes: this project has no verified source for current banking-trojan package-name prefixes (they are typically randomised/short-lived per campaign), so AndroZoo targeting by --pkg-prefix is not attempted here. Per-sample targeting is MalRadar's job once access lands (see L3b/family_labels.py); this file exists to (a) document what 'banking family' means in this project and (b) filter MalRadar rows to the families we care about, by common_name/aka.",
+  "families": [
+    {
+      "common_name": "Medusa",
+      "aka": "Gorgona, TangleBot",
+      "code_similarities": "-",
+      "associated_tas": "-",
+      "last_reported": "Feb-22",
+      "source_link": "https://malpedia.caad.fkie.fraunhofer.de/details/apk.medusa"
+    },
+    {
+      "common_name": "MoqHao",
+      "aka": "Shaoye, Xloader, Wroba.g",
+      "code_similarities": "-",
+      "associated_tas": "RoamingMantis",
+      "last_reported": "Feb-22",
+      "source_link": "https://malpedia.caad.fkie.fraunhofer.de/details/apk.moqhao"
+    },
+    {
+      "common_name": "Hydra",
+      "aka": "-",
+      "code_similarities": "-",
+      "associated_tas": "-",
+      "last_reported": "Feb-22",
+      "source_link": "https://malpedia.caad.fkie.fraunhofer.de/details/apk.hydra"
+    },
+    {
+      "common_name": "FluBot",
+      "aka": "Cabassous, FakeChat",
+      "code_similarities": "-",
+      "associated_tas": "-",
+      "last_reported": "Feb-22",
+      "source_link": "https://malpedia.caad.fkie.fraunhofer.de/details/apk.flubot"
+    },
+    {
+      "common_name": "Vultur",
+      "aka": "-",
+      "code_similarities": "-",
+      "associated_tas": "-",
+      "last_reported": "Jan-22",
+      "source_link": "https://malpedia.caad.fkie.fraunhofer.de/details/apk.vultur"
+    },
+    {
+      "common_name": "Alien",
+      "aka": "-",
+      "code_similarities": "Cerberus",
+      "associated_tas": "-ring0-",
+      "last_reported": "Jan-22",
+      "source_link": "https://malpedia.caad.fkie.fraunhofer.de/details/apk.alien"
+    },
+    {
+      "common_name": "BRATA",
+      "aka": "-",
+      "code_similarities": "-",
+      "associated_tas": "-",
+      "last_reported": "Jan-22",
+      "source_link": "https://malpedia.caad.fkie.fraunhofer.de/details/apk.brata"
+    },
+    {
+      "common_name": "BrazKing",
+      "aka": "-",
+      "code_similarities": "-",
+      "associated_tas": "-",
+      "last_reported": "Nov-21",
+      "source_link": "https://securityintelligence.com/posts/brazking-android-malware-upgraded-targeting-brazilian-banks/"
+    },
+    {
+      "common_name": "SharkBot",
+      "aka": "-",
+      "code_similarities": "-",
+      "associated_tas": "-",
+      "last_reported": "Nov-21",
+      "source_link": "https://www.cleafy.com/cleafy-labs/sharkbot-a-new-generation-of-android-trojan-is-targeting-banks-in-europe"
+    },
+    {
+      "common_name": "MasterFred",
+      "aka": "-",
+      "code_similarities": "BROX",
+      "associated_tas": "-",
+      "last_reported": "Nov-21",
+      "source_link": "https://twitter.com/AvastThreatLabs/status/1458162276708483073"
+    },
+    {
+      "common_name": "AbstractEmu",
+      "aka": "-",
+      "code_similarities": "-",
+      "associated_tas": "-",
+      "last_reported": "Oct-21",
+      "source_link": "https://blog.lookout.com/lookout-discovers-global-rooting-malware-campaign"
+    },
+    {
+      "common_name": "Anubis",
+      "aka": "-",
+      "code_similarities": "BankBot",
+      "associated_tas": "Maza-in",
+      "last_reported": "Sep-21",
+      "source_link": "https://malpedia.caad.fkie.fraunhofer.de/details/apk.anubis"
+    },
+    {
+      "common_name": "Cerberus",
+      "aka": "-",
+      "code_similarities": "-",
+      "associated_tas": "ANDROID",
+      "last_reported": "Sep-21",
+      "source_link": "https://malpedia.caad.fkie.fraunhofer.de/details/apk.cerberus"
+    },
+    {
+      "common_name": "ERMAC",
+      "aka": "-",
+      "code_similarities": "Cerberus",
+      "associated_tas": "DukeEugene",
+      "last_reported": "Sep-21",
+      "source_link": "https://www.threatfabric.com/blogs/ermac-another-cerberus-reborn.html"
+    },
+    {
+      "common_name": "Gustuff",
+      "aka": "-",
+      "code_similarities": "-",
+      "associated_tas": "-",
+      "last_reported": "Sep-21",
+      "source_link": "https://malpedia.caad.fkie.fraunhofer.de/details/apk.gustuff"
+    },
+    {
+      "common_name": "MalRhino",
+      "aka": "-",
+      "code_similarities": "-",
+      "associated_tas": "-",
+      "last_reported": "Sep-21",
+      "source_link": "https://research.checkpoint.com/2021/pixstealer-a-new-wave-of-android-banking-trojans-abusing-accessibility-services/"
+    },
+    {
+      "common_name": "PixStealer",
+      "aka": "-",
+      "code_similarities": "BrazKing",
+      "associated_tas": "-",
+      "last_reported": "Sep-21",
+      "source_link": "https://research.checkpoint.com/2021/pixstealer-a-new-wave-of-android-banking-trojans-abusing-accessibility-services/"
+    },
+    {
+      "common_name": "SOVA",
+      "aka": "-",
+      "code_similarities": "-",
+      "associated_tas": "sovenok",
+      "last_reported": "Sep-21",
+      "source_link": "https://malpedia.caad.fkie.fraunhofer.de/details/apk.sova"
+    },
+    {
+      "common_name": "TeaBot",
+      "aka": "Toddler, Anatsa",
+      "code_similarities": "-",
+      "associated_tas": "-",
+      "last_reported": "Sep-21",
+      "source_link": "https://malpedia.caad.fkie.fraunhofer.de/details/apk.anatsa"
+    },
+    {
+      "common_name": "Aberebot",
+      "aka": "-",
+      "code_similarities": "Cerberus",
+      "associated_tas": "AbereBankingBot",
+      "last_reported": "Jul-21",
+      "source_link": "https://blog.cyble.com/2021/07/30/aberebot-on-the-rise-new-banking-trojan-targeting-users-through-phishing/"
+    },
+    {
+      "common_name": "Coper",
+      "aka": "-",
+      "code_similarities": "-",
+      "associated_tas": "-",
+      "last_reported": "Jul-21",
+      "source_link": "https://news.drweb.com/show/?p=0&lng=en&i=14259&c=0"
+    },
+    {
+      "common_name": "Oscorp",
+      "aka": "UBEL",
+      "code_similarities": "-",
+      "associated_tas": "-",
+      "last_reported": "Jul-21",
+      "source_link": "https://malpedia.caad.fkie.fraunhofer.de/details/apk.oscorp"
+    },
+    {
+      "common_name": "Basbanke",
+      "aka": "BrazKing, Banbra",
+      "code_similarities": "-",
+      "associated_tas": "-",
+      "last_reported": "Apr-21",
+      "source_link": "https://securelist.com/basbanke-trend-setting-brazilian-banking-trojan/90365/"
+    },
+    {
+      "common_name": "BlackRock",
+      "aka": "-",
+      "code_similarities": "Xerxes, LokiBot",
+      "associated_tas": "DukeEugene",
+      "last_reported": "Mar-21",
+      "source_link": "https://www.threatfabric.com/blogs/blackrock_the_trojan_that_wanted_to_get_them_all.html"
+    },
+    {
+      "common_name": "Huracan",
+      "aka": "-",
+      "code_similarities": "-",
+      "associated_tas": "-",
+      "last_reported": "Feb-21",
+      "source_link": "https://twitter.com/Bank_Security/status/1363930541372891137"
+    },
+    {
+      "common_name": "Ghimob",
+      "aka": "-",
+      "code_similarities": "-",
+      "associated_tas": "-",
+      "last_reported": "Nov-20",
+      "source_link": "https://securelist.com/ghimob-tetrade-threat-mobile-devices/99228/"
+    },
+    {
+      "common_name": "Wroba",
+      "aka": "-",
+      "code_similarities": "-",
+      "associated_tas": "RoamingMantis",
+      "last_reported": "Nov-20",
+      "source_link": "https://www.avira.com/en/blog/the-android-banking-trojan-wroba-shifts-attack-from-south-korea-to-target-users-in-japan"
+    },
+    {
+      "common_name": "ExoBot",
+      "aka": "Marcher, Rahunok",
+      "code_similarities": "-",
+      "associated_tas": "TopTip",
+      "last_reported": "Oct-20",
+      "source_link": "https://www.threatfabric.com/blogs/exobot_android_banking_trojan_on_the_rise.html"
+    },
+    {
+      "common_name": "ThiefBot",
+      "aka": "-",
+      "code_similarities": "-",
+      "associated_tas": "-",
+      "last_reported": "Sep-20",
+      "source_link": "https://malpedia.caad.fkie.fraunhofer.de/details/apk.thiefbot"
+    },
+    {
+      "common_name": "FakeCop",
+      "aka": "SpyAgent",
+      "code_similarities": "-",
+      "associated_tas": "RoamingMantis",
+      "last_reported": "Jul-20",
+      "source_link": "https://medium.com/csis-techblog/the-roamingmantis-groups-expansion-to-european-apple-accounts-and-android-devices-e6381723c681"
+    },
+    {
+      "common_name": "CometBot",
+      "aka": "-",
+      "code_similarities": "BankBot",
+      "associated_tas": "-",
+      "last_reported": "Jun-20",
+      "source_link": "https://twitter.com/LukasStefanko/status/1102936772647022592"
+    },
+    {
+      "common_name": "EventBot",
+      "aka": "-",
+      "code_similarities": "-",
+      "associated_tas": "-",
+      "last_reported": "Jun-20",
+      "source_link": "https://www.cybereason.com/blog/eventbot-a-new-mobile-banking-trojan-is-born"
+    },
+    {
+      "common_name": "FakeSpy",
+      "aka": "-",
+      "code_similarities": "-",
+      "associated_tas": "RoamingMantis",
+      "last_reported": "Jun-20",
+      "source_link": "https://malpedia.caad.fkie.fraunhofer.de/details/apk.fakespy"
+    },
+    {
+      "common_name": "FunkyBot",
+      "aka": "Wroba.j",
+      "code_similarities": "-",
+      "associated_tas": "RoamingMantis",
+      "last_reported": "Jun-20",
+      "source_link": "https://malpedia.caad.fkie.fraunhofer.de/details/apk.funkybot"
+    },
+    {
+      "common_name": "GINP",
+      "aka": "-",
+      "code_similarities": "Anubis",
+      "associated_tas": "-",
+      "last_reported": "Jun-20",
+      "source_link": "https://malpedia.caad.fkie.fraunhofer.de/details/apk.ginp"
+    },
+    {
+      "common_name": "MobOK",
+      "aka": "-",
+      "code_similarities": "-",
+      "associated_tas": "-",
+      "last_reported": "Jun-20",
+      "source_link": "https://blog.zimperium.com/zimperium-discovers-mobok-malware-left-undetected-by-mobile-av-industry-for-months/"
+    },
+    {
+      "common_name": "DEFENSOR ID",
+      "aka": "Defensor Digital",
+      "code_similarities": "-",
+      "associated_tas": "-",
+      "last_reported": "May-20",
+      "source_link": "https://www.welivesecurity.com/2020/05/22/insidious-android-malware-gives-up-all-malicious-features-but-one-gain-stealth/"
+    },
+    {
+      "common_name": "Nautilus",
+      "aka": "-",
+      "code_similarities": "Anubis",
+      "associated_tas": "-",
+      "last_reported": "May-20",
+      "source_link": "https://twitter.com/LukasStefanko/status/1257693195556831232"
+    },
+    {
+      "common_name": "Mandrake",
+      "aka": "-",
+      "code_similarities": "-",
+      "associated_tas": "-",
+      "last_reported": "May-20",
+      "source_link": "https://www.bitdefender.com/blog/labs/mandrake-owning-android-devices-since-2016/"
+    },
+    {
+      "common_name": "Geost",
+      "aka": "-",
+      "code_similarities": "-",
+      "associated_tas": "-",
+      "last_reported": "Mar-20",
+      "source_link": "https://www.trendmicro.com/en_us/research/20/c/dissecting-geost-exposing-the-anatomy-of-the-android-trojan-targeting-russian-banks.html"
+    },
+    {
+      "common_name": "TrickMo",
+      "aka": "-",
+      "code_similarities": "-",
+      "associated_tas": "WizardSpider",
+      "last_reported": "Mar-20",
+      "source_link": "https://securityintelligence.com/posts/trickbot-pushing-a-2fa-bypass-app-to-bank-customers-in-germany/"
+    },
+    {
+      "common_name": "Xerxes",
+      "aka": "-",
+      "code_similarities": "LokiBot",
+      "associated_tas": "-",
+      "last_reported": "Mar-20",
+      "source_link": "https://twitter.com/LukasStefanko/status/1244563630638731266?s=20"
+    },
+    {
+      "common_name": "Flexnet",
+      "aka": "Gugi",
+      "code_similarities": "-",
+      "associated_tas": "-",
+      "last_reported": "Feb-20",
+      "source_link": "https://malpedia.caad.fkie.fraunhofer.de/details/apk.flexnet"
+    },
+    {
+      "common_name": "FakeToken",
+      "aka": "-",
+      "code_similarities": "-",
+      "associated_tas": "-",
+      "last_reported": "Jan-20",
+      "source_link": "https://securelist.com/booking-a-taxi-for-faketoken/81457/"
+    },
+    {
+      "common_name": "Hqwar",
+      "aka": "Agent.BID",
+      "code_similarities": "-",
+      "associated_tas": "TopTip",
+      "last_reported": "Oct-19",
+      "source_link": "https://securelist.com/hqwar-the-higher-it-flies-the-harder-it-drops/93689/"
+    },
+    {
+      "common_name": "CatsElite",
+      "aka": "MarsElite",
+      "code_similarities": "-",
+      "associated_tas": "TopTip",
+      "last_reported": "Aug-19",
+      "source_link": "https://malpedia.caad.fkie.fraunhofer.de/details/apk.tinyz"
+    },
+    {
+      "common_name": "NeoBot",
+      "aka": "-",
+      "code_similarities": "ExoBot",
+      "associated_tas": "-",
+      "last_reported": "Nov-18",
+      "source_link": "https://twitter.com/ThreatFabric/status/1059734713756196865"
+    },
+    {
+      "common_name": "Rotexy",
+      "aka": "-",
+      "code_similarities": "-",
+      "associated_tas": "-",
+      "last_reported": "Nov-18",
+      "source_link": "https://securelist.com/the-rotexy-mobile-trojan-banker-and-ransomware/88893/"
+    },
+    {
+      "common_name": "DiseaseBot",
+      "aka": "-",
+      "code_similarities": "-",
+      "associated_tas": "-",
+      "last_reported": "Sep-18",
+      "source_link": "https://twitter.com/cryptoinsane/status/1040537294577520640"
+    },
+    {
+      "common_name": "Razdel",
+      "aka": "-",
+      "code_similarities": "BankBot",
+      "associated_tas": "-",
+      "last_reported": "Sep-18",
+      "source_link": "https://www.bleepingcomputer.com/news/security/trojanized-app-in-google-play-steals-bank-customers-euros/"
+    },
+    {
+      "common_name": "Asacub",
+      "aka": "Honli",
+      "code_similarities": "-",
+      "associated_tas": "TopTip",
+      "last_reported": "Aug-18",
+      "source_link": "https://securelist.com/the-rise-of-mobile-banker-asacub/87591/"
+    },
+    {
+      "common_name": "Red Alert 2.0",
+      "aka": "-",
+      "code_similarities": "-",
+      "associated_tas": "-",
+      "last_reported": "Jul-18",
+      "source_link": "https://news.sophos.com/en-us/2018/07/23/red-alert-2-0-android-trojan-targets-security-seekers/"
+    },
+    {
+      "common_name": "MysteryBot",
+      "aka": "-",
+      "code_similarities": "LokiBot",
+      "associated_tas": "-",
+      "last_reported": "Jun-18",
+      "source_link": "https://www.threatfabric.com/blogs/mysterybot__a_new_android_banking_trojan_ready_for_android_7_and_8.html"
+    },
+    {
+      "common_name": "LokiBot",
+      "aka": "-",
+      "code_similarities": "-",
+      "associated_tas": "TopTip",
+      "last_reported": "Oct-17",
+      "source_link": "https://malpedia.caad.fkie.fraunhofer.de/details/apk.lokibot"
+    },
+    {
+      "common_name": "SpyBanker",
+      "aka": "-",
+      "code_similarities": "-",
+      "associated_tas": "-",
+      "last_reported": "Feb-17",
+      "source_link": "https://malpedia.caad.fkie.fraunhofer.de/details/apk.spybanker"
+    },
+    {
+      "common_name": "BankBot",
+      "aka": "-",
+      "code_similarities": "-",
+      "associated_tas": "-",
+      "last_reported": "Jan-17",
+      "source_link": "https://www.revelock.com/en/blog/bankbot-evolution-to-date"
+    },
+    {
+      "common_name": "Cronbot",
+      "aka": "-",
+      "code_similarities": "-",
+      "associated_tas": "Cron",
+      "last_reported": "Nov-16",
+      "source_link": "https://blog.group-ib.com/cron"
+    },
+    {
+      "common_name": "Svpeng",
+      "aka": "-",
+      "code_similarities": "-",
+      "associated_tas": "-",
+      "last_reported": "Nov-16",
+      "source_link": "https://www.kaspersky.co.uk/blog/advertising-svpeng/7952/"
+    }
+  ]
+}

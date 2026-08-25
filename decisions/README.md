@@ -16,4 +16,5 @@ without reading the whole log; the file exists so they see the tradeoff first.
 | [0007](decision-0007-cicmaldroid-corpus.md) | CICMalDroid banking set kept separate from the main corpus | **Open** |
 | [0008](decision-0008-l1-scratch-on-ntfs.md) | L1's heavy per-sample output moved to the NTFS data partition | Accepted |
 | [0009](decision-0009-pipeline-exit-codes.md) | Early stop is not success — exit codes carry corpus completeness | Accepted |
-| [0010](decision_dynamic_analysis_automation.md) | L2 dynamic analysis automation: DroidBot + Frida + mitmproxy, no GenAI in L2 | **Open** |
+| [0010](decision_dynamic_analysis_automation.md) | L2 dynamic analysis automation: DroidBot + Frida + mitmproxy, no GenAI in L2 | **Being revisited (2026-08-24)** — the "no GenAI" part is reversed; a GenAI navigator is planned to make payloads fire |
+| [0011](decision-0011-l3-unified-dataset.md) | L3 trains on a unified, pipeline-extracted dataset (corpus-derived vocab), not LAMDA's parquet | Accepted |

@@ -1,0 +1,53 @@
+# Benign Indian banking / UPI / finance app package names.
+#
+# Unlike a trojan's package (attacker-chosen, unverifiable, T8), these are the
+# PUBLIC, stable Google Play package ids of legitimate apps — each maps to a
+# real Play listing and can be cited. Used with:
+#
+#   androzoo_fetch.py --index --min-vt 0 --max-vt 0 \
+#       --pkg-exact-file docs/data/benign_banking_packages.txt \
+#       --market-substr play.google.com --per-pkg-cap 3
+#
+# The --max-vt 0 filter keeps only VirusTotal-clean builds, so this is a genuine
+# benign hard-negative panel (T27) — the class the F-Droid corpus entirely lacks
+# and the reason the unified model's AUROC is currently a source-confound upper
+# bound. A name not present in AndroZoo simply yields nothing (safe).
+
+# --- Public sector / private banks (mobile banking) ---
+com.sbi.lotusintouch
+com.sbi.SBIFreedomPlus
+com.snapwork.hdfc
+com.csam.icici.bank.imobile
+com.icicibank.pockets
+com.axis.mobile
+com.msf.kbank.mobile
+com.bankofbaroda.mconnect
+com.bankofbaroda.mconnect2
+com.infrasoft.uboi
+com.canarabank.mobility
+com.boi.bomobile
+com.pnb.pnbone
+com.idbibank.abhay_ee
+com.yesbank
+com.idfcfirstbank.optimus
+com.rblbank.mobank
+com.indusind.indusmobile
+com.fedmobile
+com.dbs.in.digitalbank
+com.sc.mobile.in
+com.iexceed.ftmobilebankingsdk.centralbankofindia
+
+# --- UPI / payments / wallets ---
+com.phonepe.app
+net.one97.paytm
+com.google.android.apps.nbu.paisa.user
+in.org.npci.upiapp
+com.mobikwik_new
+com.freecharge.android
+com.dreamplug.androidapp
+com.whatsapp
+
+# --- Government / identity (frequently impersonated) ---
+in.gov.uidai.mAadhaarPlus
+nic.goi.aarogyasetu
+com.digilocker.android

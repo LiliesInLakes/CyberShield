@@ -140,16 +140,21 @@ rule Android_Suspicious_Command_Execution {
         $native2 = "JNI" ascii wide
         $native3 = "dlopen" ascii wide
 
-        // Hex: ELF header for embedded binaries
-        $hex_elf = { 7F 45 4C 46 }
+        // The ELF-magic byte pattern that used to sit here is removed: this rule
+        // declares scope = "both", so it never runs on the raw container (T28),
+        // and both the source and member passes strip hex strings before
+        // compiling — it could only ever be dead weight in the condition.
 
+    // Was: 2 of ($exec*) AND 1 of ($shell*) AND 1 of ($cmd*) AND
+    // (1 of ($native*) or $hex_elf) — five co-located tokens across four groups,
+    // 0/640 malware (B29). Reduced to two groups: an execution primitive, plus
+    // two markers of what is being executed. `Runtime.getRuntime` alone is
+    // ordinary; `Runtime.getRuntime` beside `su -c` and `chmod` is not.
     condition:
         filesize < 20MB
         and uint32be(0) == 0x504B0304
-        and (2 of ($exec*))
-        and (1 of ($shell*))
-        and (1 of ($cmd*))
-        and (1 of ($native*) or $hex_elf)
+        and (1 of ($exec*))
+        and (2 of ($shell*, $cmd*, $native*))
 }
 
 

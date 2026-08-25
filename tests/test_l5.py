@@ -22,7 +22,9 @@ if str(REPO_ROOT) not in sys.path:
 import spine  # noqa: E402
 from L5 import gates as gates_mod  # noqa: E402
 from L5 import promote  # noqa: E402
-from L5.score import Policy, accumulate, apply_gates, apply_ml, score_spine, to_score  # noqa: E402
+from L5.score import (  # noqa: E402
+    Policy, accumulate, apply_banking_ml, apply_gates, apply_ml, score_spine, to_score,
+)
 from L5.validate_policy import validate  # noqa: E402
 
 import signals as sig_mod  # noqa: E402
@@ -209,6 +211,84 @@ def test_absent_l3_contributes_nothing():
     policy = make_policy(ml={"enabled": True, "max_delta": 10})
     score, delta, reason = apply_ml(50, make_doc(), policy)
     assert (score, delta, reason) == (50, 0, "")
+
+
+# --------------------------------------------------------------------------
+# L3b (banking-specific prior) — independent bound, independent refusal
+# --------------------------------------------------------------------------
+
+def _doc_with_l3b(prob: float, family_disjoint_status: str = "verified"):
+    doc = make_doc()
+    doc["layers"]["l3b"] = {
+        "status": "complete",
+        "summary": {"prob_banking_malicious": prob,
+                    "family_disjoint_status": family_disjoint_status},
+    }
+    return doc
+
+
+def test_banking_ml_is_bounded_to_ten_points():
+    policy = make_policy(banking_ml={"enabled": True, "max_delta": 10,
+                                     "may_reach_critical": False,
+                                     "require_family_disjoint": True})
+    for prob in (0.0, 0.25, 0.5, 0.75, 1.0):
+        doc = _doc_with_l3b(prob)
+        _score, delta, _ = apply_banking_ml(50, doc, policy)
+        assert -10 <= delta <= 10
+
+
+def test_banking_ml_alone_cannot_reach_critical():
+    policy = make_policy(banking_ml={"enabled": True, "max_delta": 10,
+                                     "may_reach_critical": False,
+                                     "require_family_disjoint": True})
+    doc = _doc_with_l3b(1.0)
+    score, _delta, reason = apply_banking_ml(80, doc, policy)
+    assert score == 84
+    assert reason == "banking_ml_clamp"
+
+
+def test_absent_l3b_contributes_nothing():
+    policy = make_policy(banking_ml={"enabled": True, "max_delta": 10})
+    score, delta, reason = apply_banking_ml(50, make_doc(), policy)
+    assert (score, delta, reason) == (50, 0, "")
+
+
+def test_banking_ml_refuses_to_move_the_score_while_split_is_unverified():
+    """B37: a random split over clustered banking families means nothing.
+    require_family_disjoint keeps an unverified model from moving the score,
+    even though the delta is still computed and surfaced for --explain."""
+    policy = make_policy(banking_ml={"enabled": True, "max_delta": 10,
+                                     "require_family_disjoint": True})
+    doc = _doc_with_l3b(1.0, family_disjoint_status="unverified_pending_malradar")
+    score, delta, reason = apply_banking_ml(50, doc, policy)
+    assert score == 50
+    assert delta != 0
+    assert reason == "banking_ml_unverified_split"
+
+
+def test_banking_ml_applies_once_split_is_verified():
+    policy = make_policy(banking_ml={"enabled": True, "max_delta": 10,
+                                     "require_family_disjoint": True})
+    doc = _doc_with_l3b(1.0, family_disjoint_status="verified")
+    score, delta, reason = apply_banking_ml(50, doc, policy)
+    assert score == 60
+    assert delta == 10
+    assert reason == ""
+
+
+def test_banking_ml_and_ml_are_independently_toggleable():
+    """L3's bound must not be affected by L3b existing, and vice versa."""
+    policy = make_policy(ml={"enabled": True, "max_delta": 10},
+                         banking_ml={"enabled": False, "max_delta": 10})
+    doc = make_doc()
+    doc["layers"]["l3"] = {"status": "complete", "summary": {"prob_malicious": 1.0}}
+    doc["layers"]["l3b"] = {"status": "complete",
+                            "summary": {"prob_banking_malicious": 1.0,
+                                       "family_disjoint_status": "verified"}}
+    _score, ml_delta, _ = apply_ml(50, doc, policy)
+    _score, banking_delta, _ = apply_banking_ml(50, doc, policy)
+    assert ml_delta == 10
+    assert banking_delta == 0  # banking_ml.enabled is False
 
 
 # --------------------------------------------------------------------------
@@ -405,6 +485,33 @@ def test_validator_rejects_an_ml_bound_above_ten():
     policy.raw["ml"]["max_delta"] = 25
     problems, _ = validate(policy)
     assert any("max_delta" in p for p in problems)
+
+
+def test_validator_rejects_a_banking_ml_bound_above_ten():
+    policy = make_policy()
+    policy.raw["banking_ml"] = {"enabled": False, "max_delta": 25,
+                                "may_reach_critical": False,
+                                "require_family_disjoint": True}
+    problems, _ = validate(policy)
+    assert any("banking_ml.max_delta" in p for p in problems)
+
+
+def test_validator_rejects_banking_ml_reaching_critical():
+    policy = make_policy()
+    policy.raw["banking_ml"] = {"enabled": True, "max_delta": 10,
+                                "may_reach_critical": True,
+                                "require_family_disjoint": True}
+    problems, _ = validate(policy)
+    assert any("banking_ml.may_reach_critical" in p for p in problems)
+
+
+def test_validator_warns_when_banking_ml_enabled_without_family_disjoint_guard():
+    policy = make_policy()
+    policy.raw["banking_ml"] = {"enabled": True, "max_delta": 10,
+                                "may_reach_critical": False,
+                                "require_family_disjoint": False}
+    _problems, warnings = validate(policy)
+    assert any("require_family_disjoint" in w for w in warnings)
 
 
 def test_validator_rejects_signal_schema_drift():

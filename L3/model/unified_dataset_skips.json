@@ -1,0 +1,7 @@
+{
+  "n_rows": 3319,
+  "n_malware": 2715,
+  "n_benign": 604,
+  "vocab_size": 7834,
+  "implausible_density_rows": 2
+}

@@ -91,6 +91,15 @@ class DetonationSafety:
         self._ipt("-t", "nat", "-A", "OUTPUT", "-p", "tcp", "--dport", "443",
                   "-j", "DNAT", "--to-destination", proxy_dest)
 
+        # Chain creation + jump wiring is idempotent: `-N` on an existing
+        # chain and `-D` on an absent rule both return non-zero, which
+        # `_ipt()` does not treat as fatal. The `-D` before `-I` prevents
+        # duplicate jump rules accumulating across repeated calls (one per
+        # detonation run).
+        self._ipt("-N", "st_OUTPUT")
+        self._ipt("-D", "OUTPUT", "-j", "st_OUTPUT")
+        self._ipt("-I", "OUTPUT", "-j", "st_OUTPUT")
+
         self._ipt("-F", "st_OUTPUT")
 
         self._ipt("-A", "st_OUTPUT", "-o", "lo", "-j", "RETURN")
@@ -100,7 +109,15 @@ class DetonationSafety:
         log.info("network isolation enforced — only host subnet + proxy reachable")
 
     def pre_check(self) -> list[str]:
-        """Return a list of blocking issues. Empty list means safe to proceed."""
+        """Return a list of blocking structural issues, checked before any
+        isolation is attempted. Empty list means safe to proceed to
+        ``enforce_isolation()``.
+
+        Deliberately does NOT check network reachability -- that can only
+        ever be "not yet isolated" at this point, since isolation hasn't
+        been enforced yet. See ``verify_isolation()`` for the post-enforce
+        check.
+        """
         issues: list[str] = []
 
         if self.device_serial and not self.device_serial.startswith("emulator-"):
@@ -109,22 +126,6 @@ class DetonationSafety:
                 "emulator (missing 'emulator-' prefix) -- refusing to detonate "
                 "on what may be a physical device"
             )
-
-        if _find_adb():
-            try:
-                ping = self._adb(
-                    "shell", "ping", "-c", "1", "-W", "2", _ISOLATION_CHECK_HOST,
-                )
-                if ping.returncode == 0:
-                    issues.append(
-                        "emulator has live internet access (ping to "
-                        f"{_ISOLATION_CHECK_HOST} succeeded) -- call "
-                        "enforce_isolation() first"
-                    )
-            except (subprocess.TimeoutExpired, OSError) as exc:
-                log.warning("network isolation check could not run: %s", exc)
-        else:
-            log.warning("adb not found -- cannot verify network isolation")
 
         try:
             usage = shutil.disk_usage("/")
@@ -139,6 +140,60 @@ class DetonationSafety:
 
         return issues
 
+    def verify_isolation(self) -> list[str]:
+        """Verify isolation is actually in effect. Call AFTER
+        ``enforce_isolation()`` and ``ProxyManager.up()`` have run.
+
+        Two checks, both fail-closed:
+          - negative: ping to a real-internet host must NOT succeed.
+          - positive: the guest must be able to reach the proxy path, so a
+            "block everything including the proxy" misconfiguration isn't
+            mistaken for successful isolation.
+
+        Empty list means isolation verified. A ping that fails or times out
+        is the *safe* outcome and is not an issue.
+        """
+        issues: list[str] = []
+
+        if not _find_adb():
+            issues.append("adb not found -- cannot verify network isolation")
+            return issues
+
+        try:
+            ping = self._adb(
+                "shell", "ping", "-c", "1", "-W", "2", _ISOLATION_CHECK_HOST,
+            )
+            if ping.returncode == 0:
+                issues.append(
+                    "emulator still has live internet access (ping to "
+                    f"{_ISOLATION_CHECK_HOST} succeeded) -- isolation is not "
+                    "in effect"
+                )
+        except (subprocess.TimeoutExpired, OSError) as exc:
+            log.warning("isolation ping check could not run: %s", exc)
+
+        try:
+            # AOSP/toybox images ship no `curl` -- `adb shell which curl` is
+            # empty even on API 30+, so a curl-based check fails closed with
+            # exit 127 ("not found") on every device, not just misconfigured
+            # ones. `nc` (toybox netcat) is present everywhere `sh` is; a TCP
+            # connect through it (fed empty stdin so it doesn't block waiting
+            # for input) is enough to prove the proxy path is open.
+            probe = self._adb(
+                "shell",
+                f"echo | nc -w 2 -q 1 {_EMU_HOST_GW} {self.proxy_port}",
+            )
+            if probe.returncode != 0:
+                issues.append(
+                    f"proxy path unreachable -- nc to {_EMU_HOST_GW}:"
+                    f"{self.proxy_port} through the guest failed "
+                    f"(exit {probe.returncode}): {probe.stderr.strip()}"
+                )
+        except (subprocess.TimeoutExpired, OSError) as exc:
+            issues.append(f"proxy path check could not run: {exc}")
+
+        return issues
+
     def post_restore(self) -> None:
         """Restore the emulator's network state after a detonation run."""
         if not _find_adb():
@@ -147,6 +202,7 @@ class DetonationSafety:
 
         self._ipt("-t", "nat", "-F", "OUTPUT")
         self._ipt("-F", "st_OUTPUT")
+        self._ipt("-D", "OUTPUT", "-j", "st_OUTPUT")
 
         self._adb("shell", "settings", "put", "global", "http_proxy", ":0")
         self._adb("shell", "settings", "delete", "global", "global_http_proxy_host")

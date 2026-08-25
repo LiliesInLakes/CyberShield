@@ -23,6 +23,9 @@ match the current ruleset, and refuses to arm gates when its support stamp says
    saturates so hard that nearly every malware sample lands at 99 and the Low
    and Medium bands are never used.
 3. *Apply L3*, clipped to ±10 points and unable to reach Critical alone.
+3b. *Apply L3b* (the banking-specific prior), independently clipped to ±10
+   points, unable to reach Critical alone, and refused entirely unless its
+   training run's held-out metric was family-disjoint-verified.
 4. *Apply gates as floors* — ``max(score, floor)``, never an override. A gate
    can only raise, never lower, and the additive score may legitimately exceed
    the floor, in which case the full reason chain survives intact.
@@ -98,6 +101,7 @@ class ScoreResult:
     ruleset_version: str
     unsupported: bool
     ml_delta: int = 0
+    banking_ml_delta: int = 0
 
 
 # ---------------------------------------------------------------------------
@@ -295,6 +299,49 @@ def apply_ml(score: int, doc: dict[str, Any],
 
 
 # ---------------------------------------------------------------------------
+# Stage 3b — L3b (banking-specific prior)
+# ---------------------------------------------------------------------------
+
+def apply_banking_ml(score: int, doc: dict[str, Any],
+                     policy: Policy) -> tuple[int, int, str]:
+    """Second, independently-bounded stage — see ``L3b/predict.py``.
+
+    Kept separate from ``apply_ml`` rather than merged into one bound: L3 and
+    L3b answer different questions (generic malware resemblance vs banking
+    resemblance), L3b's training population is far smaller and weaker than
+    L3's, and the audit trail (``--explain``, per-stage reason strings) needs
+    them individually attributable.
+
+    ``require_family_disjoint`` (default true) additionally refuses to apply
+    the delta unless ``l3b.summary.family_disjoint_status == "verified"`` —
+    the delta is still computed (so ``--explain`` can show what it *would*
+    have been) but the score is left untouched, with a distinct reason string
+    so this is visible rather than silently indistinguishable from "L3b was
+    never run."
+    """
+    cfg = policy.raw.get("banking_ml") or {}
+    if not cfg.get("enabled"):
+        return score, 0, ""
+    l3b = (doc.get("layers", {}).get("l3b") or {})
+    summary = l3b.get("summary") or {}
+    prob = summary.get("prob_banking_malicious")
+    if prob is None:
+        return score, 0, ""
+
+    cap = int(cfg.get("max_delta", 10))
+    delta = int(max(-cap, min(cap, round(2 * cap * (float(prob) - 0.5)))))
+
+    if (cfg.get("require_family_disjoint", True)
+            and summary.get("family_disjoint_status") != "verified"):
+        return score, delta, "banking_ml_unverified_split"
+
+    new = max(0, min(100, score + delta))
+    if score < 85 <= new and not cfg.get("may_reach_critical", False):
+        return 84, delta, "banking_ml_clamp"
+    return new, delta, ""
+
+
+# ---------------------------------------------------------------------------
 # Stage 4 — gates as floors
 # ---------------------------------------------------------------------------
 
@@ -322,10 +369,11 @@ def score_spine(doc: dict[str, Any], policy: Policy) -> ScoreResult:
     base = to_score(log_odds, policy)
 
     scored, ml_delta, ml_reason = apply_ml(base, doc, policy)
+    scored, banking_ml_delta, banking_ml_reason = apply_banking_ml(scored, doc, policy)
     gate_results = gates_mod.evaluate_all(doc, policy)
     final, binding = apply_gates(scored, gate_results)
-    if ml_reason and binding == "additive":
-        binding = ml_reason
+    if binding == "additive":
+        binding = banking_ml_reason or ml_reason or binding
 
     unsupported = policy.unsupported
     c, c_band = conf_mod.confidence(doc, policy, gate_results, unsupported)
@@ -345,4 +393,5 @@ def score_spine(doc: dict[str, Any], policy: Policy) -> ScoreResult:
         ruleset_version=str(policy.weights_meta.get("ruleset_version", "unknown")),
         unsupported=unsupported,
         ml_delta=ml_delta,
+        banking_ml_delta=banking_ml_delta,
     )

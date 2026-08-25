@@ -39,12 +39,15 @@ rule Android_Spyware_Generic_GPS_Surveillance {
         $stealth2 = "setComponentEnabledSetting" ascii wide
         $stealth3 = "COMPONENT_ENABLED_STATE_DISABLED" ascii wide
 
+    // Was: 3 of ($loc*) AND 2 of ($svc*) AND 2 of ($exfil*) AND 1 of ($stealth*)
+    // — eight co-located tokens, 0/640 malware (B29). Reduced to two groups:
+    // location capture plus persistence/egress, AND the stealth marker, which is
+    // the token benign location apps do not carry (an app that hides its own
+    // launcher icon is making a claim about intent).
     condition:
         filesize < 12MB
         and uint32be(0) == 0x504B0304
-        and (3 of ($loc*))
-        and (2 of ($svc*))
-        and (2 of ($exfil*))
+        and (2 of ($loc*, $svc*, $exfil*))
         and (1 of ($stealth*))
 }
 
@@ -68,13 +71,13 @@ rule Android_Spyware_SMS_Call_Log_Harvester {
         // Call log harvesting
         $call1 = "content://call_log/calls" ascii wide
         $call2 = "CallLog.Calls" ascii wide
-        $call3 = "NUMBER" ascii wide
-        $call4 = "DURATION" ascii wide
+        // $call3 = "NUMBER" and $call4 = "DURATION" removed — bare provider
+        // column names, present in any dialer or call-log UI class.
 
         // Contact harvesting
         $contact1 = "content://contacts/people" ascii wide
         $contact2 = "ContactsContract.Contacts" ascii wide
-        $contact3 = "DISPLAY_NAME" ascii wide
+        // $contact3 = "DISPLAY_NAME" removed for the same reason.
 
         // Exfiltration patterns
         $exfil1 = "JSONObject" ascii wide
@@ -83,13 +86,18 @@ rule Android_Spyware_SMS_Call_Log_Harvester {
 
         // Hex: content provider URI patterns
 
+    // Was: 2 of ($sms*) AND 2 of ($call*) AND 2 of ($contact*) AND 2 of ($exfil*)
+    // — eight co-located tokens across four groups, 0/640 malware (B29). A real
+    // harvester puts one provider URI and a serializer in the same class and
+    // splits the rest across helpers. Reduced to two groups: any content-provider
+    // read of personal data, plus a serialization/exfil marker. The bare column
+    // names ("NUMBER", "DURATION", "DISPLAY_NAME") are kept out of the first
+    // group — they are ordinary in any contacts or dialer UI class.
     condition:
         filesize < 10MB
         and uint32be(0) == 0x504B0304
-        and (2 of ($sms*))
-        and (2 of ($call*))
-        and (2 of ($contact*))
-        and (2 of ($exfil*))
+        and (2 of ($sms*, $call1, $call2, $contact1, $contact2))
+        and (1 of ($exfil*))
 }
 
 

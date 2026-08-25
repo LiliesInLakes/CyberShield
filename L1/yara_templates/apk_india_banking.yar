@@ -43,11 +43,16 @@ rule Android_India_Drinik_ITR_Impersonation {
         $fb2 = "fcm.googleapis.com" ascii wide nocase
         $fb3 = ".firebasedatabase.app" ascii wide nocase
 
+    // Was: 2 of ($itr*) AND 1 of ($acc*) AND (1 of ($drinik*) or 1 of ($fb*)) —
+    // four co-located tokens across three groups, 0/640 (B29). The Income-Tax
+    // lure strings live in resources.arsc and in the phishing WebView class, not
+    // in the accessibility class, so the conjunction could not be satisfied
+    // anywhere. Reduced to two groups: a Drinik-unique or Firebase-C2 endpoint
+    // marker, plus two ITR/accessibility tokens.
     condition:
         filesize < 15MB
-        and (2 of ($itr*))
-        and (1 of ($acc*))
         and (1 of ($drinik*) or 1 of ($fb*))
+        and (2 of ($itr*, $acc*))
 }
 
 
@@ -62,17 +67,20 @@ rule Android_India_UPI_Targeting {
         date = "2026-07-21"
 
     strings:
-        // UPI app package names (targeting list)
-        $upi1 = "com.phonepe.app" ascii wide
-        $upi2 = "com.google.android.apps.nbu.paisa.user" ascii wide
-        $upi3 = "net.one97.paytm" ascii wide
-        $upi4 = "in.org.npci.upiapp" ascii wide
-        $upi5 = "com.sbi.lotusintouch" ascii wide
+        // UPI app package names (targeting list).
+        // 🔴 Renamed from $upi1..5: the old condition said `3 of ($upi*)`, and
+        // that wildcard also captured $upi_str1..3, so the two groups the rule
+        // thought it had were one group. The prefixes are now disjoint.
+        $pkg1 = "com.phonepe.app" ascii wide
+        $pkg2 = "com.google.android.apps.nbu.paisa.user" ascii wide
+        $pkg3 = "net.one97.paytm" ascii wide
+        $pkg4 = "in.org.npci.upiapp" ascii wide
+        $pkg5 = "com.sbi.lotusintouch" ascii wide
 
         // UPI-specific strings
-        $upi_str1 = "upi://" ascii wide
-        $upi_str2 = "UPI PIN" ascii wide nocase
-        $upi_str3 = "MPIN" ascii wide
+        $upistr1 = "upi://" ascii wide
+        $upistr2 = "UPI PIN" ascii wide nocase
+        $upistr3 = "MPIN" ascii wide
 
         // Indian bank package patterns
         $bank1 = "com.boi.ua" ascii wide
@@ -83,10 +91,15 @@ rule Android_India_UPI_Targeting {
         $overlay1 = "WindowManager" ascii wide
         $overlay2 = "TYPE_APPLICATION_OVERLAY" ascii wide
 
+    // Was: (3 of ($upi*) or 3 of ($bank*)) AND 1 of ($upi_str*) AND
+    // 1 of ($overlay*) — five co-located tokens, and the `$upi*` wildcard
+    // silently included the $upi_str group (see above), so "3 of" could be
+    // satisfied by three UPI *strings* with no target list at all. 0/640 (B29).
+    // Reduced to two groups: a named UPI/bank target, plus a UPI credential
+    // string or overlay primitive in the same class.
     condition:
-        (3 of ($upi*) or 3 of ($bank*))
-        and (1 of ($upi_str*))
-        and (1 of ($overlay*))
+        (1 of ($pkg*) or 1 of ($bank*))
+        and (2 of ($upistr*, $overlay*))
 }
 
 
@@ -106,10 +119,13 @@ rule Android_India_SMS_OTP_Stealer {
         $sms2 = "SmsMessage" ascii wide
         $sms3 = "getMessageBody" ascii wide
 
-        // OTP-specific patterns
+        // OTP-specific patterns.
+        // 🔴 The old $otp3 = /[0-9]{4,6}/ matched any four consecutive digits —
+        // a version code, a timestamp, a colour constant. It made its group
+        // unconditionally true and is removed rather than relaxed.
         $otp1 = "OTP" ascii wide
         $otp2 = "one time password" ascii wide nocase
-        $otp3 = /[0-9]{4,6}/ ascii
+        $otp3 = "verification code" ascii wide nocase
 
         // Indian bank/UPI OTP patterns
         $india1 = "SBIINB" ascii wide
@@ -123,11 +139,17 @@ rule Android_India_SMS_OTP_Stealer {
         $exfil1 = "HttpURLConnection" ascii wide
         $exfil2 = "firebase" ascii wide nocase
 
+    // Was: 2 of ($sms*) AND 1 of ($otp*) AND 2 of ($india*) AND 1 of ($exfil*)
+    // — six co-located tokens across four groups, 0/640 (B29), on a corpus where
+    // `Android_BFSI_SMS_Intercept_And_Forward` fires on 128 samples. Two Indian
+    // sender IDs in one class is the clause nothing satisfies: a real stealer
+    // carries one, or none, and filters on "OTP" instead. Reduced to two groups:
+    // two co-located SMS-interception tokens, plus one India/OTP/egress marker.
+    // Note the ordering: SMS mechanics must be present, so a payments app that
+    // merely mentions "UPI" beside an HTTP client cannot satisfy the rule.
     condition:
         (2 of ($sms*))
-        and (1 of ($otp*))
-        and (2 of ($india*))
-        and (1 of ($exfil*))
+        and (1 of ($india*, $otp*, $exfil*))
 }
 
 
@@ -163,8 +185,14 @@ rule Android_India_FakeBank_App {
         $web2 = "loadUrl" ascii wide
         $web3 = "javascript:" ascii wide
 
+    // Was: 2 of ($name*) AND 2 of ($lure*) AND 2 of ($web*) — six co-located
+    // tokens, 0/640 (B29). Two *different* bank names in one class describes a
+    // targeting list, not an impersonation: a fake SBI app names SBI once. The
+    // bank-name strings also live in resources.arsc, which the scanner does not
+    // yet extract (open item), so this rule can only see the ones a class holds.
+    // Reduced to two groups: one named Indian bank, plus two lure/WebView
+    // phishing tokens in the same class.
     condition:
-        (2 of ($name*))
-        and (2 of ($lure*))
-        and (2 of ($web*))
+        (1 of ($name*))
+        and (2 of ($lure*, $web*))
 }

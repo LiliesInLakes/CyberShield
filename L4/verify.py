@@ -34,12 +34,15 @@ from __future__ import annotations
 
 import base64
 import binascii
+import codecs
+import gzip
 import re
+import zlib
 from dataclasses import dataclass, field
 from typing import Any, Iterable
 
 # Claim kinds that survive only if a check passes.
-CHECKABLE = ("decoded_strings", "renamed", "api_calls", "iocs")
+CHECKABLE = ("decoded_strings", "renamed", "api_calls", "iocs", "matched_pattern")
 
 
 @dataclass
@@ -67,39 +70,109 @@ class Verdict:
         }
 
 
+# A decoded/deobfuscated blob only counts as a "confirmed" decoding when it is
+# an indicator-shaped string. This is what keeps the speculative decoders (XOR,
+# ROT13) from turning any ASCII input into a spurious "decoding" — plain text
+# must yield the empty set.
+_INDICATOR_RE = re.compile(
+    r"https?://|[a-z0-9.-]+\.(?:com|net|ru|cn|php|apk|xyz|top|info|onion|io|co)\b"
+    r"|\d{1,3}(?:\.\d{1,3}){3}",  # bare IPv4
+    re.IGNORECASE,
+)
+
+
+def _bytes_to_texts(raw: bytes) -> set[str]:
+    """UTF-8 text of ``raw`` and of ``raw`` gunzipped/inflated, when printable.
+
+    Droppers routinely base64 a gzip/zlib-compressed payload, so a decode that
+    stops at the compressed bytes would falsely reject a correct claim. Only
+    decompressions that yield printable text are kept.
+    """
+    out: set[str] = set()
+    if not raw:
+        return out
+    try:
+        out.add(raw.decode("utf-8"))
+    except UnicodeDecodeError:
+        pass
+    for inflate in (gzip.decompress, zlib.decompress,
+                    lambda b: zlib.decompress(b, -zlib.MAX_WBITS)):
+        try:
+            dec = inflate(raw)
+        except (OSError, zlib.error, EOFError, ValueError):
+            continue
+        try:
+            text = dec.decode("utf-8")
+        except UnicodeDecodeError:
+            continue
+        if text.isprintable() or "\n" in text:
+            out.add(text)
+    return out
+
+
 def _try_decode(literal: str) -> set[str]:
-    """Every plausible decoding of a literal, for comparison against a claim."""
+    """Every plausible decoding of a literal, for comparison against a claim.
+
+    Structural decoders (base64 std/url-safe, base32, hex) are gated by
+    ``validate=True`` / an alphabet check, so junk input simply fails to decode.
+    Speculative decoders (single-byte XOR, ROT13) are additionally gated on the
+    result being indicator-shaped, so plain ASCII text never yields a spurious
+    "decoding".
+    """
     out: set[str] = set()
     s = literal.strip()
 
-    for pad in ("", "=", "==", "==="):
-        try:
-            raw = base64.b64decode(s + pad, validate=True)
-        except (binascii.Error, ValueError):
-            continue
-        try:
-            out.add(raw.decode("utf-8"))
-        except UnicodeDecodeError:
-            pass
-        break
+    # base64 (standard and URL-safe), tolerating missing padding. URL-safe is
+    # handled by translating -_ to +/ then validating through b64decode, since
+    # urlsafe_b64decode itself takes no validate= flag.
+    for table in (None, str.maketrans("-_", "+/")):
+        cand = s.translate(table) if table else s
+        for pad in ("", "=", "==", "==="):
+            try:
+                raw = base64.b64decode(cand + pad, validate=True)
+            except (binascii.Error, ValueError):
+                continue
+            out |= _bytes_to_texts(raw)
+            # A base64 payload is very often itself base64 (double-encoded).
+            for t in list(_bytes_to_texts(raw)):
+                if re.fullmatch(r"[A-Za-z0-9+/=_-]{8,}", t.strip()):
+                    try:
+                        out |= _bytes_to_texts(base64.b64decode(t.strip() + "===", validate=False))
+                    except (binascii.Error, ValueError):
+                        pass
+            break
+
+    # base32 (uppercase A-Z2-7 alphabet), tolerating missing padding.
+    if re.fullmatch(r"[A-Z2-7]+=*", s) and len(s) >= 8:
+        for pad in range(0, 8):
+            try:
+                raw = base64.b32decode(s + "=" * pad)
+            except (binascii.Error, ValueError):
+                continue
+            out |= _bytes_to_texts(raw)
+            break
 
     if re.fullmatch(r"(?:[0-9a-fA-F]{2})+", s):
-        try:
-            out.add(bytes.fromhex(s).decode("utf-8"))
-        except (ValueError, UnicodeDecodeError):
-            pass
+        out |= _bytes_to_texts(bytes.fromhex(s))
 
-    # ROT13 and simple XOR are common in droppers; only single-byte XOR is
-    # cheap enough to brute force, and only printable results are kept.
+    # Speculative: single-byte XOR (cheap to brute force) and ROT13. Kept only
+    # when the result is indicator-shaped, so plain text stays out.
     try:
         raw = s.encode("latin-1")
         for key in range(1, 256):
             cand = bytes(b ^ key for b in raw)
-            if all(32 <= c < 127 for c in cand) and len(cand) > 6:
+            if len(cand) > 6 and all(32 <= c < 127 for c in cand):
                 text = cand.decode("ascii")
-                if re.search(r"https?://|\.(com|net|ru|cn|php|apk)\b", text):
+                if _INDICATOR_RE.search(text):
                     out.add(text)
     except UnicodeEncodeError:
+        pass
+
+    try:
+        rot = codecs.encode(s, "rot_13")
+        if _INDICATOR_RE.search(rot):
+            out.add(rot)
+    except (TypeError, ValueError):
         pass
 
     return out
@@ -224,16 +297,48 @@ def verify_iocs(claims: list[str], extracted: Iterable[str],
     return kept
 
 
+def verify_matched_pattern(claim: str | None, valid_kb_ids: Iterable[str],
+                           verdict: Verdict) -> str | None:
+    """A cited KB entry must be one the analyst was actually shown.
+
+    Mirrors ``iocs``: the model may never introduce a pattern id the
+    retrieval step did not surface (`L4/knowledge/retriever.py::retrieve`).
+    Inventing a plausible-sounding MITRE/KB id is exactly the T26 failure
+    shape one layer up — settle it mechanically, not by trusting the claim.
+    """
+    if claim is None:
+        return None
+    valid = {str(v) for v in valid_kb_ids}
+    if isinstance(claim, str) and claim in valid:
+        return claim
+    verdict.drop("matched_pattern", claim, "kb_id_not_in_retrieved_matches",
+                 expected=sorted(valid)[:5])
+    return None
+
+
 def verify(claims: dict[str, Any], *, code: list[str],
-           extracted_iocs: Iterable[str] = ()) -> Verdict:
-    """Check a model response against the artifact it claims to describe."""
+           extracted_iocs: Iterable[str] = (),
+           valid_kb_ids: Iterable[str] = (),
+           dex_symbols: Iterable[str] = ()) -> Verdict:
+    """Check a model response against the artifact it claims to describe.
+
+    ``dex_symbols`` supplements ``code`` for the ``renamed`` and ``api_calls``
+    checks with identifiers/API names read straight from the DEX (androguard),
+    so a claim is not falsely dropped merely because jadx failed to decompile
+    (or truncated) the class — grounding stops being coupled to decompiler
+    success. Empty by default, so callers that pass only ``code`` are unchanged.
+    """
     v = Verdict()
+
+    haystack = list(code) + [s for s in dex_symbols if s]
 
     v.kept["decoded_strings"] = verify_decoded_strings(
         claims.get("decoded_strings") or {}, v)
-    v.kept["renamed"] = verify_renamed(claims.get("renamed") or {}, code, v)
-    v.kept["api_calls"] = verify_api_calls(claims.get("api_calls") or [], code, v)
+    v.kept["renamed"] = verify_renamed(claims.get("renamed") or {}, haystack, v)
+    v.kept["api_calls"] = verify_api_calls(claims.get("api_calls") or [], haystack, v)
     v.kept["iocs"] = verify_iocs(claims.get("iocs") or [], extracted_iocs, v)
+    v.kept["matched_pattern"] = verify_matched_pattern(
+        claims.get("matched_pattern"), valid_kb_ids, v)
 
     # Everything else is narrative. It is kept, but marked, so a reader can see
     # exactly which sentences rest on the model's word.

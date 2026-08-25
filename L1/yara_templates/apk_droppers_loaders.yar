@@ -68,11 +68,11 @@ rule Android_Dropper_Native_Library_Loader {
         $lib2 = "System.load" ascii wide
         $lib3 = "JNI_OnLoad" ascii wide
 
-        // Native library paths
-        $path1 = "lib/armeabi-v7a/" ascii wide
-        $path2 = "lib/arm64-v8a/" ascii wide
-        $path3 = "lib/x86/" ascii wide
-        $path4 = ".so" ascii wide
+        // Native library paths were declared here ($path1..4: "lib/armeabi-v7a/",
+        // "lib/arm64-v8a/", "lib/x86/", ".so") and are removed: they are ZIP
+        // directory entries, not strings the loading class holds, so requiring
+        // them co-located with the loader was part of why this rule fired on
+        // nothing. ABI coverage belongs to the container-scope file-format rules.
 
         // Native API calls
         $api1 = "dlopen" ascii wide
@@ -87,14 +87,17 @@ rule Android_Dropper_Native_Library_Loader {
         // Hex: ELF magic in .so files
         $hex_elf = { 7F 45 4C 46 }
 
+    // Was: 2 of ($lib*) AND 2 of ($path*) AND 2 of ($api*) AND 1 of ($extract*)
+    // AND $hex_elf — eight co-located tokens plus a byte pattern, 0/640 malware
+    // (B29). The byte pattern is stripped for the source and member passes
+    // anyway, and `lib/…` paths live in the ZIP directory rather than in the
+    // loading class. Reduced to two groups: the load primitive, plus a native
+    // symbol or an asset/raw-resource payload source in the same class.
     condition:
         filesize < 15MB
         and uint32be(0) == 0x504B0304
-        and (2 of ($lib*))
-        and (2 of ($path*))
-        and (2 of ($api*))
         and (1 of ($extract*))
-        and $hex_elf
+        and (2 of ($lib*, $api*))
 }
 
 
