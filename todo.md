@@ -1,11 +1,41 @@
 # TODO — CyberShield / APK Sentinel
 
 Tracks all active work, what's done, and what's next.
-Last updated: 2026-08-14
+Last updated: 2026-08-24
 
 ---
 
 ## In Progress
+
+### L3 Unified Dataset (2026-08-24) — supersedes the LAMDA-only prior
+- Reason: LAMDA-trained model has train/serve skew — our `extract_from_apk` only
+  reproduces 0.4–1.8% of LAMDA's 4,561 columns (vs its 2.5% density). Decision
+  (user): build a **unified, pipeline-extracted dataset** with a **corpus-derived
+  vocabulary** — every column comes from tokens our own pipeline emits. Plan:
+  `docs/plans/l3_unified_dataset_plan.md`.
+- [x] `L3/unified_features.py` — `CorpusVocabulary` + `meaningful_tokens` relevance
+  filter (keeps permissions/intent-actions/hardware/URLs + only security-sensitive
+  API calls; drops androidx/kotlin library-signature noise that would otherwise make
+  the model learn "uses androidx → benign", the ML form of the T27 source confound)
+- [x] `tools/build_unified_dataset.py` — two resumable stages (extract→token cache on
+  `$SENTINEL_DATA_ROOT/l3_unified/`, build→vocab+matrix)
+- [x] `L3/unified_train.py` — group-disjoint split, held-out-only metrics, flags
+  AUROC ≥ 0.99 as source-artifact leakage
+- [x] `L3/unified_predict.py` — same `layers.l3` spine contract as `predict.py`
+- [x] `tests/test_l3_unified_features.py` — 8 tests, green
+- [ ] **Running now**: `extract` over ~3,400 on-disk APKs (benign F-Droid are slow)
+- [ ] `build` → `unified_train.py`; read held-out AUROC (remember it's an UPPER BOUND —
+  benign=F-Droid vs malware=CICMalDroid are disjoint sources, T27)
+- [ ] Wire L3 into `tools/corpus_run.py` + `run.py`, then flip `ml.enabled` in
+  `L5/policy.yaml`
+
+### L2 GenAI Navigator (planned 2026-08-24) — reverses the earlier "skip GenAI" call
+- The old decision (skip GenAI, DroidBot+rules sufficient) is why payloads don't fire:
+  `dfs_greedy` + regex field-fill can't reason about a login/registration/SUBMIT flow.
+- [ ] Plan `L2/sandbox/genai_navigator.py`: uiautomator XML → LLM (reuse `L4/provider.py`,
+  $0 OpenRouter) → JSON action (tap/type/swipe/back); context-aware Indian dummy-data
+  generation (name/mobile/card/UPI/MPIN/DOB); OTP keeps the hint-file bridge; falls back
+  to `dfs_greedy` when the LLM is unavailable (same graceful-degradation contract)
 
 ### Codebase Refactoring
 - [x] Remove deprecated `summarize_results.py` shim at repo root
@@ -32,10 +62,24 @@ Last updated: 2026-08-14
 - [x] Phase 1 implemented (Sonnet agent): DroidBot from GitHub (PyPI broken), wired into orchestrator.py as interaction engine; permission auto-grant + accessibility enablement; SMS OTP injection (SBI/HDFC/ICICI at T+10/20/30s via threading.Timer); stealth extensions (sensor jitter, battery spoof, package hiding, WiFi spoof, /proc logging)
 - [x] Phase 2 implemented (Sonnet agent): `ssl_unpin.js` (TrustManager/OkHttp3/Conscrypt/WebViewClient bypass); `install_ca.py` (mitmproxy CA → system store); `proxy_setup.py` (system proxy + iptables NAT + DNS redirect via /etc/hosts); `pcap_capture.py` (tcpdump start/stop/pull); `mitm_addon.py` updated (removed incorrect FCM claim, added Indian banking API fakes, bulk exfil detection, Base64 payload decoding)
 - [x] Infra tested on live emulator: proxy+iptables OK, PCAP OK, Frida script loading OK. DNS redirect + CA install need writable /system (deferred — Frida SSL unpin handles pinning)
-- [ ] **Detonation test**: script ready at `/tmp/.../scratchpad/detonate_test.py`, blocked on classifier — user must run manually
+- [x] **Detonation works (MVP), re-verified 2026-08-24**: sentinel30 AVD boots, DroidBot
+  reaches+operates the SBI sample's real MainActivity, Frida re-attach loop captures,
+  mitmproxy+tcpdump capture, isolation verified fail-closed. 3/3 live runs
+  (`docs/l2_droidbot_reliability_log.md`). Stale "AVD boot defect / never detonated"
+  notes in README/CLAUDE are wrong.
 - [x] Phase 3 implemented (Sonnet agent): `auth_fill.js` (EditText scan + credential fill + submit click), `auth_bypass.js` (BiometricPrompt/FingerprintManager/KeyguardManager bypass + SharedPreferences login state forcing), `accessibility_hooks.js` (event/globalAction/nodeAction capture, critical severity for cross-app abuse), `mitm_addon.py` extended (UPI txns, balance, beneficiaries, mini statement fake responses)
-- [ ] Implement Phase 4: dynamic.json generation + spine wiring + detonation safety (~8h)
-- [ ] Go/no-go checkpoint: detonate first India-targeted sample
+- [x] Phase 4: dynamic.json generation (`orchestrator._generate_dynamic_json`) + spine
+  wiring (`l2_engine.py`, `promote.py`) + detonation safety (`safety.py`, isolation IS
+  called at `orchestrator.py:873` + verified at :877 — the PIPELINE_EXPLAINER "dead code"
+  claim is stale)
+- [ ] **The one real L2 gap**: sample's malicious payload never *fires* — capture works,
+  triggering needs sample-specific RE of the SBI SUBMIT handler. This is what the GenAI
+  navigator targets.
+- [ ] **Bug**: `l2_engine.py:314-364` `process()` globs ALL `L2/sandbox/artifacts/*`
+  fixtures instead of just the passed `sandbox_dir` → the 1 failing test + real sample
+  cross-contamination
+- [ ] **Bug**: `honeypot.seed_contacts()` inserts empty raw_contacts (name/number never
+  bound to the `content insert`)
 
 ### YARA Rules
 - [x] Diagnose dead rules — 16 dead, 4 root causes identified (see decision_yara_improvement.md)
@@ -50,6 +94,10 @@ Last updated: 2026-08-14
 
 ### Testing
 - [x] Full test suite: 285/285 passing (276 + 9 YARA structural tests, 2026-08-16)
+- [ ] **Now 338 pass / 1 fail / 1 skip (2026-08-24)**: the 1 fail is
+  `test_l2_engine_handles_frida_cli_send_wrapper` (the `l2_engine.py` scope bug above);
+  the skip is `test_l3_features` (LAMDA not fetched locally). The `.pytest_cache`-reported
+  "2× L5 gate-validator failures" were stale — those pass now.
 - [ ] Ensure test fixtures work with malware APKs (corpus path validation)
 - [ ] Add integration tests for L0→spine→L1→spine pipeline
 - [ ] Add L2 integration tests (emulator-dependent, skip when unavailable)
@@ -79,7 +127,9 @@ Last updated: 2026-08-14
 - [x] L1 detection repair (B1) — 8% → 37% via per-class dex + BFSI primitives
 - [x] Corpus runner (A3) — both populations, resumable, disk-safe
 - [x] Rule-firing report (A4)
-- [x] L3 pipeline verified — LAMDA fetch, train, predict (no model trained on full data)
+- [x] L3 pipeline verified — LAMDA fetch, train, predict. **Models DO exist**
+  (`L3/model/lamda_lgbm.joblib`, `L3b/model/banking_lgbm.joblib`) — the "no model / needs
+  6 GB" notes were stale. Superseded 2026-08-24 by the unified pipeline-extracted dataset.
 - [x] L4 deobfuscation + verification
 - [x] L5 scoring + gates + confidence
 - [x] L6 API, reports, STIX/CSV/YARA/Sigma export
@@ -90,9 +140,10 @@ Last updated: 2026-08-14
 
 ## Blocked
 
-- **L2 detonation test**: detonation script ready, classifier blocks automated execution — user must run manually
+- ~~**L2 detonation test**~~: RESOLVED — detonation works (MVP), 3/3 live runs (2026-08-24)
 - **L2 writable /system**: DNS redirect + CA install need `-writable-system` which causes boot loop after reboot. Workaround: Frida SSL unpin handles pinning bypass without system CA
-- **L3 full training**: needs ~6 GB, model dir empty
+- ~~**L3 full training: needs ~6 GB, model dir empty**~~: STALE — models exist; unified
+  pipeline-extracted dataset now in progress (see In Progress)
 - **L5 gate arming**: blocked on `n_benign ≥ 213` (currently at 245/600 re-run)
 - **CICMalDroid integration**: needs human decision (see decision pending in CLAUDE.md §6.5)
 

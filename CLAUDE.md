@@ -22,8 +22,8 @@ Seven layers, glued by a single evidence record:
 | **L0** Ingestion & triage | Hashing, manifest, icon pHash, certificate, **bank-impersonation check**, routing | ✅ works |
 | **L1** Static analysis | jadx decompile + YARA (source, per-class dex, APK scopes); Ghidra for native | ⚠️ 37% malware-category detection (was 8%); **18 rules still dead** (B29) |
 | **Spine** | Merged `artifacts/<sha256>/evidence.json`, stable evidence IDs | ✅ works (L0+L1 wired) |
-| **L2** Dynamic analysis | Emulator detonation, Frida hooks, mitmproxy | ⚠️ functional (22 hooks, DroidBot, SMS inject, spine-wired); **network isolation not enforced yet** |
-| **L3** ML classifier | Calibrated maliciousness prior, bounded ±10 | ⚠️ built + feature bridge verified; **no model trained yet** |
+| **L2** Dynamic analysis | Emulator detonation, Frida hooks, mitmproxy | ✅ MVP-ready (re-verified 2026-08-24): sentinel30 AVD boots, DroidBot operates the real UI, Frida/mitmproxy/tcpdump capture, **isolation IS enforced+verified** (`orchestrator.py:873/877`). One gap: sample payload never *fires* (needs SUBMIT-handler RE) |
+| **L3** ML classifier | Calibrated maliciousness prior, bounded ±10 | ⚠️ models exist (`lamda_lgbm`, `banking_lgbm`); **unified pipeline-extracted dataset** in progress (2026-08-24) to kill train/serve skew — see §9 |
 | **L4** GenAI reasoning | Verified deobfuscation + report generation | ✅ works — OpenRouter free tier, execution verifier, $0.00/call |
 | **L5** Hybrid scoring | Auditable additive score + smoking-gun gates | ⚠️ built; **gates refuse to arm** while weights are unsupported (T24) |
 | **L6** Output & UX | Dashboard, report, IOC export | ✅ works — STIX 2.1 / CSV / YARA / Sigma, FastAPI, HTML report |
@@ -62,7 +62,7 @@ python3 -m venv env && ./env/bin/pip install -r requirements.txt && ./env/bin/pi
 | jadx + bundled JDK 17 | ✅ `tools/jadx`, `tools/jdk17` |
 | **Ghidra** | ❌ absent — native track degrades gracefully; only ~12% of samples have native libs |
 | Android SDK, emulator, adb, frida-server, `/dev/kvm` | ✅ all present |
-| **`sentinel` AVD** | ❌ **core-dumps on boot** (see §6) |
+| **`sentinel` AVD** | ❌ core-dumped on boot (T14) — **replaced** by ✅ `sentinel30` (android-30, on `/mnt/SharedData/`), which boots and detonates (2026-08-24) |
 
 ---
 
@@ -376,9 +376,12 @@ separate member ruleset + per-class dex buffers + `L1/yara_templates/apk_bfsi_pr
    sample is user-approved**; a go/no-go checkpoint is owed after the India-12 stage.
 6. **Stale malware `L0/artifacts/`** (pre-A6, T16) — largely superseded by the corpus run,
    but the pre-A6 files remain.
-7. 🔴 **No L3 model is trained.** The pipeline is verified end to end (a 2020-only proof run
-   gave AUROC 0.9965 in-year, 0.8978 on 2024 — the drift exhibit), but `L3/model/` is empty
-   and `l3` is `not_attempted` on every spine. The full train needs ~6 GB.
+7. ~~**No L3 model is trained.**~~ STALE — models exist (`L3/model/lamda_lgbm.joblib`,
+   `L3b/model/banking_lgbm.joblib`). Superseded 2026-08-24 by the **unified
+   pipeline-extracted dataset** (§9): the LAMDA model has train/serve skew (our extractor
+   reproduces only 0.4–1.8% of LAMDA's columns), so L3 is being retrained on a
+   corpus-derived vocabulary our own pipeline emits. `l3` is still `not_attempted` on the
+   corpus spines — batch-wiring into `corpus_run.py`/`run.py` is pending.
 8. **The benign corpus does not contain the class of app most likely to be a false positive**
    (T27): F-Droid has 5 accessibility apps, 79 SMS apps and **zero** commercial banking apps
    repo-wide. Growing B fixes the arithmetic, not the coverage. The named mitigation is a
@@ -427,3 +430,48 @@ Practical consequences:
 - **Freeze a baseline before touching a detector**, then diff against it.
 - When a fix arms a code path that never previously executed, **assume it will produce a
   false positive** and test the benign set immediately — that is exactly how T7 was caught.
+
+---
+
+## 9. Update 2026-08-24 — L2 re-verified, L3 unified dataset
+
+### L2 is MVP-ready (correcting §1/§2/§6)
+Re-verified by reading the code and the reliability log. The core-dumping `sentinel` AVD
+(T14) was replaced by **`sentinel30`**. `docs/l2_droidbot_reliability_log.md` records 3/3
+live runs where DroidBot operates the SBI sample's real `MainActivity`. Full flow in
+`orchestrator.run()`: `enforce_isolation()` (**called at line 873**, iptables DROP-all
+except loopback+`10.0.2.0/24`, DNAT 80/443→mitmproxy) → `verify_isolation()` (line 877,
+fail-closed: ping 8.8.8.8 must FAIL + proxy reachable) → mitmdump + tcpdump → frida-server →
+install/grant/accessibility/honeypot → DroidBot + Frida re-attach-by-PID loop → dynamic.json
+→ spine. **So "network isolation not enforced" / "dead code" claims are stale.**
+
+- **Networking IS captured**: mitmproxy logs every request to `network_evidence.json`
+  (keyword + base64 + volume exfil detection, plus active bank/UPI/Firebase/Telegram
+  response hijacking); tcpdump → `capture.pcap`. HTTPS via `ssl_unpin.js` (no system CA —
+  /system read-only). FCM `mtalk.google.com:5228` is unproxiable → DNS-blackholed.
+- **OTP system**: OTPs pre-generated → `latest_injected_otp.txt` (`DROIDBOT_OTP_FILE`);
+  injected as REAL incoming SMS via `adb emu sms send` at T+10/20/30 (sbi/hdfc/icici); a
+  droidbot `device_state.py` patch types the actual arriving OTP into OTP fields.
+- **The one real gap**: payload never *fires* (0 network requests / attach-only
+  `frida_hooks.jsonl` on SBI) — needs sample-specific RE of the SUBMIT handler. The planned
+  **GenAI navigator** (`L2/sandbox/genai_navigator.py`, reusing `L4/provider.py`) targets
+  this, reversing the earlier "skip GenAI" decision.
+- **Two bugs**: `l2_engine.py:314-364` `process()` globs ALL `L2/sandbox/artifacts/*`
+  (the 1 failing test + real cross-contamination); `honeypot.seed_contacts()` binds no
+  name/number.
+
+### L3 unified pipeline-extracted dataset (supersedes LAMDA prior)
+LAMDA model has **train/serve skew** — `L3/features.extract_from_apk` reproduces only
+0.4–1.8% of LAMDA's 4,561 columns (vs its 2.5% density). Decision (user): build a
+**unified dataset with a corpus-derived vocabulary** — every column is a token our own
+pipeline emits over our on-disk corpus. Modules: `L3/unified_features.py`,
+`tools/build_unified_dataset.py`, `L3/unified_train.py`, `L3/unified_predict.py`; plan in
+`docs/plans/l3_unified_dataset_plan.md`; decision in
+`decisions/decision-0011-l3-unified-dataset.md`.
+
+🔴 **Source confound (T27, ML form)**: benign=F-Droid vs malware=CICMalDroid are disjoint
+sources, so any held-out AUROC is an **UPPER BOUND** — a real benign banking app is not
+represented. The `meaningful_tokens` filter (permissions/intents/hardware/URLs + only
+security-sensitive API calls) drops androidx/kotlin library signatures so the model can't
+just learn "uses androidx → benign". Metrics flag AUROC ≥ 0.99 as leakage. Model stays a
+bounded ±10 generic prior, never a verdict.

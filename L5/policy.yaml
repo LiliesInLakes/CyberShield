@@ -101,6 +101,19 @@ ml:
   max_delta: 10
   may_reach_critical: false
 
+# L3b's contribution — a separate, banking-specific prior (see L3b/train.py,
+# docs/PROJECT_LOG.md B37). Independently bounded to +/-10 points, unable to
+# reach Critical on its own, and refused entirely while its training run's
+# held-out metric is not family-disjoint-verified: a random split over
+# tightly-clustered banking families reports an AUROC that means nothing
+# (B37), so require_family_disjoint keeps that unmeasured claim off the score
+# until L3b/model/metrics.json actually says family_disjoint_status: verified.
+banking_ml:
+  enabled: false
+  max_delta: 10
+  may_reach_critical: false
+  require_family_disjoint: true
+
 # Named rule groups the gates reference. A rule may only appear here if
 # validate_policy.py can show, from the weights file, that its benign-rate 95%
 # upper bound is under gate_constraints.max_benign_rate_upper_ci.

@@ -333,7 +333,7 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
 
     labels_doc = corpus_labels.load(Path(args.labels))
-    labels = labels_doc["labels"]
+    labels = corpus_labels.general_population(labels_doc["labels"])
     spine_root = Path(args.spine_root) if args.spine_root else None
 
     views, unlabelled = build_views(labels, spine_root)

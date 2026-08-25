@@ -283,7 +283,7 @@ def main(argv: list[str] | None = None) -> int:
 
     labels_doc = corpus_labels.load(Path(args.labels))
     policy = load_policy()
-    samples = load_samples(labels_doc["labels"])
+    samples = load_samples(corpus_labels.general_population(labels_doc["labels"]))
 
     n_mal = sum(1 for s in samples if s.cls == corpus_labels.CLASS_MALWARE)
     n_ben = sum(1 for s in samples if s.cls == corpus_labels.CLASS_BENIGN)

@@ -1,0 +1,70 @@
+{
+  "generated_at": "2026-08-24T19:24:49.098184+00:00",
+  "evaluation": "stratified_kfold_deduplicated",
+  "n_features": 7834,
+  "dedup": {
+    "threshold": 0.97,
+    "n_before": 3317,
+    "n_clusters_kept": 1166,
+    "n_removed": 2151,
+    "removed_fraction": 0.6485
+  },
+  "cv": {
+    "n_splits": 5,
+    "auroc_mean": 0.9963,
+    "auroc_std": 0.0017,
+    "ece_mean": 0.0204,
+    "ece_std": 0.0079,
+    "folds": [
+      {
+        "fold": 1,
+        "n_test": 234,
+        "auroc": 0.9945,
+        "ece": 0.0267,
+        "mean_p_malware": 0.9946,
+        "mean_p_benign": 0.0622
+      },
+      {
+        "fold": 2,
+        "n_test": 233,
+        "auroc": 0.9972,
+        "ece": 0.0288,
+        "mean_p_malware": 0.9785,
+        "mean_p_benign": 0.0678
+      },
+      {
+        "fold": 3,
+        "n_test": 233,
+        "auroc": 0.9956,
+        "ece": 0.0086,
+        "mean_p_malware": 0.987,
+        "mean_p_benign": 0.0145
+      },
+      {
+        "fold": 4,
+        "n_test": 233,
+        "auroc": 0.9951,
+        "ece": 0.0243,
+        "mean_p_malware": 0.9959,
+        "mean_p_benign": 0.0555
+      },
+      {
+        "fold": 5,
+        "n_test": 233,
+        "auroc": 0.9993,
+        "ece": 0.0137,
+        "mean_p_malware": 0.9838,
+        "mean_p_benign": 0.018
+      }
+    ]
+  },
+  "seed": 20260825,
+  "lightgbm": "4.7.0",
+  "caveats": [
+    "WARNING: CV AUROC 0.9963 >= 0.99 even after dedup \u2014 the residual is the source confound, not skill",
+    "GENERIC maliciousness prior, bounded to +-10 points in L5; never a verdict",
+    "NEAR-DEDUPLICATED at cosine >= 0.97 (same-label clusters) before eval",
+    "capability (absence) aggregates are first-class columns (cap:*)",
+    "SOURCE-CONFOUNDED (T27): benign=F-Droid, malware=CICMalDroid \u2014 dedup removes duplicate-leakage but not the source confound; CV AUROC is still an UPPER bound"
+  ]
+}

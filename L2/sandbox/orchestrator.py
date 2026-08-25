@@ -40,6 +40,12 @@ from L2.sandbox.safety import DetonationSafety, DetonationSafetyError
 
 log = logging.getLogger(__name__)
 
+# Navigator modes: "droidbot" (default, blind DFS exploration) or "genai"
+# (LLM perceive->reason->act loop, see genai_navigator.py). "genai" falls
+# back to "droidbot" at run time if the provider is unavailable/errors --
+# see L2Orchestrator._run_genai_navigator.
+_NAVIGATOR_MODES = ("droidbot", "genai")
+
 _SANDBOX_DIR = Path(__file__).resolve().parent
 _REPO_ROOT = _SANDBOX_DIR.parent.parent
 
@@ -78,11 +84,13 @@ class L2Orchestrator:
     droidbot_duration_s: int = 120
     sha256: str = ""
     auto_launch_emulator: bool = True
+    navigator: str = "droidbot"
     device_serial: str = field(default="", init=False)
     artifacts_dir: Path = field(default=Path(), init=False)
     frida_log_path: Path = field(default=Path(), init=False)
     droidbot_dir: Path = field(default=Path(), init=False)
     otp_file_path: Path = field(default=Path(), init=False)
+    genai_nav_log_path: Path = field(default=Path(), init=False)
     _mitm_proc: subprocess.Popen[bytes] | None = field(
         default=None, init=False, repr=False,
     )
@@ -100,6 +108,10 @@ class L2Orchestrator:
 
     def __post_init__(self) -> None:
         self.apk_path = Path(self.apk_path)
+        if self.navigator not in _NAVIGATOR_MODES:
+            raise ValueError(
+                f"navigator must be one of {_NAVIGATOR_MODES}, got {self.navigator!r}"
+            )
         if not self.sha256:
             self.sha256 = self._compute_sha256(self.apk_path)
         self.device_serial = self._ensure_device()
@@ -108,6 +120,7 @@ class L2Orchestrator:
         self.frida_log_path = self.artifacts_dir / "frida_hooks.jsonl"
         self.droidbot_dir = self.artifacts_dir / "droidbot_utg"
         self.otp_file_path = self.artifacts_dir / "latest_injected_otp.txt"
+        self.genai_nav_log_path = self.artifacts_dir / "genai_nav.jsonl"
 
     @staticmethod
     def _compute_sha256(apk_path: Path) -> str:
@@ -545,6 +558,58 @@ class L2Orchestrator:
             log.error("failed to launch DroidBot: %s", exc)
             return None
 
+    def _start_genai_navigator(self) -> threading.Thread | None:
+        """Launch the app and run ``GenAINavigator`` in a background thread.
+
+        Returns the started thread, or ``None`` if the navigator could not
+        be started at all (provider unavailable/misconfigured, or any
+        other setup error) -- callers treat ``None`` as "fall back to
+        DroidBot", per the plan's graceful-degradation contract: a
+        provider outage must never hard-fail the detonation.
+        """
+        try:
+            from L2.sandbox.genai_navigator import GenAINavigator
+            from L4.provider import ProviderError, get_provider
+        except ImportError as exc:
+            log.warning("genai navigator: import failed (%s) -- falling back to droidbot", exc)
+            return None
+
+        try:
+            provider = get_provider("openrouter")
+        except ProviderError as exc:
+            log.warning("genai navigator: provider unavailable (%s) -- falling back to droidbot", exc)
+            return None
+
+        activity = self._find_launcher_activity()
+        if activity:
+            self._adb("shell", "am", "start", "-n", f"{self.package_name}/{activity}")
+        else:
+            self._adb("shell", "monkey", "-p", self.package_name,
+                       "-c", "android.intent.category.LAUNCHER", "1")
+
+        navigator = GenAINavigator(
+            device_serial=self.device_serial,
+            package_name=self.package_name,
+            provider=provider,
+            otp_hint_file=self.otp_file_path,
+            log_path=self.genai_nav_log_path,
+            budget_s=float(max(self.detonation_time_s, self.droidbot_duration_s)),
+        )
+
+        def _run() -> None:
+            try:
+                summary = navigator.run()
+                log.info("genai navigator finished: %s", summary)
+            except Exception as exc:  # noqa: BLE001
+                # A failure mid-run must not take the whole detonation
+                # window down with it -- Frida re-attach + SMS injection
+                # keep running regardless.
+                log.warning("genai navigator crashed mid-run: %s", exc, exc_info=True)
+
+        thread = threading.Thread(target=_run, daemon=True)
+        thread.start()
+        return thread
+
     def _wait_for_pid(self, timeout_s: float = 60.0) -> int | None:
         """Poll ``adb shell pidof`` until the target package has a live PID.
 
@@ -596,7 +661,14 @@ class L2Orchestrator:
             log.error("Frida scripts missing from %s", script_dir)
             return
 
-        droidbot_proc = self._run_droidbot()
+        droidbot_proc: subprocess.Popen[bytes] | None = None
+        genai_thread: threading.Thread | None = None
+        if self.navigator == "genai":
+            genai_thread = self._start_genai_navigator()
+            if genai_thread is None:
+                log.warning("navigator=genai unavailable this run -- falling back to droidbot")
+        if genai_thread is None:
+            droidbot_proc = self._run_droidbot()
 
         self.schedule_sms_injection()
 
@@ -645,6 +717,8 @@ class L2Orchestrator:
                     droidbot_proc.wait(timeout=wait_s)
                 except subprocess.TimeoutExpired:
                     pass
+            elif genai_thread:
+                genai_thread.join(timeout=wait_s)
             else:
                 time.sleep(wait_s)
         finally:
@@ -1048,6 +1122,12 @@ def main() -> int:
         help="Do not auto-launch tools/launch_emulator.sh if no ADB device "
              "is attached -- fail immediately instead (default: auto-launch)",
     )
+    parser.add_argument(
+        "--navigator", choices=_NAVIGATOR_MODES, default="droidbot",
+        help="UI interaction engine: 'droidbot' (default, blind DFS "
+             "exploration) or 'genai' (LLM perceive->reason->act loop; "
+             "falls back to droidbot if the LLM provider is unavailable)",
+    )
     args = parser.parse_args()
 
     try:
@@ -1057,6 +1137,7 @@ def main() -> int:
             detonation_time_s=args.time,
             droidbot_duration_s=args.droidbot_time,
             auto_launch_emulator=not args.no_auto_launch_emulator,
+            navigator=args.navigator,
         )
         orch.run()
     except EmulatorUnavailableError as exc:

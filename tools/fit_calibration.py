@@ -245,8 +245,8 @@ def main(argv: list[str] | None = None) -> int:
 
     labels_doc = corpus_labels.load(Path(args.labels))
     policy = load_policy()
-    f = fit(policy, labels_doc["labels"], min_benign=args.min_benign,
-            target_fpr=args.target_fpr)
+    f = fit(policy, corpus_labels.general_population(labels_doc["labels"]),
+            min_benign=args.min_benign, target_fpr=args.target_fpr)
 
     print(f"corpus: {f.n_malware} malware, {f.n_benign} benign")
     print(f"  s0            {f.s0:+.4f}   (50-point anchor, {f.crossing_method})")

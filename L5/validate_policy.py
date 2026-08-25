@@ -46,7 +46,7 @@ def measure_gate_rates(policy: Policy) -> dict[str, dict]:
     from tools.rule_firing_report import jeffreys_interval
 
     try:
-        labels = corpus_labels.load()["labels"]
+        labels = corpus_labels.general_population(corpus_labels.load()["labels"])
     except SystemExit:
         return {}
 
@@ -179,6 +179,26 @@ def validate(policy: Policy,
         problems.append(
             "ml.may_reach_critical is true — a generic prior trained on a ~99.6% "
             "non-banking corpus must not be able to declare a banking trojan"
+        )
+
+    # --- banking_ml bound ----------------------------------------------
+    banking_ml = raw.get("banking_ml") or {}
+    if int(banking_ml.get("max_delta", 10)) > 10:
+        problems.append(
+            f"banking_ml.max_delta is {banking_ml.get('max_delta')}, above "
+            "the agreed ±10 bound"
+        )
+    if banking_ml.get("may_reach_critical"):
+        problems.append(
+            "banking_ml.may_reach_critical is true — L3b is trained on a "
+            "small, partially family-verified corpus and must not be able "
+            "to declare a banking trojan by itself"
+        )
+    if banking_ml.get("enabled") and not banking_ml.get("require_family_disjoint", True):
+        warnings.append(
+            "banking_ml.require_family_disjoint is false while banking_ml is "
+            "enabled — this lets an unverified-split model move the score; "
+            "see B37 in docs/PROJECT_LOG.md for why that split matters"
         )
 
     return problems, warnings
