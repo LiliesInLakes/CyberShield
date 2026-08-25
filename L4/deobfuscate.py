@@ -219,12 +219,41 @@ def extract_string_literals(source: str) -> list[str]:
     return [m.group(1) for m in _STRING_LITERAL_RE.finditer(source)]
 
 
+def _dex_location_to_source_rel(location: str) -> str | None:
+    """Map an L1 dex-scan location to its jadx source file, relative to sources/.
+
+    L1's per-class dex findings are located as ``classesN.dex!com/foo/Bar$Inner``
+    (multi-dex prefix, ``/``-separated class path, optional ``$`` nested-class
+    suffix). jadx writes nested classes into the *outer* class's file, so
+    ``com/foo/Bar$Inner$1`` -> ``com/foo/Bar.java``. A dotted class path
+    (``com.foo.Bar``) is also accepted defensively. Returns None if the location
+    is not class-shaped.
+    """
+    cls = location.rsplit("!", 1)[1] if "!" in location else location
+    if cls.endswith((".java", ".dex", ".apk")):  # a file, not a class path
+        return None
+    if "/" not in cls and "." in cls:            # dotted -> slashed
+        cls = cls.replace(".", "/")
+    if "/" not in cls:
+        return None
+    outer = cls.split("$", 1)[0]                  # nested class -> outer file
+    return outer + ".java"
+
+
 def read_source(src_root: Path, location: str) -> str | None:
     """Resolve a finding's location to source text, tolerating layout drift."""
     candidates = [src_root / location]
     if location.startswith("sources/"):
         candidates.append(src_root / location[len("sources/"):])
     candidates.append(src_root / "sources" / location)
+    # L1 dex-scan locations ('classesN.dex!com/foo/Bar$Inner') don't map to a
+    # file path directly — translate them to the jadx source file. Without this,
+    # every dex-detected finding read as "source not available" and L4 analysed
+    # zero classes.
+    rel = _dex_location_to_source_rel(location)
+    if rel:
+        candidates.append(src_root / "sources" / rel)
+        candidates.append(src_root / rel)
     for path in candidates:
         if path.is_file():
             try:
