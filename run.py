@@ -88,17 +88,17 @@ def build_l2_cmd(ctx: RunContext) -> str:
 
 
 def build_l3_cmd(ctx: RunContext) -> str | None:
-    if not (REPO_ROOT / "L3" / "predict.py").exists():
+    if not (REPO_ROOT / "L3" / "unified_predict.py").exists():
         return None
-    if not (REPO_ROOT / "L3" / "model" / "lamda_lgbm.joblib").exists():
+    if not (REPO_ROOT / "L3" / "model" / "unified_lgbm.joblib").exists():
         return None
-    return _sourced(f'$SENTINEL_PYTHON L3/predict.py "{ctx.apk_path}" --explain')
+    return _sourced(f'$SENTINEL_PYTHON L3/unified_predict.py "{ctx.apk_path}" --explain')
 
 
 def l3_skip_reason(ctx: RunContext) -> str | None:
-    if not (REPO_ROOT / "L3" / "predict.py").exists():
-        return "skipped (no L3/predict.py CLI)"
-    if not (REPO_ROOT / "L3" / "model" / "lamda_lgbm.joblib").exists():
+    if not (REPO_ROOT / "L3" / "unified_predict.py").exists():
+        return "skipped (no L3/unified_predict.py CLI)"
+    if not (REPO_ROOT / "L3" / "model" / "unified_lgbm.joblib").exists():
         return "skipped (no trained model in L3/model/)"
     return None
 

@@ -72,7 +72,7 @@ class TestStageCommands:
         with patch.object(Path, "exists", return_value=True):
             cmd = run_gui.build_l3_cmd(_ctx())
             assert cmd is not None
-            assert "L3/predict.py" in cmd
+            assert "L3/unified_predict.py" in cmd
 
     def test_l3_skip_reason_when_no_model(self) -> None:
         def fake_exists(self: Path) -> bool:

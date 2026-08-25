@@ -253,9 +253,10 @@ def l3_setup() -> tuple[Any, str | None, Any]:
     """Load the L3 model, calibrator, metrics and vocabulary once.
 
     Returns ``(bundle, fingerprint, vocab)`` where ``bundle`` is
-    ``(model, calibrator, metrics)`` from ``L3.predict.load_model``, or
+    ``(model, calibrator, metrics)`` derived from ``L3.unified_predict.load_model``
+    (the unified pipeline-extracted model, not the LAMDA prior), or
     ``(None, None, None)`` when L3 cannot run at all — missing deps, missing
-    model, missing LAMDA vocabulary. Degradation is deliberate: the caller
+    model, missing unified vocabulary. Degradation is deliberate: the caller
     turns it into a loud refusal, not a silent corpus without the ML prior.
 
     ``fingerprint`` is a short hash of the three files a prediction depends on
@@ -267,22 +268,25 @@ def l3_setup() -> tuple[Any, str | None, Any]:
     try:
         import hashlib
 
-        from L3.features import MAPPING_PATH, Vocabulary
-        from L3.predict import MODEL_DIR, load_model
+        from L3.unified_predict import (
+            METRICS_PATH, MODEL_PATH, VOCAB_PATH, load_model,
+        )
     except Exception:  # noqa: BLE001 — L3 deps (numpy, joblib) not installed
         return None, None, None
 
     try:
-        bundle = load_model()
-        vocab = Vocabulary.load()
+        # unified load_model returns (model, calibrator, vocab, metrics); the
+        # rest of this module expects bundle = (model, calibrator, metrics) and
+        # vocab returned separately.
+        model, calibrator, vocab, metrics = load_model()
+        bundle = (model, calibrator, metrics)
     except (Exception, SystemExit):  # noqa: BLE001
-        # ModelMissing or a missing feature_mapping.csv (Vocabulary.load raises
-        # SystemExit). Either way L3 cannot run; the run proceeds without it.
+        # ModelMissing or a missing unified vocabulary. Either way L3 cannot
+        # run; the run proceeds without it.
         return None, None, None
 
     h = hashlib.sha256()
-    for p in (MODEL_DIR / "lamda_lgbm.joblib", MODEL_DIR / "metrics.json",
-              MAPPING_PATH):
+    for p in (MODEL_PATH, METRICS_PATH, VOCAB_PATH):
         if p.is_file():
             h.update(p.read_bytes())
     return bundle, h.hexdigest()[:12], vocab
@@ -378,7 +382,7 @@ def analyse_one(sample: Sample, args: argparse.Namespace) -> dict[str, Any]:
                 record.update(l3_status="skipped", l3_reason="l3_unavailable")
             else:
                 try:
-                    from L3.predict import predict_apk, write_layer
+                    from L3.unified_predict import predict_apk, write_layer
 
                     iocs = (report.artifacts.get("iocs")
                             if report is not None else None)
