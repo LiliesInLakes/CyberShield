@@ -26,14 +26,48 @@ def retrieve(query_text: str, top_k: int = 3, min_sim: float = 0.3) -> list[KBMa
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.pipeline import FeatureUnion
 
 KB_PATH = Path(__file__).resolve().parent / "kb.json"
+
+_CAMEL_RE = re.compile(r"(?<=[a-z0-9])(?=[A-Z])")
+
+
+def _expand_identifiers(text: str) -> str:
+    """Append the split components of dotted / camelCase tokens.
+
+    ``sendTextMessage`` -> ``... send Text Message``,
+    ``android.telephony.SmsManager`` -> ``... android telephony SmsManager Sms Manager``.
+    API names survive obfuscation (T22) where renamed identifiers do not, so
+    exposing their word components lets the (word-level) retriever match KB
+    descriptions that spell the behaviour out in prose.
+    """
+    extra: list[str] = []
+    for tok in re.findall(r"[A-Za-z][A-Za-z0-9_.$/]{2,}", text):
+        for part in re.split(r"[._$/]+", tok):
+            if not part:
+                continue
+            extra.append(part)
+            extra.extend(p for p in _CAMEL_RE.split(part) if p)
+    return text + " " + " ".join(extra) if extra else text
+
+
+def _make_vectorizer() -> FeatureUnion:
+    """Word TF-IDF (topic match) unioned with char n-grams (robust to renaming
+    and partial-token overlap, which plain word matching misses)."""
+    return FeatureUnion([
+        ("word", TfidfVectorizer(stop_words="english", lowercase=True,
+                                 sublinear_tf=True)),
+        ("char", TfidfVectorizer(analyzer="char_wb", ngram_range=(3, 5),
+                                 lowercase=True, min_df=1)),
+    ])
 
 
 @dataclass
@@ -71,15 +105,15 @@ class _KBIndex:
             self.matrix = None
             return
 
-        documents = [_entry_document(e) for e in self.entries]
-        self.vectorizer = TfidfVectorizer(stop_words="english", lowercase=True)
+        documents = [_expand_identifiers(_entry_document(e)) for e in self.entries]
+        self.vectorizer = _make_vectorizer()
         self.matrix = self.vectorizer.fit_transform(documents)
 
     def search(self, query_text: str, top_k: int, min_sim: float) -> list[KBMatch]:
         if not self.entries or self.vectorizer is None:
             return []
 
-        query_vec = self.vectorizer.transform([query_text])
+        query_vec = self.vectorizer.transform([_expand_identifiers(query_text)])
         sims = cosine_similarity(query_vec, self.matrix)[0]
 
         ranked = sorted(range(len(sims)), key=lambda i: sims[i], reverse=True)

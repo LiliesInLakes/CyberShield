@@ -234,10 +234,57 @@ def read_source(src_root: Path, location: str) -> str | None:
     return None
 
 
+def dex_symbols(apk_path: str | Path) -> list[str]:
+    """Identifiers + strings read straight from the DEX, for ``verify``.
+
+    Supplements the jadx-decompiled source so ``renamed``/``api_calls`` claims
+    are not falsely dropped when jadx failed to decompile (or truncated) a
+    class — grounding stops being coupled to decompiler success. Returns a
+    single newline-joined haystack string (fast substring/word-boundary search),
+    or ``[]`` on any failure (androguard missing, malformed dex — an
+    anti-analysis technique, not a reason to crash).
+    """
+    try:
+        from androguard.core.apk import APK
+        from androguard.core.dex import DEX
+    except ImportError:
+        return []
+    syms: set[str] = set()
+    try:
+        apk = APK(str(apk_path))
+        for dex_bytes in apk.get_all_dex():
+            try:
+                dex = DEX(dex_bytes)
+                for m in dex.get_methods():
+                    name = m.get_name()
+                    if name:
+                        syms.add(name)
+                    cls = m.get_class_name()
+                    if cls.startswith("L"):
+                        dotted = cls[1:].rstrip(";").replace("/", ".")
+                        syms.add(dotted)
+                        syms.add(dotted.rsplit(".", 1)[-1])
+                        if name and not name.startswith("<"):
+                            syms.add(f"{dotted.rsplit('.', 1)[-1]}.{name}")
+                for f in dex.get_fields():
+                    if f.get_name():
+                        syms.add(f.get_name())
+                for s in dex.get_strings():
+                    text = s.get() if hasattr(s, "get") else str(s)
+                    if text and len(text) < 200:
+                        syms.add(text)
+            except Exception:  # noqa: BLE001 — malformed dex; keep what we have
+                continue
+    except Exception:  # noqa: BLE001
+        return ["\n".join(sorted(syms))] if syms else []
+    return ["\n".join(sorted(syms))] if syms else []
+
+
 def explain_class(provider: Provider, location: str, source: str,
                   extracted_iocs: Iterable[str], *,
                   l0_context: str = "", l2_context: str = "",
                   network_evidence: dict[str, Any] | None = None,
+                  dex_haystack: Iterable[str] = (),
                   ) -> tuple[ClassExplanation, list[Completion]]:
     """Run the three-agent chain for one class: analyst -> mechanical verify
     -> reasoning-trail -> adversarial verifier -> deterministic score.
@@ -279,7 +326,7 @@ def explain_class(provider: Provider, location: str, source: str,
 
     valid_kb_ids = [m.kb_id for m in kb_matches]
     v: Verdict = verify(claims, code=[source], extracted_iocs=extracted_iocs,
-                        valid_kb_ids=valid_kb_ids)
+                        valid_kb_ids=valid_kb_ids, dex_symbols=dex_haystack)
 
     trail: ReasoningTrail | None = None
     verifier_result: VerifierVerdict | None = None
@@ -319,6 +366,12 @@ def deobfuscate(doc: dict[str, Any], src_root: Path, *,
     l2_context = package_l2_context(doc)
     network_evidence = package_network_evidence(doc)
 
+    # DEX symbols supplement the decompiled source so verify() doesn't drop true
+    # claims on classes jadx failed to render (fix: grounding not coupled to
+    # jadx). Best-effort and computed once per sample.
+    apk_path = (doc.get("identity") or {}).get("source_apk")
+    dex_haystack = dex_symbols(apk_path) if apk_path and Path(apk_path).is_file() else []
+
     spend_before = getattr(provider, "ledger", None)
     spend_before = spend_before.spent_usd if spend_before else 0.0
 
@@ -331,7 +384,7 @@ def deobfuscate(doc: dict[str, Any], src_root: Path, *,
             explanation, _completions = explain_class(
                 provider, location, source, extracted_iocs,
                 l0_context=l0_context, l2_context=l2_context,
-                network_evidence=network_evidence,
+                network_evidence=network_evidence, dex_haystack=dex_haystack,
             )
         except Exception as exc:  # noqa: BLE001
             result.errors.append(f"{location}: {type(exc).__name__}: {exc}")
