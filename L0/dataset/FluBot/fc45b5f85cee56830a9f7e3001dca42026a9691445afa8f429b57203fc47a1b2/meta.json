@@ -1,0 +1,71 @@
+{
+  "family": "FluBot",
+  "source_file": "C:\\Users\\DELL\\AppData\\Local\\Temp\\tmprn23d6kp\\fc45b5f85cee56830a9f7e3001dca42026a9691445afa8f429b57203fc47a1b2.apk",
+  "fingerprint": {
+    "md5": "af9f032aecbb2c3a4f5eed9b5f675419",
+    "sha256": "fc45b5f85cee56830a9f7e3001dca42026a9691445afa8f429b57203fc47a1b2"
+  },
+  "manifest": {
+    "package_name": "com.tencent.qqmusic",
+    "app_label": "DHL Express Mobile",
+    "version_name": "1.5",
+    "version_code": "1",
+    "min_sdk": "24",
+    "target_sdk": "28",
+    "permissions": [
+      "android.permission.ACCESS_NETWORK_STATE",
+      "android.permission.CALL_PHONE",
+      "android.permission.FOREGROUND_SERVICE",
+      "android.permission.INTERNET",
+      "android.permission.KILL_BACKGROUND_PROCESSES",
+      "android.permission.QUERY_ALL_PACKAGES",
+      "android.permission.READ_CONTACTS",
+      "android.permission.READ_PHONE_STATE",
+      "android.permission.READ_SMS",
+      "android.permission.RECEIVE_SMS",
+      "android.permission.REQUEST_DELETE_PACKAGES",
+      "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS",
+      "android.permission.SEND_SMS",
+      "android.permission.VIBRATE",
+      "android.permission.WAKE_LOCK",
+      "android.permission.WRITE_SMS"
+    ],
+    "permission_count": 16,
+    "high_risk_permissions": [
+      "android.permission.CALL_PHONE",
+      "android.permission.READ_CONTACTS",
+      "android.permission.READ_PHONE_STATE",
+      "android.permission.READ_SMS",
+      "android.permission.RECEIVE_SMS",
+      "android.permission.SEND_SMS"
+    ],
+    "high_risk_permission_count": 6
+  },
+  "icon": {
+    "present": true,
+    "phash": "ad1ed1618f61d06e",
+    "source": "res/drawable/icon.png",
+    "saved_path": "dataset\\FluBot\\fc45b5f85cee56830a9f7e3001dca42026a9691445afa8f429b57203fc47a1b2\\icon.png"
+  },
+  "routing": {
+    "track": "track1_jadx",
+    "dex_files": [
+      "classes.dex"
+    ],
+    "dex_count": 1,
+    "native_libs": [],
+    "native_lib_count": 0,
+    "native_arches": [],
+    "framework_indicators": [],
+    "packing_signals": [],
+    "routing_decisions": [
+      {
+        "engine": "jadx",
+        "targets": [
+          "classes.dex"
+        ],
+        "reason": "Dalvik bytecode present; decompile smali to Java for static triage."
+      }
+    ]
+  }
+}

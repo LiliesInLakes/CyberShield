@@ -1,0 +1,401 @@
+{
+  "analysis_gaps": [
+    "detonation_not_attempted",
+    "ghidra_unavailable"
+  ],
+  "counts": {
+    "by_category": {
+      "other": 5
+    },
+    "by_layer": {
+      "l1": 5
+    },
+    "by_severity": {
+      "critical": 1,
+      "high": 1,
+      "low": 1,
+      "medium": 2
+    },
+    "certificate_anomaly": 0,
+    "findings": 5,
+    "malware_category": 0
+  },
+  "created_at": "2026-08-08T17:10:10.489568+00:00",
+  "findings": [
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 1,
+        "locations": [
+          "sources/I3/C0231l.java"
+        ],
+        "match_count": 1,
+        "matched_string_ids": [
+          "$jsi"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$jsi",
+            "location": "sources/I3/C0231l.java",
+            "snippet": "addJavascriptInterface"
+          }
+        ],
+        "scopes": [
+          "source"
+        ],
+        "yara_rule": "Android_WebView_JavascriptInterface"
+      },
+      "engine": "yara",
+      "evidence": "[Android_WebView_JavascriptInterface] WebView exposes JavaScript bridge \u2014 potential XSS-to-RCE if untrusted content loaded -> addJavascriptInterface",
+      "fingerprint": "14800d072fb9",
+      "id": "F001",
+      "layer": "l1",
+      "location": "sources/I3/C0231l.java",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "critical"
+    },
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 1,
+        "locations": [
+          "sources/me/proton/android/lumo/MainActivity.java"
+        ],
+        "match_count": 1,
+        "matched_string_ids": [
+          "$jse"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$jse",
+            "location": "sources/me/proton/android/lumo/MainActivity.java",
+            "snippet": "setJavaScriptEnabled"
+          }
+        ],
+        "scopes": [
+          "source"
+        ],
+        "yara_rule": "Android_WebView_JavaScriptEnabled"
+      },
+      "engine": "yara",
+      "evidence": "[Android_WebView_JavaScriptEnabled] WebView has JavaScript enabled \u2014 increases XSS attack surface -> setJavaScriptEnabled",
+      "fingerprint": "86ad5e3865bc",
+      "id": "F002",
+      "layer": "l1",
+      "location": "sources/me/proton/android/lumo/MainActivity.java",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "high"
+    },
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 1,
+        "locations": [
+          "me.proton.android.lumo_50.apk"
+        ],
+        "match_count": 7,
+        "matched_string_ids": [
+          "$dex1",
+          "$dex2",
+          "$hex_dex"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$dex1",
+            "location": "me.proton.android.lumo_50.apk",
+            "snippet": "classes.dex"
+          },
+          {
+            "id": "$dex1",
+            "location": "me.proton.android.lumo_50.apk",
+            "snippet": "classes.dex"
+          },
+          {
+            "id": "$dex1",
+            "location": "me.proton.android.lumo_50.apk",
+            "snippet": "classes.dex"
+          },
+          {
+            "id": "$dex2",
+            "location": "me.proton.android.lumo_50.apk",
+            "snippet": "classes2.dex"
+          },
+          {
+            "id": "$dex2",
+            "location": "me.proton.android.lumo_50.apk",
+            "snippet": "classes2.dex"
+          },
+          {
+            "id": "$hex_dex",
+            "location": "me.proton.android.lumo_50.apk",
+            "snippet": "dex\n"
+          },
+          {
+            "id": "$hex_dex",
+            "location": "me.proton.android.lumo_50.apk",
+            "snippet": "dex\n"
+          }
+        ],
+        "scopes": [
+          "container"
+        ],
+        "yara_rule": "APK_Anomalous_Multiple_DEX_Files"
+      },
+      "engine": "yara",
+      "evidence": "[APK_Anomalous_Multiple_DEX_Files] Detects APKs with multiple DEX files (possible multidex or packing) -> classes.dex",
+      "fingerprint": "1e5c774f11af",
+      "id": "F003",
+      "layer": "l1",
+      "location": "me.proton.android.lumo_50.apk",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "medium"
+    },
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 5,
+        "locations": [
+          "sources/J2/ViewOnClickListenerC0257a.java",
+          "sources/J2/w.java",
+          "sources/p046l/G.java",
+          "sources/q2/a.java",
+          "sources/D1/f.java"
+        ],
+        "match_count": 10,
+        "matched_string_ids": [
+          "$pw1"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$pw1",
+            "location": "sources/J2/ViewOnClickListenerC0257a.java",
+            "snippet": ".Password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/J2/w.java",
+            "snippet": ".Password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/J2/w.java",
+            "snippet": ".password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/p046l/G.java",
+            "snippet": ".Password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/q2/a.java",
+            "snippet": ".password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/q2/a.java",
+            "snippet": ".password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/q2/a.java",
+            "snippet": ".password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/q2/a.java",
+            "snippet": ".password"
+          }
+        ],
+        "scopes": [
+          "source"
+        ],
+        "yara_rule": "Android_Secrets_Hardcoded"
+      },
+      "engine": "yara",
+      "evidence": "[Android_Secrets_Hardcoded] Potential hardcoded credential or secret \u2014 review for plaintext secrets -> .Password",
+      "fingerprint": "cc1927d9d7c8",
+      "id": "F004",
+      "layer": "l1",
+      "location": "sources/J2/ViewOnClickListenerC0257a.java",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "medium"
+    },
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 1,
+        "locations": [
+          "me.proton.android.lumo_50.apk"
+        ],
+        "match_count": 882,
+        "matched_string_ids": [
+          "$cert1",
+          "$cert4",
+          "$classes",
+          "$hex_cd",
+          "$hex_eocd",
+          "$hex_zip",
+          "$manifest",
+          "$resources"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$manifest",
+            "location": "me.proton.android.lumo_50.apk",
+            "snippet": "AndroidManifest.xml"
+          },
+          {
+            "id": "$manifest",
+            "location": "me.proton.android.lumo_50.apk",
+            "snippet": "AndroidManifest.xml"
+          },
+          {
+            "id": "$manifest",
+            "location": "me.proton.android.lumo_50.apk",
+            "snippet": "AndroidManifest.xml"
+          },
+          {
+            "id": "$manifest",
+            "location": "me.proton.android.lumo_50.apk",
+            "snippet": "AndroidManifest.xml"
+          },
+          {
+            "id": "$manifest",
+            "location": "me.proton.android.lumo_50.apk",
+            "snippet": "AndroidManifest.xml"
+          },
+          {
+            "id": "$classes",
+            "location": "me.proton.android.lumo_50.apk",
+            "snippet": "classes.dex"
+          },
+          {
+            "id": "$classes",
+            "location": "me.proton.android.lumo_50.apk",
+            "snippet": "classes.dex"
+          },
+          {
+            "id": "$classes",
+            "location": "me.proton.android.lumo_50.apk",
+            "snippet": "classes.dex"
+          }
+        ],
+        "scopes": [
+          "container"
+        ],
+        "yara_rule": "APK_Valid_Structure_Check"
+      },
+      "engine": "yara",
+      "evidence": "[APK_Valid_Structure_Check] Validates basic APK file structure integrity -> AndroidManifest.xml",
+      "fingerprint": "a983bb24584a",
+      "id": "F005",
+      "layer": "l1",
+      "location": "me.proton.android.lumo_50.apk",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "low"
+    }
+  ],
+  "identity": {
+    "app_label": "Lumo",
+    "md5": "316341003857d7e8478f7fc73ce0c72c",
+    "package": "me.proton.android.lumo",
+    "sha256": "b161760381522ffc61925c8978d633a9644a6a14b8c5f391dd90461251ec5d5f",
+    "source_apk": "testing_apps/good_apps/me.proton.android.lumo_50.apk",
+    "version_name": "1.2.18-nogms"
+  },
+  "layers": {
+    "l0": {
+      "artifact": "L0/artifacts/b161760381522ffc61925c8978d633a9644a6a14b8c5f391dd90461251ec5d5f/evidence.json",
+      "coverage": {
+        "certificate_parsed": true,
+        "icon_extracted": true,
+        "manifest_parsed": true,
+        "permission_count": 7,
+        "reputation_checked": false
+      },
+      "gaps": [],
+      "status": "complete",
+      "summary": {
+        "cert_anomalies": [],
+        "cert_signal": {
+          "cert_detail": null,
+          "cert_in_whitelist": false,
+          "cert_weight": 0.0
+        },
+        "claimed_entity": null,
+        "matched_bank": null,
+        "reputation_hit": false,
+        "smoking_gun_inputs": {
+          "brand_claim": false,
+          "cert_anomalies": [],
+          "claimed_entity": null,
+          "sms_trifecta": false
+        },
+        "track": "track1_jadx_then_track2_ghidra",
+        "verdict": "unknown"
+      },
+      "updated_at": "2026-08-08T17:12:08.324499+00:00"
+    },
+    "l1": {
+      "artifact": "L1/artifacts/b161760381522ffc61925c8978d633a9644a6a14b8c5f391dd90461251ec5d5f/analysis.json",
+      "coverage": {
+        "apk_yara_rules": 2,
+        "decompiled_files": 3747,
+        "ghidra_attempted": true,
+        "ghidra_available": false,
+        "ghidra_ok": false,
+        "source_findings": 3
+      },
+      "gaps": [
+        "ghidra_unavailable"
+      ],
+      "status": "partial",
+      "summary": {
+        "categories": [
+          "other"
+        ],
+        "engine": "jadx+ghidra",
+        "finding_count": 5,
+        "ruleset_version": "614d58d9a5b9",
+        "severity_counts": {
+          "critical": 1,
+          "high": 1,
+          "info": 0,
+          "low": 1,
+          "medium": 2
+        },
+        "track": "track1_jadx_then_track2_ghidra"
+      },
+      "updated_at": "2026-08-08T17:10:26.953655+00:00"
+    },
+    "l2": {
+      "status": "not_attempted"
+    },
+    "l3": {
+      "status": "not_attempted"
+    },
+    "l4": {
+      "status": "not_attempted"
+    },
+    "l5": {
+      "status": "not_attempted"
+    },
+    "l6": {
+      "status": "not_attempted"
+    }
+  },
+  "schema_version": "apk-sentinel-0.2",
+  "sha256": "b161760381522ffc61925c8978d633a9644a6a14b8c5f391dd90461251ec5d5f",
+  "updated_at": "2026-08-08T17:12:08.324947+00:00"
+}

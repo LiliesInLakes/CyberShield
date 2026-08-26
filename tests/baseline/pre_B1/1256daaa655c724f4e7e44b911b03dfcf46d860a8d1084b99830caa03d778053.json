@@ -1,0 +1,504 @@
+{
+  "analysis_gaps": [
+    "detonation_not_attempted",
+    "ghidra_unavailable"
+  ],
+  "counts": {
+    "by_category": {
+      "other": 6
+    },
+    "by_layer": {
+      "l1": 6
+    },
+    "by_severity": {
+      "critical": 1,
+      "high": 1,
+      "low": 1,
+      "medium": 3
+    },
+    "certificate_anomaly": 0,
+    "findings": 6,
+    "malware_category": 0
+  },
+  "created_at": "2026-08-08T17:10:09.676536+00:00",
+  "findings": [
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 1,
+        "locations": [
+          "sources/defpackage/af.java"
+        ],
+        "match_count": 7,
+        "matched_string_ids": [
+          "$tm1",
+          "$tm2"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$tm1",
+            "location": "sources/defpackage/af.java",
+            "snippet": "X509TrustManager"
+          },
+          {
+            "id": "$tm1",
+            "location": "sources/defpackage/af.java",
+            "snippet": "X509TrustManager"
+          },
+          {
+            "id": "$tm1",
+            "location": "sources/defpackage/af.java",
+            "snippet": "X509TrustManager"
+          },
+          {
+            "id": "$tm1",
+            "location": "sources/defpackage/af.java",
+            "snippet": "X509TrustManager"
+          },
+          {
+            "id": "$tm1",
+            "location": "sources/defpackage/af.java",
+            "snippet": "X509TrustManager"
+          },
+          {
+            "id": "$tm1",
+            "location": "sources/defpackage/af.java",
+            "snippet": "X509TrustManager"
+          },
+          {
+            "id": "$tm2",
+            "location": "sources/defpackage/af.java",
+            "snippet": "checkServerTrusted"
+          }
+        ],
+        "scopes": [
+          "source"
+        ],
+        "yara_rule": "Android_SSL_TrustAll"
+      },
+      "engine": "yara",
+      "evidence": "[Android_SSL_TrustAll] Custom X509TrustManager detected \u2014 may bypass SSL validation (MITM risk) -> X509TrustManager",
+      "fingerprint": "7ebdced6433c",
+      "id": "F001",
+      "layer": "l1",
+      "location": "sources/defpackage/af.java",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "critical"
+    },
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 4,
+        "locations": [
+          "sources/defpackage/b20.java",
+          "sources/defpackage/hc0.java",
+          "sources/defpackage/rl1.java",
+          "sources/com/pennywiseai/tracker/receiver/QuickCategoryPickerActivity.java"
+        ],
+        "match_count": 6,
+        "matched_string_ids": [
+          "$w1",
+          "$w3"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$w1",
+            "location": "sources/defpackage/b20.java",
+            "snippet": "\"DES\""
+          },
+          {
+            "id": "$w1",
+            "location": "sources/defpackage/hc0.java",
+            "snippet": "\"DES\""
+          },
+          {
+            "id": "$w1",
+            "location": "sources/defpackage/rl1.java",
+            "snippet": "\"DES\""
+          },
+          {
+            "id": "$w3",
+            "location": "sources/defpackage/rl1.java",
+            "snippet": "\"RC4\""
+          },
+          {
+            "id": "$w3",
+            "location": "sources/defpackage/rl1.java",
+            "snippet": "\"RC4\""
+          },
+          {
+            "id": "$w3",
+            "location": "sources/com/pennywiseai/tracker/receiver/QuickCategoryPickerActivity.java",
+            "snippet": "\"rc4\""
+          }
+        ],
+        "scopes": [
+          "source"
+        ],
+        "yara_rule": "Android_Crypto_WeakAlgorithm"
+      },
+      "engine": "yara",
+      "evidence": "[Android_Crypto_WeakAlgorithm] Weak or deprecated cryptographic algorithm in use -> \"DES\"",
+      "fingerprint": "e2f029c1b905",
+      "id": "F002",
+      "layer": "l1",
+      "location": "sources/defpackage/b20.java",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "high"
+    },
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 1,
+        "locations": [
+          "com.pennywiseai.tracker_99.apk"
+        ],
+        "match_count": 20,
+        "matched_string_ids": [
+          "$dex1",
+          "$dex2",
+          "$dex3",
+          "$hex_dex"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$dex1",
+            "location": "com.pennywiseai.tracker_99.apk",
+            "snippet": "classes.dex"
+          },
+          {
+            "id": "$dex1",
+            "location": "com.pennywiseai.tracker_99.apk",
+            "snippet": "classes.dex"
+          },
+          {
+            "id": "$dex2",
+            "location": "com.pennywiseai.tracker_99.apk",
+            "snippet": "classes2.dex"
+          },
+          {
+            "id": "$dex2",
+            "location": "com.pennywiseai.tracker_99.apk",
+            "snippet": "classes2.dex"
+          },
+          {
+            "id": "$dex3",
+            "location": "com.pennywiseai.tracker_99.apk",
+            "snippet": "classes3.dex"
+          },
+          {
+            "id": "$dex3",
+            "location": "com.pennywiseai.tracker_99.apk",
+            "snippet": "classes3.dex"
+          },
+          {
+            "id": "$hex_dex",
+            "location": "com.pennywiseai.tracker_99.apk",
+            "snippet": "dex\n"
+          },
+          {
+            "id": "$hex_dex",
+            "location": "com.pennywiseai.tracker_99.apk",
+            "snippet": "dex\n"
+          }
+        ],
+        "scopes": [
+          "container"
+        ],
+        "yara_rule": "APK_Anomalous_Multiple_DEX_Files"
+      },
+      "engine": "yara",
+      "evidence": "[APK_Anomalous_Multiple_DEX_Files] Detects APKs with multiple DEX files (possible multidex or packing) -> classes.dex",
+      "fingerprint": "1e5c774f11af",
+      "id": "F003",
+      "layer": "l1",
+      "location": "com.pennywiseai.tracker_99.apk",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "medium"
+    },
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 1,
+        "locations": [
+          "sources/defpackage/gm.java"
+        ],
+        "match_count": 2,
+        "matched_string_ids": [
+          "$iv"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$iv",
+            "location": "sources/defpackage/gm.java",
+            "snippet": "IvParameterSpec("
+          },
+          {
+            "id": "$iv",
+            "location": "sources/defpackage/gm.java",
+            "snippet": "IvParameterSpec("
+          }
+        ],
+        "scopes": [
+          "source"
+        ],
+        "yara_rule": "Android_Crypto_StaticIV"
+      },
+      "engine": "yara",
+      "evidence": "[Android_Crypto_StaticIV] IvParameterSpec usage \u2014 verify IV is not hardcoded or static -> IvParameterSpec(",
+      "fingerprint": "499988df8c86",
+      "id": "F004",
+      "layer": "l1",
+      "location": "sources/defpackage/gm.java",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "medium"
+    },
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 6,
+        "locations": [
+          "sources/defpackage/sl.java",
+          "sources/defpackage/yt2.java",
+          "sources/defpackage/rz2.java",
+          "sources/defpackage/mv3.java",
+          "sources/defpackage/qj1.java",
+          "sources/defpackage/z0.java"
+        ],
+        "match_count": 7,
+        "matched_string_ids": [
+          "$pw1",
+          "$pw2"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$pw1",
+            "location": "sources/defpackage/sl.java",
+            "snippet": ".Password"
+          },
+          {
+            "id": "$pw2",
+            "location": "sources/defpackage/yt2.java",
+            "snippet": ".Secret"
+          },
+          {
+            "id": "$pw2",
+            "location": "sources/defpackage/yt2.java",
+            "snippet": ".Secret"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/defpackage/rz2.java",
+            "snippet": ".Password"
+          },
+          {
+            "id": "$pw2",
+            "location": "sources/defpackage/mv3.java",
+            "snippet": ".Secret"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/defpackage/qj1.java",
+            "snippet": ".Password"
+          },
+          {
+            "id": "$pw2",
+            "location": "sources/defpackage/z0.java",
+            "snippet": ".Secret"
+          }
+        ],
+        "scopes": [
+          "source"
+        ],
+        "yara_rule": "Android_Secrets_Hardcoded"
+      },
+      "engine": "yara",
+      "evidence": "[Android_Secrets_Hardcoded] Potential hardcoded credential or secret \u2014 review for plaintext secrets -> .Password",
+      "fingerprint": "cc1927d9d7c8",
+      "id": "F005",
+      "layer": "l1",
+      "location": "sources/defpackage/sl.java",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "medium"
+    },
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 1,
+        "locations": [
+          "com.pennywiseai.tracker_99.apk"
+        ],
+        "match_count": 2198,
+        "matched_string_ids": [
+          "$cert1",
+          "$cert2",
+          "$cert4",
+          "$classes",
+          "$hex_cd",
+          "$hex_eocd",
+          "$hex_zip",
+          "$manifest",
+          "$resources"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$manifest",
+            "location": "com.pennywiseai.tracker_99.apk",
+            "snippet": "AndroidManifest.xml"
+          },
+          {
+            "id": "$manifest",
+            "location": "com.pennywiseai.tracker_99.apk",
+            "snippet": "AndroidManifest.xml"
+          },
+          {
+            "id": "$classes",
+            "location": "com.pennywiseai.tracker_99.apk",
+            "snippet": "classes.dex"
+          },
+          {
+            "id": "$classes",
+            "location": "com.pennywiseai.tracker_99.apk",
+            "snippet": "classes.dex"
+          },
+          {
+            "id": "$resources",
+            "location": "com.pennywiseai.tracker_99.apk",
+            "snippet": "resources.arsc"
+          },
+          {
+            "id": "$resources",
+            "location": "com.pennywiseai.tracker_99.apk",
+            "snippet": "resources.arsc"
+          },
+          {
+            "id": "$cert1",
+            "location": "com.pennywiseai.tracker_99.apk",
+            "snippet": "META-INF/"
+          },
+          {
+            "id": "$cert1",
+            "location": "com.pennywiseai.tracker_99.apk",
+            "snippet": "META-INF/"
+          }
+        ],
+        "scopes": [
+          "container"
+        ],
+        "yara_rule": "APK_Valid_Structure_Check"
+      },
+      "engine": "yara",
+      "evidence": "[APK_Valid_Structure_Check] Validates basic APK file structure integrity -> AndroidManifest.xml",
+      "fingerprint": "a983bb24584a",
+      "id": "F006",
+      "layer": "l1",
+      "location": "com.pennywiseai.tracker_99.apk",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "low"
+    }
+  ],
+  "identity": {
+    "app_label": "PennyWise AI - Expense Tracker",
+    "md5": "6d5391bd3735b033fd9027d8c7b493f7",
+    "package": "com.pennywiseai.tracker",
+    "sha256": "1256daaa655c724f4e7e44b911b03dfcf46d860a8d1084b99830caa03d778053",
+    "source_apk": "testing_apps/good_apps/com.pennywiseai.tracker_99.apk",
+    "version_name": "2.17.0"
+  },
+  "layers": {
+    "l0": {
+      "artifact": "L0/artifacts/1256daaa655c724f4e7e44b911b03dfcf46d860a8d1084b99830caa03d778053/evidence.json",
+      "coverage": {
+        "certificate_parsed": true,
+        "icon_extracted": true,
+        "manifest_parsed": true,
+        "permission_count": 12,
+        "reputation_checked": false
+      },
+      "gaps": [],
+      "status": "complete",
+      "summary": {
+        "cert_anomalies": [],
+        "cert_signal": {
+          "cert_detail": null,
+          "cert_in_whitelist": false,
+          "cert_weight": 0.0
+        },
+        "claimed_entity": null,
+        "matched_bank": null,
+        "reputation_hit": false,
+        "smoking_gun_inputs": {
+          "brand_claim": false,
+          "cert_anomalies": [],
+          "claimed_entity": null,
+          "sms_trifecta": false
+        },
+        "track": "track1_jadx_then_track2_ghidra",
+        "verdict": "unknown"
+      },
+      "updated_at": "2026-08-08T17:12:05.822227+00:00"
+    },
+    "l1": {
+      "artifact": "L1/artifacts/1256daaa655c724f4e7e44b911b03dfcf46d860a8d1084b99830caa03d778053/analysis.json",
+      "coverage": {
+        "apk_yara_rules": 2,
+        "decompiled_files": 24181,
+        "ghidra_attempted": true,
+        "ghidra_available": false,
+        "ghidra_ok": false,
+        "source_findings": 4
+      },
+      "gaps": [
+        "ghidra_unavailable"
+      ],
+      "status": "partial",
+      "summary": {
+        "categories": [
+          "other"
+        ],
+        "engine": "jadx+ghidra",
+        "finding_count": 6,
+        "ruleset_version": "614d58d9a5b9",
+        "severity_counts": {
+          "critical": 1,
+          "high": 1,
+          "info": 0,
+          "low": 1,
+          "medium": 3
+        },
+        "track": "track1_jadx_then_track2_ghidra"
+      },
+      "updated_at": "2026-08-08T17:10:25.149430+00:00"
+    },
+    "l2": {
+      "status": "not_attempted"
+    },
+    "l3": {
+      "status": "not_attempted"
+    },
+    "l4": {
+      "status": "not_attempted"
+    },
+    "l5": {
+      "status": "not_attempted"
+    },
+    "l6": {
+      "status": "not_attempted"
+    }
+  },
+  "schema_version": "apk-sentinel-0.2",
+  "sha256": "1256daaa655c724f4e7e44b911b03dfcf46d860a8d1084b99830caa03d778053",
+  "updated_at": "2026-08-08T17:12:05.822625+00:00"
+}

@@ -1,0 +1,115 @@
+{
+ "org.diekaiju.duckassist_245.apk": {
+  "class": "benign",
+  "package": "org.diekaiju.duckassist",
+  "label": "duckAssist",
+  "verdict": "suspicious",
+  "matched_bank": null,
+  "finding_types": [
+   "self_signed_bank_impersonation"
+  ],
+  "finding_severities": [
+   "critical"
+  ],
+  "cert_anomalies": [
+   "self_signed"
+  ],
+  "icon_phash": "c4b510765b596db4"
+ },
+ "com.pennywiseai.tracker_99.apk": {
+  "class": "benign",
+  "package": "com.pennywiseai.tracker",
+  "label": "PennyWise AI - Expense Tracker",
+  "verdict": "unknown",
+  "matched_bank": null,
+  "finding_types": [],
+  "finding_severities": [],
+  "cert_anomalies": [
+   "self_signed"
+  ],
+  "icon_phash": "b29bcb6439932639"
+ },
+ "me.proton.android.lumo_50.apk": {
+  "class": "benign",
+  "package": "me.proton.android.lumo",
+  "label": "Lumo",
+  "verdict": "unknown",
+  "matched_bank": null,
+  "finding_types": [],
+  "finding_severities": [],
+  "cert_anomalies": [
+   "self_signed"
+  ],
+  "icon_phash": "c1c91e966ba33e2c"
+ },
+ "com.module.notelycompose.android_33.apk": {
+  "class": "benign",
+  "package": "com.module.notelycompose.android",
+  "label": "Notely Voice",
+  "verdict": "unknown",
+  "matched_bank": null,
+  "finding_types": [],
+  "finding_severities": [],
+  "cert_anomalies": [
+   "self_signed"
+  ],
+  "icon_phash": "c16e3ab06ec93b16"
+ },
+ "InsecureBankv2.apk": {
+  "class": "vuln",
+  "package": "com.android.insecurebankv2",
+  "label": "InsecureBankv2",
+  "verdict": "unknown",
+  "matched_bank": null,
+  "finding_types": [],
+  "finding_severities": [],
+  "cert_anomalies": [
+   "self_signed"
+  ],
+  "icon_phash": "979c6863879c7863"
+ },
+ "pivaa.apk": {
+  "class": "vuln",
+  "package": "com.htbridge.pivaa",
+  "label": "PIVAA",
+  "verdict": "suspicious",
+  "matched_bank": null,
+  "finding_types": [
+   "debug_signed"
+  ],
+  "finding_severities": [
+   "high"
+  ],
+  "cert_anomalies": [
+   "debug_keystore",
+   "self_signed"
+  ],
+  "icon_phash": "d09d2e631f4c3b86"
+ },
+ "uncrackable-level1.apk": {
+  "class": "vuln",
+  "package": "owasp.mstg.uncrackable1",
+  "label": "Uncrackable1",
+  "verdict": "unknown",
+  "matched_bank": null,
+  "finding_types": [],
+  "finding_severities": [],
+  "cert_anomalies": [
+   "self_signed"
+  ],
+  "icon_phash": "c0942f4b3f0f3a6c"
+ },
+ "uncrackable-level2.apk": {
+  "class": "vuln",
+  "package": "owasp.mstg.uncrackable2",
+  "label": "Uncrackable Level 2",
+  "verdict": "unknown",
+  "matched_bank": null,
+  "finding_types": [],
+  "finding_severities": [],
+  "cert_anomalies": [
+   "self_signed"
+  ],
+  "icon_phash": "c0c629392f963e67"
+ }
+}

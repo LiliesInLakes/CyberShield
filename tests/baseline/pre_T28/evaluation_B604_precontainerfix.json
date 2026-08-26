@@ -1,0 +1,191 @@
+{
+  "generated_at": "2026-08-12T04:37:04.458233+00:00",
+  "policy_version": "l5-0.1",
+  "weights_version": "2026-08-12",
+  "unsupported": false,
+  "n_malware": 640,
+  "n_benign": 604,
+  "in_sample": {
+    "auroc": 0.9274,
+    "auroc_ci95": [
+      0.9137,
+      0.94
+    ],
+    "operating_points": [
+      {
+        "threshold": 25,
+        "recall": 0.9969,
+        "benign_fpr": 0.5877,
+        "benign_fpr_ci95": [
+          0.5482,
+          0.6265
+        ],
+        "fp_count": 355,
+        "n_benign": 604
+      },
+      {
+        "threshold": 50,
+        "recall": 0.8313,
+        "benign_fpr": 0.1043,
+        "benign_fpr_ci95": [
+          0.0818,
+          0.1306
+        ],
+        "fp_count": 63,
+        "n_benign": 604
+      },
+      {
+        "threshold": 70,
+        "recall": 0.7125,
+        "benign_fpr": 0.0513,
+        "benign_fpr_ci95": [
+          0.0358,
+          0.0711
+        ],
+        "fp_count": 31,
+        "n_benign": 604
+      },
+      {
+        "threshold": 85,
+        "recall": 0.5437,
+        "benign_fpr": 0.0116,
+        "benign_fpr_ci95": [
+          0.0052,
+          0.0226
+        ],
+        "fp_count": 7,
+        "n_benign": 604
+      }
+    ]
+  },
+  "distribution": {
+    "benign": {
+      "n": 604,
+      "median": 32.0,
+      "iqr": [
+        16.0,
+        32.0
+      ],
+      "mean": 28.53,
+      "bands": {
+        "Low": 292,
+        "Informational": 249,
+        "Medium": 32,
+        "High": 24,
+        "Critical": 7
+      }
+    },
+    "india_malware": {
+      "n": 14,
+      "median": 99.5,
+      "iqr": [
+        96.75,
+        100.0
+      ],
+      "mean": 98.5,
+      "bands": {
+        "Critical": 14
+      }
+    },
+    "malware": {
+      "n": 626,
+      "median": 88.0,
+      "iqr": [
+        61.0,
+        97.0
+      ],
+      "mean": 76.34,
+      "bands": {
+        "Low": 106,
+        "Critical": 334,
+        "Medium": 76,
+        "High": 108,
+        "Informational": 2
+      }
+    }
+  },
+  "negative_controls": {
+    "n": 4,
+    "samples": [
+      {
+        "sha256": "57887e1d1e11",
+        "app": "PIVAA",
+        "score": 98,
+        "band": "Critical"
+      },
+      {
+        "sha256": "1da8bf57d266",
+        "app": "Uncrackable1",
+        "score": 32,
+        "band": "Low"
+      },
+      {
+        "sha256": "4c7980ef1f6c",
+        "app": "Uncrackable Level 2",
+        "score": 32,
+        "band": "Low"
+      },
+      {
+        "sha256": "b18af2a0e44d",
+        "app": "InsecureBankv2",
+        "score": 32,
+        "band": "Low"
+      }
+    ],
+    "max_band": "Critical"
+  },
+  "cross_validated": {
+    "folds": 5,
+    "auroc": 0.9203,
+    "auroc_ci95": [
+      0.9057,
+      0.9344
+    ],
+    "operating_points": [
+      {
+        "threshold": 25,
+        "recall": 0.9953,
+        "benign_fpr": 0.6026,
+        "benign_fpr_ci95": [
+          0.5632,
+          0.6411
+        ],
+        "fp_count": 364,
+        "n_benign": 604
+      },
+      {
+        "threshold": 50,
+        "recall": 0.8172,
+        "benign_fpr": 0.1109,
+        "benign_fpr_ci95": [
+          0.0877,
+          0.1378
+        ],
+        "fp_count": 67,
+        "n_benign": 604
+      },
+      {
+        "threshold": 70,
+        "recall": 0.7063,
+        "benign_fpr": 0.043,
+        "benign_fpr_ci95": [
+          0.029,
+          0.0615
+        ],
+        "fp_count": 26,
+        "n_benign": 604
+      },
+      {
+        "threshold": 85,
+        "recall": 0.5328,
+        "benign_fpr": 0.0099,
+        "benign_fpr_ci95": [
+          0.0042,
+          0.0204
+        ],
+        "fp_count": 6,
+        "n_benign": 604
+      }
+    ]
+  }
+}

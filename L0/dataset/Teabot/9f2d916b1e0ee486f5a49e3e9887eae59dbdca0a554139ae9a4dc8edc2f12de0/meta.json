@@ -1,0 +1,74 @@
+{
+  "family": "Teabot",
+  "source_file": "C:\\Users\\DELL\\AppData\\Local\\Temp\\tmp5y1e4jtt\\9f2d916b1e0ee486f5a49e3e9887eae59dbdca0a554139ae9a4dc8edc2f12de0.apk",
+  "fingerprint": {
+    "md5": "af9fde69078e906d628f5c04fe4ab11f",
+    "sha256": "9f2d916b1e0ee486f5a49e3e9887eae59dbdca0a554139ae9a4dc8edc2f12de0"
+  },
+  "manifest": {
+    "package_name": "com.zzvk.elxxjqz",
+    "app_label": "PDF AI: TEXT RECOGNISER",
+    "version_name": "1.0",
+    "version_code": "1",
+    "min_sdk": "24",
+    "target_sdk": "28",
+    "permissions": [
+      "android.permission.FOREGROUND_SERVICE",
+      "android.permission.INTERNET",
+      "android.permission.QUERY_ALL_PACKAGES",
+      "android.permission.READ_PHONE_STATE",
+      "android.permission.READ_SMS",
+      "android.permission.RECEIVE_BOOT_COMPLETED",
+      "android.permission.RECEIVE_MMS",
+      "android.permission.RECEIVE_SMS",
+      "android.permission.REQUEST_DELETE_PACKAGES",
+      "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS",
+      "android.permission.REQUEST_PASSWORD_COMPLEXITY",
+      "android.permission.SEND_SMS",
+      "android.permission.SYSTEM_ALERT_WINDOW",
+      "android.permission.USE_BIOMETRIC",
+      "android.permission.USE_FULL_SCREEN_INTENT",
+      "android.permission.WAKE_LOCK",
+      "android.permission.WRITE_SMS"
+    ],
+    "permission_count": 17,
+    "high_risk_permissions": [
+      "android.permission.READ_PHONE_STATE",
+      "android.permission.READ_SMS",
+      "android.permission.RECEIVE_BOOT_COMPLETED",
+      "android.permission.RECEIVE_MMS",
+      "android.permission.RECEIVE_SMS",
+      "android.permission.SEND_SMS",
+      "android.permission.SYSTEM_ALERT_WINDOW"
+    ],
+    "high_risk_permission_count": 7
+  },
+  "icon": {
+    "present": false,
+    "phash": null,
+    "source": null,
+    "saved_path": null,
+    "error": "cannot identify image file <_io.BytesIO object at 0x00000202A2AE5300>"
+  },
+  "routing": {
+    "track": "track1_jadx",
+    "dex_files": [
+      "classes.dex"
+    ],
+    "dex_count": 1,
+    "native_libs": [],
+    "native_lib_count": 0,
+    "native_arches": [],
+    "framework_indicators": [],
+    "packing_signals": [],
+    "routing_decisions": [
+      {
+        "engine": "jadx",
+        "targets": [
+          "classes.dex"
+        ],
+        "reason": "Dalvik bytecode present; decompile smali to Java for static triage."
+      }
+    ]
+  }
+}

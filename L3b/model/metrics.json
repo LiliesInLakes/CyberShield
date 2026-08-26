@@ -1,0 +1,28 @@
+{
+  "n_train": 2655,
+  "n_calibration": 296,
+  "n_held_out": 0,
+  "family_disjoint_status": "unverified_pending_malradar",
+  "held_out_families": [],
+  "in_sample": {
+    "auroc": 1.0,
+    "ece_raw": 0.0042,
+    "ece_calibrated": 0.0
+  },
+  "held_out": null,
+  "generated_at": "2026-08-19T05:02:12.368685+00:00",
+  "n_features": 4567,
+  "lightgbm": "4.7.0",
+  "seed": 20260818,
+  "malware_sources": [
+    "banking_cicmaldroid"
+  ],
+  "benign_source": "benign_fdroid",
+  "scope": "banking_specific_prior",
+  "caveats": [
+    "trained on a small, partially family-verified banking-trojan corpus -- see family_disjoint_status and held_out_families before trusting any AUROC here as banking-specific",
+    "labels are corpus provenance (CICMalDroid's own curation), not manual per-sample review",
+    "benign source is F-Droid: zero commercial banking apps (T27) -- cannot validate a banking false-positive rate",
+    "bounded to +-10 points in L5 and unable to reach Critical alone unless the held-out metric is family-disjoint-verified"
+  ]
+}

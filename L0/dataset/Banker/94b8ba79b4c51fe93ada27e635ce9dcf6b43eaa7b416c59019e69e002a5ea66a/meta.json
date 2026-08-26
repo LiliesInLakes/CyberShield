@@ -1,0 +1,89 @@
+{
+  "family": "Banker",
+  "source_file": "C:\\Users\\DELL\\AppData\\Local\\Temp\\tmpjm0ky12z\\94b8ba79b4c51fe93ada27e635ce9dcf6b43eaa7b416c59019e69e002a5ea66a.apk",
+  "fingerprint": {
+    "md5": "2cb8a3fc838677fcd0d1c36cb7786e3e",
+    "sha256": "94b8ba79b4c51fe93ada27e635ce9dcf6b43eaa7b416c59019e69e002a5ea66a"
+  },
+  "manifest": {
+    "package_name": "sjmo.zfzln.phqdw",
+    "app_label": "\u0421hr\u043eme",
+    "version_name": "azglhocmlmhjgaohhn",
+    "version_code": "3407",
+    "min_sdk": "14",
+    "target_sdk": "21",
+    "permissions": [
+      "android.permission.ACCESS_NETWORK_STATE",
+      "android.permission.ACCESS_WIFI_STATE",
+      "android.permission.CALL_PHONE",
+      "android.permission.CHANGE_NETWORK_STATE",
+      "android.permission.CHANGE_WIFI_STATE",
+      "android.permission.DISABLE_KEYGUARD",
+      "android.permission.GET_ACCOUNTS",
+      "android.permission.INTERNET",
+      "android.permission.MODIFY_AUDIO_SETTINGS",
+      "android.permission.READ_CONTACTS",
+      "android.permission.READ_EXTERNAL_STORAGE",
+      "android.permission.READ_PHONE_STATE",
+      "android.permission.READ_PROFILE",
+      "android.permission.READ_SMS",
+      "android.permission.RECEIVE_BOOT_COMPLETED",
+      "android.permission.RECEIVE_MMS",
+      "android.permission.RECEIVE_SMS",
+      "android.permission.SEND_SMS",
+      "android.permission.SYSTEM_ALERT_WINDOW",
+      "android.permission.SYSTEM_OVERLAY_WINDOW",
+      "android.permission.WAKE_LOCK",
+      "android.permission.WRITE_EXTERNAL_STORAGE",
+      "android.permission.WRITE_SMS",
+      "bcnuik.gjffsl.nbgvypj",
+      "ngaybx.ubyydbcr.vvrqntfe",
+      "voltlabv.sdoukub.nshar",
+      "vywwbg.mpyxcvg.hgtl",
+      "xhymeoga.qudz.gklciyj"
+    ],
+    "permission_count": 28,
+    "high_risk_permissions": [
+      "android.permission.CALL_PHONE",
+      "android.permission.GET_ACCOUNTS",
+      "android.permission.READ_CONTACTS",
+      "android.permission.READ_EXTERNAL_STORAGE",
+      "android.permission.READ_PHONE_STATE",
+      "android.permission.READ_SMS",
+      "android.permission.RECEIVE_BOOT_COMPLETED",
+      "android.permission.RECEIVE_MMS",
+      "android.permission.RECEIVE_SMS",
+      "android.permission.SEND_SMS",
+      "android.permission.SYSTEM_ALERT_WINDOW",
+      "android.permission.WRITE_EXTERNAL_STORAGE"
+    ],
+    "high_risk_permission_count": 12
+  },
+  "icon": {
+    "present": true,
+    "phash": "956c59e46b949e92",
+    "source": "res/drawable-xhdpi/ic_launcher.png",
+    "saved_path": "dataset\\Banker\\94b8ba79b4c51fe93ada27e635ce9dcf6b43eaa7b416c59019e69e002a5ea66a\\icon.png"
+  },
+  "routing": {
+    "track": "track1_jadx",
+    "dex_files": [
+      "classes.dex"
+    ],
+    "dex_count": 1,
+    "native_libs": [],
+    "native_lib_count": 0,
+    "native_arches": [],
+    "framework_indicators": [],
+    "packing_signals": [],
+    "routing_decisions": [
+      {
+        "engine": "jadx",
+        "targets": [
+          "classes.dex"
+        ],
+        "reason": "Dalvik bytecode present; decompile smali to Java for static triage."
+      }
+    ]
+  }
+}

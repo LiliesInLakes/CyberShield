@@ -1,0 +1,192 @@
+{
+  "analysis_gaps": [
+    "detonation_not_attempted",
+    "ghidra_unavailable"
+  ],
+  "counts": {
+    "by_category": {
+      "other": 1
+    },
+    "by_layer": {
+      "l1": 1
+    },
+    "by_severity": {
+      "low": 1
+    },
+    "certificate_anomaly": 0,
+    "findings": 1,
+    "malware_category": 0
+  },
+  "created_at": "2026-08-08T17:10:12.679653+00:00",
+  "findings": [
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 1,
+        "locations": [
+          "uncrackable-level2.apk"
+        ],
+        "match_count": 454,
+        "matched_string_ids": [
+          "$cert1",
+          "$cert2",
+          "$cert4",
+          "$classes",
+          "$hex_cd",
+          "$hex_eocd",
+          "$hex_zip",
+          "$manifest",
+          "$resources"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$manifest",
+            "location": "uncrackable-level2.apk",
+            "snippet": "AndroidManifest.xml"
+          },
+          {
+            "id": "$manifest",
+            "location": "uncrackable-level2.apk",
+            "snippet": "AndroidManifest.xml"
+          },
+          {
+            "id": "$classes",
+            "location": "uncrackable-level2.apk",
+            "snippet": "classes.dex"
+          },
+          {
+            "id": "$classes",
+            "location": "uncrackable-level2.apk",
+            "snippet": "classes.dex"
+          },
+          {
+            "id": "$resources",
+            "location": "uncrackable-level2.apk",
+            "snippet": "resources.arsc"
+          },
+          {
+            "id": "$resources",
+            "location": "uncrackable-level2.apk",
+            "snippet": "resources.arsc"
+          },
+          {
+            "id": "$cert1",
+            "location": "uncrackable-level2.apk",
+            "snippet": "META-INF/"
+          },
+          {
+            "id": "$cert1",
+            "location": "uncrackable-level2.apk",
+            "snippet": "META-INF/"
+          }
+        ],
+        "scopes": [
+          "container"
+        ],
+        "yara_rule": "APK_Valid_Structure_Check"
+      },
+      "engine": "yara",
+      "evidence": "[APK_Valid_Structure_Check] Validates basic APK file structure integrity -> AndroidManifest.xml",
+      "fingerprint": "a983bb24584a",
+      "id": "F001",
+      "layer": "l1",
+      "location": "uncrackable-level2.apk",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "low"
+    }
+  ],
+  "identity": {
+    "app_label": "Uncrackable Level 2",
+    "md5": "f9f31bfe8df27eb74cdb8f14fd7c85df",
+    "package": "owasp.mstg.uncrackable2",
+    "sha256": "4c7980ef1f6cc29508f38417c2a5b5b7721eeb4a3d7f00a0c1a08f5192fa6ddd",
+    "source_apk": "testing_apps/vuln/uncrackable-level2.apk",
+    "version_name": "1.0"
+  },
+  "layers": {
+    "l0": {
+      "artifact": "L0/artifacts/4c7980ef1f6cc29508f38417c2a5b5b7721eeb4a3d7f00a0c1a08f5192fa6ddd/evidence.json",
+      "coverage": {
+        "certificate_parsed": true,
+        "icon_extracted": true,
+        "manifest_parsed": true,
+        "permission_count": 0,
+        "reputation_checked": false
+      },
+      "gaps": [],
+      "status": "complete",
+      "summary": {
+        "cert_anomalies": [],
+        "cert_signal": {
+          "cert_detail": null,
+          "cert_in_whitelist": false,
+          "cert_weight": 0.0
+        },
+        "claimed_entity": null,
+        "matched_bank": null,
+        "reputation_hit": false,
+        "smoking_gun_inputs": {
+          "brand_claim": false,
+          "cert_anomalies": [],
+          "claimed_entity": null,
+          "sms_trifecta": false
+        },
+        "track": "track1_jadx_then_track2_ghidra",
+        "verdict": "unknown"
+      },
+      "updated_at": "2026-08-08T17:12:14.542271+00:00"
+    },
+    "l1": {
+      "artifact": "L1/artifacts/4c7980ef1f6cc29508f38417c2a5b5b7721eeb4a3d7f00a0c1a08f5192fa6ddd/analysis.json",
+      "coverage": {
+        "apk_yara_rules": 1,
+        "decompiled_files": 283,
+        "ghidra_attempted": true,
+        "ghidra_available": false,
+        "ghidra_ok": false,
+        "source_findings": 0
+      },
+      "gaps": [
+        "ghidra_unavailable"
+      ],
+      "status": "partial",
+      "summary": {
+        "categories": [
+          "other"
+        ],
+        "engine": "jadx+ghidra",
+        "finding_count": 1,
+        "ruleset_version": "614d58d9a5b9",
+        "severity_counts": {
+          "critical": 0,
+          "high": 0,
+          "info": 0,
+          "low": 1,
+          "medium": 0
+        },
+        "track": "track1_jadx_then_track2_ghidra"
+      },
+      "updated_at": "2026-08-08T17:10:28.928107+00:00"
+    },
+    "l2": {
+      "status": "not_attempted"
+    },
+    "l3": {
+      "status": "not_attempted"
+    },
+    "l4": {
+      "status": "not_attempted"
+    },
+    "l5": {
+      "status": "not_attempted"
+    },
+    "l6": {
+      "status": "not_attempted"
+    }
+  },
+  "schema_version": "apk-sentinel-0.2",
+  "sha256": "4c7980ef1f6cc29508f38417c2a5b5b7721eeb4a3d7f00a0c1a08f5192fa6ddd",
+  "updated_at": "2026-08-08T17:12:14.543012+00:00"
+}

@@ -1,0 +1,519 @@
+{
+  "analysis_gaps": [
+    "decompilation_partial",
+    "detonation_not_attempted"
+  ],
+  "counts": {
+    "by_category": {
+      "other": 6,
+      "phishing_impersonation": 1
+    },
+    "by_layer": {
+      "l0": 1,
+      "l1": 6
+    },
+    "by_severity": {
+      "critical": 1,
+      "high": 3,
+      "low": 1,
+      "medium": 2
+    },
+    "certificate_anomaly": 0,
+    "findings": 7,
+    "malware_category": 1
+  },
+  "created_at": "2026-08-08T18:56:58.014783+00:00",
+  "findings": [
+    {
+      "category": "phishing_impersonation",
+      "detail": {
+        "entity": "Paytm",
+        "l0_finding": {
+          "claims": [
+            {
+              "entity": "Paytm",
+              "entity_package": "net.one97.paytm",
+              "matched_phrases": [],
+              "matched_tokens": [
+                "paytm"
+              ],
+              "type": "label_brand_token"
+            },
+            {
+              "entity": "Paytm Payments Bank",
+              "entity_package": "com.paytmbank",
+              "matched_phrases": [],
+              "matched_tokens": [
+                "paytm"
+              ],
+              "type": "label_brand_token"
+            }
+          ],
+          "detail": "App presents itself as Paytm (label_brand_token, label_brand_token) but is not an official Paytm package.",
+          "entities": [
+            "Paytm",
+            "Paytm Payments Bank"
+          ],
+          "entity": "Paytm",
+          "severity": "high",
+          "type": "brand_impersonation"
+        },
+        "l0_finding_type": "brand_impersonation",
+        "spine_key": "brand_impersonation:Paytm"
+      },
+      "engine": "l0_impersonation",
+      "evidence": "[brand_impersonation] App presents itself as Paytm (label_brand_token, label_brand_token) but is not an official Paytm package.",
+      "fingerprint": "306503b835d0",
+      "id": "F001",
+      "layer": "l0",
+      "location": "AndroidManifest.xml",
+      "mitre_techniques": [
+        "T1655",
+        "T1660"
+      ],
+      "observation": "inferred",
+      "severity": "high"
+    },
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 5,
+        "locations": [
+          "sources/com/unity3d/services/core/webview/WebView.java",
+          "sources/com/unity3d/services/ads/webplayer/WebPlayerView.java",
+          "sources/com/facebook/ads/redexgen/X/NM.java",
+          "sources/com/facebook/ads/redexgen/X/PX.java",
+          "sources/com/facebook/ads/redexgen/X/C0677Oe.java"
+        ],
+        "match_count": 5,
+        "matched_string_ids": [
+          "$jsi"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$jsi",
+            "location": "sources/com/unity3d/services/core/webview/WebView.java",
+            "snippet": "addJavascriptInterface"
+          },
+          {
+            "id": "$jsi",
+            "location": "sources/com/unity3d/services/ads/webplayer/WebPlayerView.java",
+            "snippet": "addJavascriptInterface"
+          },
+          {
+            "id": "$jsi",
+            "location": "sources/com/facebook/ads/redexgen/X/NM.java",
+            "snippet": "addJavascriptInterface"
+          },
+          {
+            "id": "$jsi",
+            "location": "sources/com/facebook/ads/redexgen/X/PX.java",
+            "snippet": "addJavascriptInterface"
+          },
+          {
+            "id": "$jsi",
+            "location": "sources/com/facebook/ads/redexgen/X/C0677Oe.java",
+            "snippet": "addJavascriptInterface"
+          }
+        ],
+        "scopes": [
+          "source"
+        ],
+        "yara_rule": "Android_WebView_JavascriptInterface"
+      },
+      "engine": "yara",
+      "evidence": "[Android_WebView_JavascriptInterface] WebView exposes JavaScript bridge \u2014 potential XSS-to-RCE if untrusted content loaded -> addJavascriptInterface",
+      "fingerprint": "14800d072fb9",
+      "id": "F002",
+      "layer": "l1",
+      "location": "sources/com/unity3d/services/core/webview/WebView.java",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "critical"
+    },
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 1,
+        "locations": [
+          "sources/com/facebook/ads/internal/dynamicloading/DynamicLoaderFactory.java"
+        ],
+        "match_count": 6,
+        "matched_string_ids": [
+          "$dc1"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$dc1",
+            "location": "sources/com/facebook/ads/internal/dynamicloading/DynamicLoaderFactory.java",
+            "snippet": "DexClassLoader"
+          },
+          {
+            "id": "$dc1",
+            "location": "sources/com/facebook/ads/internal/dynamicloading/DynamicLoaderFactory.java",
+            "snippet": "DexClassLoader"
+          },
+          {
+            "id": "$dc1",
+            "location": "sources/com/facebook/ads/internal/dynamicloading/DynamicLoaderFactory.java",
+            "snippet": "DexClassLoader"
+          },
+          {
+            "id": "$dc1",
+            "location": "sources/com/facebook/ads/internal/dynamicloading/DynamicLoaderFactory.java",
+            "snippet": "DexClassLoader"
+          },
+          {
+            "id": "$dc1",
+            "location": "sources/com/facebook/ads/internal/dynamicloading/DynamicLoaderFactory.java",
+            "snippet": "DexClassLoader"
+          },
+          {
+            "id": "$dc1",
+            "location": "sources/com/facebook/ads/internal/dynamicloading/DynamicLoaderFactory.java",
+            "snippet": "DexClassLoader"
+          }
+        ],
+        "scopes": [
+          "source"
+        ],
+        "yara_rule": "Android_Dynamic_CodeLoading"
+      },
+      "engine": "yara",
+      "evidence": "[Android_Dynamic_CodeLoading] Dynamic class loading detected \u2014 potential code injection or tampering -> DexClassLoader",
+      "fingerprint": "ca98036edd87",
+      "id": "F003",
+      "layer": "l1",
+      "location": "sources/com/facebook/ads/internal/dynamicloading/DynamicLoaderFactory.java",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "high"
+    },
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 3,
+        "locations": [
+          "sources/com/unity3d/services/core/webview/WebView.java",
+          "sources/com/unity3d/services/ads/webplayer/WebPlayerView.java",
+          "sources/com/facebook/ads/redexgen/X/ND.java"
+        ],
+        "match_count": 3,
+        "matched_string_ids": [
+          "$jse"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$jse",
+            "location": "sources/com/unity3d/services/core/webview/WebView.java",
+            "snippet": "setJavaScriptEnabled"
+          },
+          {
+            "id": "$jse",
+            "location": "sources/com/unity3d/services/ads/webplayer/WebPlayerView.java",
+            "snippet": "setJavaScriptEnabled"
+          },
+          {
+            "id": "$jse",
+            "location": "sources/com/facebook/ads/redexgen/X/ND.java",
+            "snippet": "setJavaScriptEnabled"
+          }
+        ],
+        "scopes": [
+          "source"
+        ],
+        "yara_rule": "Android_WebView_JavaScriptEnabled"
+      },
+      "engine": "yara",
+      "evidence": "[Android_WebView_JavaScriptEnabled] WebView has JavaScript enabled \u2014 increases XSS attack surface -> setJavaScriptEnabled",
+      "fingerprint": "86ad5e3865bc",
+      "id": "F004",
+      "layer": "l1",
+      "location": "sources/com/unity3d/services/core/webview/WebView.java",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "high"
+    },
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 1,
+        "locations": [
+          "sources/com/facebook/ads/redexgen/X/EH.java"
+        ],
+        "match_count": 1,
+        "matched_string_ids": [
+          "$iv"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$iv",
+            "location": "sources/com/facebook/ads/redexgen/X/EH.java",
+            "snippet": "IvParameterSpec("
+          }
+        ],
+        "scopes": [
+          "source"
+        ],
+        "yara_rule": "Android_Crypto_StaticIV"
+      },
+      "engine": "yara",
+      "evidence": "[Android_Crypto_StaticIV] IvParameterSpec usage \u2014 verify IV is not hardcoded or static -> IvParameterSpec(",
+      "fingerprint": "499988df8c86",
+      "id": "F005",
+      "layer": "l1",
+      "location": "sources/com/facebook/ads/redexgen/X/EH.java",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "medium"
+    },
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 5,
+        "locations": [
+          "sources/okhttp3/HttpUrl.java",
+          "sources/com/google/android/material/textfield/TextInputLayout.java",
+          "sources/com/google/android/material/R.java",
+          "sources/com/free350paytm/app/R.java",
+          "sources/com/facebook/ads/redexgen/X/EH.java"
+        ],
+        "match_count": 78,
+        "matched_string_ids": [
+          "$pw1",
+          "$pw2"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$pw1",
+            "location": "sources/okhttp3/HttpUrl.java",
+            "snippet": ".password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/okhttp3/HttpUrl.java",
+            "snippet": ".password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/okhttp3/HttpUrl.java",
+            "snippet": ".password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/okhttp3/HttpUrl.java",
+            "snippet": ".password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/com/google/android/material/textfield/TextInputLayout.java",
+            "snippet": ".Password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/com/google/android/material/textfield/TextInputLayout.java",
+            "snippet": ".password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/com/google/android/material/textfield/TextInputLayout.java",
+            "snippet": ".password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/com/google/android/material/textfield/TextInputLayout.java",
+            "snippet": ".password"
+          }
+        ],
+        "scopes": [
+          "source"
+        ],
+        "yara_rule": "Android_Secrets_Hardcoded"
+      },
+      "engine": "yara",
+      "evidence": "[Android_Secrets_Hardcoded] Potential hardcoded credential or secret \u2014 review for plaintext secrets -> .password",
+      "fingerprint": "cc1927d9d7c8",
+      "id": "F006",
+      "layer": "l1",
+      "location": "sources/okhttp3/HttpUrl.java",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "medium"
+    },
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 1,
+        "locations": [
+          "sample.apk"
+        ],
+        "match_count": 803,
+        "matched_string_ids": [
+          "$cert1",
+          "$cert2",
+          "$cert4",
+          "$classes",
+          "$hex_cd",
+          "$hex_eocd",
+          "$hex_zip",
+          "$manifest",
+          "$resources"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$manifest",
+            "location": "sample.apk",
+            "snippet": "AndroidManifest.xml"
+          },
+          {
+            "id": "$manifest",
+            "location": "sample.apk",
+            "snippet": "AndroidManifest.xml"
+          },
+          {
+            "id": "$classes",
+            "location": "sample.apk",
+            "snippet": "classes.dex"
+          },
+          {
+            "id": "$classes",
+            "location": "sample.apk",
+            "snippet": "classes.dex"
+          },
+          {
+            "id": "$resources",
+            "location": "sample.apk",
+            "snippet": "resources.arsc"
+          },
+          {
+            "id": "$resources",
+            "location": "sample.apk",
+            "snippet": "resources.arsc"
+          },
+          {
+            "id": "$cert1",
+            "location": "sample.apk",
+            "snippet": "META-INF/"
+          },
+          {
+            "id": "$cert1",
+            "location": "sample.apk",
+            "snippet": "META-INF/"
+          }
+        ],
+        "scopes": [
+          "container"
+        ],
+        "yara_rule": "APK_Valid_Structure_Check"
+      },
+      "engine": "yara",
+      "evidence": "[APK_Valid_Structure_Check] Validates basic APK file structure integrity -> AndroidManifest.xml",
+      "fingerprint": "a983bb24584a",
+      "id": "F007",
+      "layer": "l1",
+      "location": "sample.apk",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "low"
+    }
+  ],
+  "identity": {
+    "app_label": "Free 350 Paytm",
+    "impersonates": "Paytm",
+    "md5": "a2fba41933c2043ccc99f1e4dca83cd0",
+    "package": "com.free350paytm.app",
+    "sha256": "6eed09c33ecc66299cb741e5f0c90bad4a03a99d0475064c586a667e4af4bee2",
+    "source_apk": "/home/nightwings/cybershield/CyberShield/corpus/_work/s145455882855/sample.apk",
+    "version_name": "2.00"
+  },
+  "layers": {
+    "l0": {
+      "artifact": "L0/artifacts/6eed09c33ecc66299cb741e5f0c90bad4a03a99d0475064c586a667e4af4bee2/evidence.json",
+      "coverage": {
+        "certificate_parsed": true,
+        "icon_extracted": true,
+        "manifest_parsed": true,
+        "permission_count": 8,
+        "reputation_checked": false
+      },
+      "gaps": [],
+      "status": "complete",
+      "summary": {
+        "cert_anomalies": [],
+        "cert_signal": {
+          "cert_detail": null,
+          "cert_in_whitelist": false,
+          "cert_weight": 0.0
+        },
+        "claimed_entity": "Paytm",
+        "matched_bank": null,
+        "reputation_hit": false,
+        "smoking_gun_inputs": {
+          "brand_claim": true,
+          "cert_anomalies": [],
+          "claimed_entity": "Paytm",
+          "sms_trifecta": false
+        },
+        "track": "track1_jadx",
+        "verdict": "impersonation_suspected"
+      },
+      "updated_at": "2026-08-08T18:56:58.014818+00:00"
+    },
+    "l1": {
+      "artifact": "L1/artifacts/6eed09c33ecc66299cb741e5f0c90bad4a03a99d0475064c586a667e4af4bee2/analysis.json",
+      "coverage": {
+        "apk_yara_rules": 1,
+        "decompiled_files": 7786,
+        "ghidra_attempted": false,
+        "ghidra_available": false,
+        "ghidra_ok": false,
+        "source_findings": 5
+      },
+      "gaps": [
+        "decompilation_partial"
+      ],
+      "status": "partial",
+      "summary": {
+        "categories": [
+          "other"
+        ],
+        "engine": "jadx+yara",
+        "finding_count": 6,
+        "ruleset_version": "614d58d9a5b9",
+        "severity_counts": {
+          "critical": 1,
+          "high": 2,
+          "info": 0,
+          "low": 1,
+          "medium": 2
+        },
+        "track": "track1_jadx"
+      },
+      "updated_at": "2026-08-08T18:57:10.971418+00:00"
+    },
+    "l2": {
+      "status": "not_attempted"
+    },
+    "l3": {
+      "status": "not_attempted"
+    },
+    "l4": {
+      "status": "not_attempted"
+    },
+    "l5": {
+      "status": "not_attempted"
+    },
+    "l6": {
+      "status": "not_attempted"
+    }
+  },
+  "schema_version": "apk-sentinel-0.2",
+  "sha256": "6eed09c33ecc66299cb741e5f0c90bad4a03a99d0475064c586a667e4af4bee2",
+  "updated_at": "2026-08-08T18:57:10.971736+00:00"
+}

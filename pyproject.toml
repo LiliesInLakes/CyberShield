@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "apk-sentinel"
+version = "0.2.0"
+requires-python = ">=3.12"
+
+[tool.setuptools]
+packages = [
+    "L0",
+    "L1",
+    "L1.engines",
+    "L2",
+    "L2.sandbox",
+    "L3",
+    "L4",
+    "L5",
+    "L6",
+    "tools",
+    "tools.debug",
+    "tests",
+]
+# spine.py and signals.py live at the repo root alongside the layer packages
+py-modules = ["spine", "signals"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

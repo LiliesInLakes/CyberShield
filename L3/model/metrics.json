@@ -1,0 +1,58 @@
+{
+  "train_years": [
+    2013,
+    2014,
+    2016,
+    2017,
+    2018,
+    2019,
+    2020,
+    2021,
+    2022
+  ],
+  "test_years": [
+    2023,
+    2024,
+    2025
+  ],
+  "n_train": 774843,
+  "n_calibration": 86094,
+  "in_sample": {
+    "auroc": 0.9908,
+    "ece_raw": 0.0117,
+    "ece_calibrated": 0.0
+  },
+  "per_year": {
+    "2023": {
+      "n": 54354,
+      "auroc": 0.9709,
+      "ece": 0.03,
+      "mean_p": 0.1152,
+      "positive_rate": 0.1452
+    },
+    "2024": {
+      "n": 48427,
+      "auroc": 0.9131,
+      "ece": 0.0057,
+      "mean_p": 0.0162,
+      "positive_rate": 0.0164
+    },
+    "2025": {
+      "n": 44663,
+      "auroc": 0.8686,
+      "ece": 0.006,
+      "mean_p": 0.0065,
+      "positive_rate": 0.0005
+    }
+  },
+  "generated_at": "2026-08-12T05:39:57.170288+00:00",
+  "n_features": 4561,
+  "lightgbm": "4.7.0",
+  "seed": 20260812,
+  "caveats": [
+    "LAMDA is ~99.6% non-banking: this is a GENERIC maliciousness prior and must never make a banking claim",
+    "bounded to +-10 points in L5 and unable to reach Critical alone",
+    "trained on AndroZoo-derived features; our samples match its vocabulary only partially (measured 0.4-1.8% density vs LAMDA's 2.5%)",
+    "labels are VirusTotal 4+ detections, not manual analysis"
+  ]
+}

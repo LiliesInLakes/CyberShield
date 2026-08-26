@@ -1,0 +1,66 @@
+{
+  "sha256": "b18af2a0e44d7634bbcdf93664d9c78a2695e050393fcfbb5e8b91f902d194a4",
+  "source_apk": "testing_apps/vuln/InsecureBankv2.apk",
+  "engine": "jadx+yara",
+  "track": "track1_jadx",
+  "generated_at": "2026-08-07T05:09:46.813361+00:00",
+  "findings": [
+    {
+      "engine": "yara_source",
+      "category": "other",
+      "severity": "high",
+      "evidence": "[Android_WebView_JavaScriptEnabled] WebView has JavaScript enabled \u2014 increases XSS attack surface -> setJavaScriptEnabled",
+      "location": "sources/com/android/insecurebankv2/ViewStatement.java:$jse",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "detail": {
+        "yara_rule": "Android_WebView_JavaScriptEnabled",
+        "source_file": "sources/com/android/insecurebankv2/ViewStatement.java"
+      }
+    },
+    {
+      "engine": "yara_source",
+      "category": "other",
+      "severity": "medium",
+      "evidence": "[Android_Crypto_StaticIV] IvParameterSpec usage \u2014 verify IV is not hardcoded or static -> IvParameterSpec(",
+      "location": "sources/com/android/insecurebankv2/CryptoClass.java:$iv",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "detail": {
+        "yara_rule": "Android_Crypto_StaticIV",
+        "source_file": "sources/com/android/insecurebankv2/CryptoClass.java"
+      }
+    },
+    {
+      "engine": "yara_source",
+      "category": "other",
+      "severity": "medium",
+      "evidence": "[Android_Secrets_Hardcoded] Potential hardcoded credential or secret \u2014 review for plaintext secrets -> .Password",
+      "location": "sources/com/android/insecurebankv2/LoginActivity.java:$pw1",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "detail": {
+        "yara_rule": "Android_Secrets_Hardcoded",
+        "source_file": "sources/com/android/insecurebankv2/LoginActivity.java"
+      }
+    }
+  ],
+  "artifacts": {
+    "decompiled_src": "/home/nightwings/cybershield/CyberShield/L1/artifacts/b18af2a0e44d7634bbcdf93664d9c78a2695e050393fcfbb5e8b91f902d194a4/jadx_src"
+  },
+  "summary": {
+    "finding_count": 3,
+    "severity_counts": {
+      "info": 0,
+      "low": 0,
+      "medium": 2,
+      "high": 1,
+      "critical": 0
+    },
+    "categories": [
+      "other"
+    ],
+    "decompiled_files": 2992,
+    "source_findings": 3
+  }
+}

@@ -1,0 +1,108 @@
+{
+  "sha256": "57887e1d1e119939eec0e929801b049f8037cf90d2accab479a48f0d4dd2c19a",
+  "source_apk": "testing_apps/vuln/pivaa.apk",
+  "engine": "jadx+yara",
+  "track": "track1_jadx",
+  "generated_at": "2026-08-07T05:09:45.900423+00:00",
+  "findings": [
+    {
+      "engine": "yara_source",
+      "category": "native_payload",
+      "severity": "medium",
+      "evidence": "[Android_Dropper_Encrypted_Payload_Stage1] Detects stage-1 droppers with encrypted payload in assets or resources -> assets/",
+      "location": "sources/defpackage/ExternalCode.java:$asset1",
+      "mitre_techniques": [
+        "T1407"
+      ],
+      "observation": "inferred",
+      "detail": {
+        "yara_rule": "Android_Dropper_Encrypted_Payload_Stage1",
+        "source_file": "sources/defpackage/ExternalCode.java"
+      }
+    },
+    {
+      "engine": "yara_source",
+      "category": "other",
+      "severity": "high",
+      "evidence": "[Android_WebView_JavaScriptEnabled] WebView has JavaScript enabled \u2014 increases XSS attack surface -> setJavaScriptEnabled",
+      "location": "sources/com/htbridge/pivaa/WebviewActivity.java:$jse",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "detail": {
+        "yara_rule": "Android_WebView_JavaScriptEnabled",
+        "source_file": "sources/com/htbridge/pivaa/WebviewActivity.java"
+      }
+    },
+    {
+      "engine": "yara_source",
+      "category": "other",
+      "severity": "critical",
+      "evidence": "[Android_SSL_TrustAll] Custom X509TrustManager detected \u2014 may bypass SSL validation (MITM risk) -> X509TrustManager",
+      "location": "sources/com/htbridge/pivaa/handlers/API.java:$tm1",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "detail": {
+        "yara_rule": "Android_SSL_TrustAll",
+        "source_file": "sources/com/htbridge/pivaa/handlers/API.java"
+      }
+    },
+    {
+      "engine": "yara_source",
+      "category": "other",
+      "severity": "medium",
+      "evidence": "[Android_Crypto_StaticIV] IvParameterSpec usage \u2014 verify IV is not hardcoded or static -> IvParameterSpec(",
+      "location": "sources/com/htbridge/pivaa/handlers/Encryption.java:$iv",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "detail": {
+        "yara_rule": "Android_Crypto_StaticIV",
+        "source_file": "sources/com/htbridge/pivaa/handlers/Encryption.java"
+      }
+    },
+    {
+      "engine": "yara_source",
+      "category": "other",
+      "severity": "high",
+      "evidence": "[Android_Dynamic_CodeLoading] Dynamic class loading detected \u2014 potential code injection or tampering -> DexClassLoader",
+      "location": "sources/com/htbridge/pivaa/handlers/LoadCode.java:$dc1",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "detail": {
+        "yara_rule": "Android_Dynamic_CodeLoading",
+        "source_file": "sources/com/htbridge/pivaa/handlers/LoadCode.java"
+      }
+    },
+    {
+      "engine": "yara_source",
+      "category": "other",
+      "severity": "medium",
+      "evidence": "[Android_Secrets_Hardcoded] Potential hardcoded credential or secret \u2014 review for plaintext secrets -> .password",
+      "location": "sources/com/htbridge/pivaa/R.java:$pw1",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "detail": {
+        "yara_rule": "Android_Secrets_Hardcoded",
+        "source_file": "sources/com/htbridge/pivaa/R.java"
+      }
+    }
+  ],
+  "artifacts": {
+    "decompiled_src": "/home/nightwings/cybershield/CyberShield/L1/artifacts/57887e1d1e119939eec0e929801b049f8037cf90d2accab479a48f0d4dd2c19a/jadx_src"
+  },
+  "summary": {
+    "finding_count": 6,
+    "severity_counts": {
+      "info": 0,
+      "low": 0,
+      "medium": 3,
+      "high": 2,
+      "critical": 1
+    },
+    "categories": [
+      "native_payload",
+      "other"
+    ],
+    "decompiled_files": 1209,
+    "source_findings": 6
+  }
+}
