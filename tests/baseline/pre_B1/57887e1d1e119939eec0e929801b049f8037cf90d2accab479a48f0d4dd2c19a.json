@@ -1,0 +1,476 @@
+{
+  "analysis_gaps": [
+    "detonation_not_attempted"
+  ],
+  "counts": {
+    "by_category": {
+      "certificate_anomaly": 1,
+      "other": 6
+    },
+    "by_layer": {
+      "l0": 1,
+      "l1": 6
+    },
+    "by_severity": {
+      "critical": 1,
+      "high": 3,
+      "low": 1,
+      "medium": 2
+    },
+    "certificate_anomaly": 1,
+    "findings": 7,
+    "malware_category": 0
+  },
+  "created_at": "2026-08-08T17:17:47.668183+00:00",
+  "findings": [
+    {
+      "category": "certificate_anomaly",
+      "detail": {
+        "l0_finding": {
+          "anomalies": [
+            "debug_keystore",
+            "vendor_claiming_dn"
+          ],
+          "detail": "APK signed with an Android debug keystore \u2014 never used for legitimate distribution.",
+          "severity": "high",
+          "subject": "Common Name: Android Debug, Organization: Android, Country: US",
+          "type": "cert_debug_keystore"
+        },
+        "l0_finding_type": "cert_debug_keystore",
+        "spine_key": "cert_debug_keystore"
+      },
+      "engine": "l0_impersonation",
+      "evidence": "[cert_debug_keystore] APK signed with an Android debug keystore \u2014 never used for legitimate distribution.",
+      "fingerprint": "824885a094cd",
+      "id": "F001",
+      "layer": "l0",
+      "location": "META-INF/ (signing block)",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "high"
+    },
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 1,
+        "locations": [
+          "sources/com/htbridge/pivaa/handlers/API.java"
+        ],
+        "match_count": 6,
+        "matched_string_ids": [
+          "$tm1",
+          "$tm2"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$tm1",
+            "location": "sources/com/htbridge/pivaa/handlers/API.java",
+            "snippet": "X509TrustManager"
+          },
+          {
+            "id": "$tm1",
+            "location": "sources/com/htbridge/pivaa/handlers/API.java",
+            "snippet": "X509TrustManager"
+          },
+          {
+            "id": "$tm1",
+            "location": "sources/com/htbridge/pivaa/handlers/API.java",
+            "snippet": "X509TrustManager"
+          },
+          {
+            "id": "$tm1",
+            "location": "sources/com/htbridge/pivaa/handlers/API.java",
+            "snippet": "X509TrustManager"
+          },
+          {
+            "id": "$tm1",
+            "location": "sources/com/htbridge/pivaa/handlers/API.java",
+            "snippet": "X509TrustManager"
+          },
+          {
+            "id": "$tm2",
+            "location": "sources/com/htbridge/pivaa/handlers/API.java",
+            "snippet": "checkServerTrusted"
+          }
+        ],
+        "scopes": [
+          "source"
+        ],
+        "yara_rule": "Android_SSL_TrustAll"
+      },
+      "engine": "yara",
+      "evidence": "[Android_SSL_TrustAll] Custom X509TrustManager detected \u2014 may bypass SSL validation (MITM risk) -> X509TrustManager",
+      "fingerprint": "7ebdced6433c",
+      "id": "F002",
+      "layer": "l1",
+      "location": "sources/com/htbridge/pivaa/handlers/API.java",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "critical"
+    },
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 1,
+        "locations": [
+          "sources/com/htbridge/pivaa/handlers/LoadCode.java"
+        ],
+        "match_count": 3,
+        "matched_string_ids": [
+          "$dc1"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$dc1",
+            "location": "sources/com/htbridge/pivaa/handlers/LoadCode.java",
+            "snippet": "DexClassLoader"
+          },
+          {
+            "id": "$dc1",
+            "location": "sources/com/htbridge/pivaa/handlers/LoadCode.java",
+            "snippet": "DexClassLoader"
+          },
+          {
+            "id": "$dc1",
+            "location": "sources/com/htbridge/pivaa/handlers/LoadCode.java",
+            "snippet": "DexClassLoader"
+          }
+        ],
+        "scopes": [
+          "source"
+        ],
+        "yara_rule": "Android_Dynamic_CodeLoading"
+      },
+      "engine": "yara",
+      "evidence": "[Android_Dynamic_CodeLoading] Dynamic class loading detected \u2014 potential code injection or tampering -> DexClassLoader",
+      "fingerprint": "ca98036edd87",
+      "id": "F003",
+      "layer": "l1",
+      "location": "sources/com/htbridge/pivaa/handlers/LoadCode.java",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "high"
+    },
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 2,
+        "locations": [
+          "sources/com/htbridge/pivaa/WebviewActivity.java",
+          "sources/com/htbridge/pivaa/BroadcastReceiverActivity.java"
+        ],
+        "match_count": 2,
+        "matched_string_ids": [
+          "$jse"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$jse",
+            "location": "sources/com/htbridge/pivaa/WebviewActivity.java",
+            "snippet": "setJavaScriptEnabled"
+          },
+          {
+            "id": "$jse",
+            "location": "sources/com/htbridge/pivaa/BroadcastReceiverActivity.java",
+            "snippet": "setJavaScriptEnabled"
+          }
+        ],
+        "scopes": [
+          "source"
+        ],
+        "yara_rule": "Android_WebView_JavaScriptEnabled"
+      },
+      "engine": "yara",
+      "evidence": "[Android_WebView_JavaScriptEnabled] WebView has JavaScript enabled \u2014 increases XSS attack surface -> setJavaScriptEnabled",
+      "fingerprint": "86ad5e3865bc",
+      "id": "F004",
+      "layer": "l1",
+      "location": "sources/com/htbridge/pivaa/WebviewActivity.java",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "high"
+    },
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 1,
+        "locations": [
+          "sources/com/htbridge/pivaa/handlers/Encryption.java"
+        ],
+        "match_count": 2,
+        "matched_string_ids": [
+          "$iv"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$iv",
+            "location": "sources/com/htbridge/pivaa/handlers/Encryption.java",
+            "snippet": "IvParameterSpec("
+          },
+          {
+            "id": "$iv",
+            "location": "sources/com/htbridge/pivaa/handlers/Encryption.java",
+            "snippet": "IvParameterSpec("
+          }
+        ],
+        "scopes": [
+          "source"
+        ],
+        "yara_rule": "Android_Crypto_StaticIV"
+      },
+      "engine": "yara",
+      "evidence": "[Android_Crypto_StaticIV] IvParameterSpec usage \u2014 verify IV is not hardcoded or static -> IvParameterSpec(",
+      "fingerprint": "499988df8c86",
+      "id": "F005",
+      "layer": "l1",
+      "location": "sources/com/htbridge/pivaa/handlers/Encryption.java",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "medium"
+    },
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 3,
+        "locations": [
+          "sources/com/htbridge/pivaa/R.java",
+          "sources/com/htbridge/pivaa/MainActivity.java",
+          "sources/com/htbridge/pivaa/handlers/Encryption.java"
+        ],
+        "match_count": 7,
+        "matched_string_ids": [
+          "$pw1",
+          "$pw2"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$pw1",
+            "location": "sources/com/htbridge/pivaa/R.java",
+            "snippet": ".password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/com/htbridge/pivaa/R.java",
+            "snippet": ".password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/com/htbridge/pivaa/R.java",
+            "snippet": ".password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/com/htbridge/pivaa/R.java",
+            "snippet": ".password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/com/htbridge/pivaa/R.java",
+            "snippet": ".password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/com/htbridge/pivaa/MainActivity.java",
+            "snippet": ".password"
+          },
+          {
+            "id": "$pw2",
+            "location": "sources/com/htbridge/pivaa/handlers/Encryption.java",
+            "snippet": ".Secret"
+          }
+        ],
+        "scopes": [
+          "source"
+        ],
+        "yara_rule": "Android_Secrets_Hardcoded"
+      },
+      "engine": "yara",
+      "evidence": "[Android_Secrets_Hardcoded] Potential hardcoded credential or secret \u2014 review for plaintext secrets -> .password",
+      "fingerprint": "cc1927d9d7c8",
+      "id": "F006",
+      "layer": "l1",
+      "location": "sources/com/htbridge/pivaa/R.java",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "medium"
+    },
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 1,
+        "locations": [
+          "pivaa.apk"
+        ],
+        "match_count": 517,
+        "matched_string_ids": [
+          "$cert1",
+          "$cert2",
+          "$cert4",
+          "$classes",
+          "$hex_cd",
+          "$hex_eocd",
+          "$hex_zip",
+          "$manifest",
+          "$resources"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$manifest",
+            "location": "pivaa.apk",
+            "snippet": "AndroidManifest.xml"
+          },
+          {
+            "id": "$manifest",
+            "location": "pivaa.apk",
+            "snippet": "AndroidManifest.xml"
+          },
+          {
+            "id": "$classes",
+            "location": "pivaa.apk",
+            "snippet": "classes.dex"
+          },
+          {
+            "id": "$classes",
+            "location": "pivaa.apk",
+            "snippet": "classes.dex"
+          },
+          {
+            "id": "$resources",
+            "location": "pivaa.apk",
+            "snippet": "resources.arsc"
+          },
+          {
+            "id": "$resources",
+            "location": "pivaa.apk",
+            "snippet": "resources.arsc"
+          },
+          {
+            "id": "$cert1",
+            "location": "pivaa.apk",
+            "snippet": "META-INF/"
+          },
+          {
+            "id": "$cert1",
+            "location": "pivaa.apk",
+            "snippet": "META-INF/"
+          }
+        ],
+        "scopes": [
+          "container"
+        ],
+        "yara_rule": "APK_Valid_Structure_Check"
+      },
+      "engine": "yara",
+      "evidence": "[APK_Valid_Structure_Check] Validates basic APK file structure integrity -> AndroidManifest.xml",
+      "fingerprint": "a983bb24584a",
+      "id": "F007",
+      "layer": "l1",
+      "location": "pivaa.apk",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "low"
+    }
+  ],
+  "identity": {
+    "app_label": "PIVAA",
+    "md5": "eaade08f941e47b08cfbce65c37895d6",
+    "package": "com.htbridge.pivaa",
+    "sha256": "57887e1d1e119939eec0e929801b049f8037cf90d2accab479a48f0d4dd2c19a",
+    "source_apk": "testing_apps/vuln/pivaa.apk",
+    "version_name": "1.0"
+  },
+  "layers": {
+    "l0": {
+      "artifact": "L0/artifacts/57887e1d1e119939eec0e929801b049f8037cf90d2accab479a48f0d4dd2c19a/evidence.json",
+      "coverage": {
+        "certificate_parsed": true,
+        "icon_extracted": true,
+        "manifest_parsed": true,
+        "permission_count": 12,
+        "reputation_checked": false
+      },
+      "gaps": [],
+      "status": "complete",
+      "summary": {
+        "cert_anomalies": [
+          "debug_keystore",
+          "vendor_claiming_dn"
+        ],
+        "cert_signal": {
+          "cert_detail": "Signer anomalies: debug_keystore, vendor_claiming_dn",
+          "cert_in_whitelist": false,
+          "cert_weight": -0.5
+        },
+        "claimed_entity": null,
+        "matched_bank": null,
+        "reputation_hit": false,
+        "smoking_gun_inputs": {
+          "brand_claim": false,
+          "cert_anomalies": [
+            "debug_keystore",
+            "vendor_claiming_dn"
+          ],
+          "claimed_entity": null,
+          "sms_trifecta": false
+        },
+        "track": "track1_jadx",
+        "verdict": "impersonation_suspected"
+      },
+      "updated_at": "2026-08-08T17:17:47.668235+00:00"
+    },
+    "l1": {
+      "artifact": "L1/artifacts/57887e1d1e119939eec0e929801b049f8037cf90d2accab479a48f0d4dd2c19a/analysis.json",
+      "coverage": {
+        "apk_yara_rules": 1,
+        "decompiled_files": 1209,
+        "ghidra_attempted": false,
+        "ghidra_available": false,
+        "ghidra_ok": false,
+        "source_findings": 5
+      },
+      "gaps": [],
+      "status": "complete",
+      "summary": {
+        "categories": [
+          "other"
+        ],
+        "engine": "jadx+yara",
+        "finding_count": 6,
+        "ruleset_version": "614d58d9a5b9",
+        "severity_counts": {
+          "critical": 1,
+          "high": 2,
+          "info": 0,
+          "low": 1,
+          "medium": 2
+        },
+        "track": "track1_jadx"
+      },
+      "updated_at": "2026-08-08T17:17:48.119956+00:00"
+    },
+    "l2": {
+      "status": "not_attempted"
+    },
+    "l3": {
+      "status": "not_attempted"
+    },
+    "l4": {
+      "status": "not_attempted"
+    },
+    "l5": {
+      "status": "not_attempted"
+    },
+    "l6": {
+      "status": "not_attempted"
+    }
+  },
+  "schema_version": "apk-sentinel-0.2",
+  "sha256": "57887e1d1e119939eec0e929801b049f8037cf90d2accab479a48f0d4dd2c19a",
+  "updated_at": "2026-08-08T17:17:48.120268+00:00"
+}

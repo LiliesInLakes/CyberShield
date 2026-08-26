@@ -1,0 +1,268 @@
+{
+  "analysis_gaps": [
+    "detonation_not_attempted"
+  ],
+  "counts": {
+    "by_category": {
+      "certificate_anomaly": 1,
+      "other": 1,
+      "phishing_impersonation": 1
+    },
+    "by_layer": {
+      "l0": 2,
+      "l1": 1
+    },
+    "by_severity": {
+      "critical": 1,
+      "high": 1,
+      "low": 1
+    },
+    "certificate_anomaly": 1,
+    "findings": 3,
+    "malware_category": 1
+  },
+  "created_at": "2026-08-08T17:13:45.218839+00:00",
+  "findings": [
+    {
+      "category": "phishing_impersonation",
+      "detail": {
+        "entity": "Aarogya Setu",
+        "l0_finding": {
+          "claims": [
+            {
+              "entity": "Aarogya Setu",
+              "entity_package": "nic.goi.aarogyasetu",
+              "matched_phrases": [
+                "aarogya setu"
+              ],
+              "matched_tokens": [
+                "aarogya"
+              ],
+              "type": "label_brand_phrase"
+            }
+          ],
+          "detail": "App presents itself as Aarogya Setu (label_brand_phrase) but is not an official Aarogya Setu package. Signer is anomalous.",
+          "entities": [
+            "Aarogya Setu"
+          ],
+          "entity": "Aarogya Setu",
+          "severity": "critical",
+          "type": "brand_impersonation"
+        },
+        "l0_finding_type": "brand_impersonation",
+        "spine_key": "brand_impersonation:Aarogya Setu"
+      },
+      "engine": "l0_impersonation",
+      "evidence": "[brand_impersonation] App presents itself as Aarogya Setu (label_brand_phrase) but is not an official Aarogya Setu package. Signer is anomalous.",
+      "fingerprint": "ac91147094d1",
+      "id": "F001",
+      "layer": "l0",
+      "location": "AndroidManifest.xml",
+      "mitre_techniques": [
+        "T1655",
+        "T1660"
+      ],
+      "observation": "inferred",
+      "severity": "critical"
+    },
+    {
+      "category": "certificate_anomaly",
+      "detail": {
+        "l0_finding": {
+          "anomalies": [
+            "aosp_test_key"
+          ],
+          "detail": "APK signed with the public AOSP platform test key \u2014 anyone can sign with it, so it proves no publisher identity. App claims to be Aarogya Setu.",
+          "severity": "high",
+          "subject": "Email Address: android@android.com, Common Name: Android, Organizational Unit: Android, Organization: Android, Locality: Mountain View, State/Province: California, Country: US",
+          "type": "cert_aosp_test_key"
+        },
+        "l0_finding_type": "cert_aosp_test_key",
+        "spine_key": "cert_aosp_test_key"
+      },
+      "engine": "l0_impersonation",
+      "evidence": "[cert_aosp_test_key] APK signed with the public AOSP platform test key \u2014 anyone can sign with it, so it proves no publisher identity. App claims to be Aarogya Setu.",
+      "fingerprint": "776e89fdcd74",
+      "id": "F002",
+      "layer": "l0",
+      "location": "META-INF/ (signing block)",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "high"
+    },
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 2,
+        "locations": [
+          "sample.apk",
+          "res/raw/google.apk"
+        ],
+        "match_count": 3101,
+        "matched_string_ids": [
+          "$cert1",
+          "$cert2",
+          "$cert4",
+          "$classes",
+          "$hex_cd",
+          "$hex_eocd",
+          "$hex_zip",
+          "$manifest",
+          "$resources"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$manifest",
+            "location": "sample.apk",
+            "snippet": "AndroidManifest.xml"
+          },
+          {
+            "id": "$manifest",
+            "location": "sample.apk",
+            "snippet": "AndroidManifest.xml"
+          },
+          {
+            "id": "$manifest",
+            "location": "sample.apk",
+            "snippet": "AndroidManifest.xml"
+          },
+          {
+            "id": "$manifest",
+            "location": "sample.apk",
+            "snippet": "AndroidManifest.xml"
+          },
+          {
+            "id": "$classes",
+            "location": "sample.apk",
+            "snippet": "classes.dex"
+          },
+          {
+            "id": "$classes",
+            "location": "sample.apk",
+            "snippet": "classes.dex"
+          },
+          {
+            "id": "$classes",
+            "location": "sample.apk",
+            "snippet": "classes.dex"
+          },
+          {
+            "id": "$classes",
+            "location": "sample.apk",
+            "snippet": "classes.dex"
+          }
+        ],
+        "scopes": [
+          "apk_member",
+          "container"
+        ],
+        "yara_rule": "APK_Valid_Structure_Check"
+      },
+      "engine": "yara",
+      "evidence": "[APK_Valid_Structure_Check] Validates basic APK file structure integrity -> AndroidManifest.xml",
+      "fingerprint": "a983bb24584a",
+      "id": "F003",
+      "layer": "l1",
+      "location": "sample.apk",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "low"
+    }
+  ],
+  "identity": {
+    "app_label": "Aarogya Setu - AddOn",
+    "impersonates": "Aarogya Setu",
+    "md5": "bbe84ba545d652d9e06635a6e89d48b5",
+    "package": "yps.eton.application",
+    "sha256": "f733ded73d4f498327480d232e415465c0f5654a69b431da081f83998b49ead2",
+    "source_apk": "/home/nightwings/cybershield/CyberShield/corpus/_work/s514251555726/sample.apk",
+    "version_name": "null"
+  },
+  "layers": {
+    "l0": {
+      "artifact": "L0/artifacts/f733ded73d4f498327480d232e415465c0f5654a69b431da081f83998b49ead2/evidence.json",
+      "coverage": {
+        "certificate_parsed": true,
+        "icon_extracted": true,
+        "manifest_parsed": true,
+        "permission_count": 32,
+        "reputation_checked": false
+      },
+      "gaps": [],
+      "status": "complete",
+      "summary": {
+        "cert_anomalies": [
+          "aosp_test_key"
+        ],
+        "cert_signal": {
+          "cert_detail": "Signer anomalies: aosp_test_key",
+          "cert_in_whitelist": false,
+          "cert_weight": -0.9
+        },
+        "claimed_entity": "Aarogya Setu",
+        "matched_bank": null,
+        "reputation_hit": false,
+        "smoking_gun_inputs": {
+          "brand_claim": true,
+          "cert_anomalies": [
+            "aosp_test_key"
+          ],
+          "claimed_entity": "Aarogya Setu",
+          "sms_trifecta": true
+        },
+        "track": "track1_jadx",
+        "verdict": "impersonation_likely"
+      },
+      "updated_at": "2026-08-08T18:47:45.155496+00:00"
+    },
+    "l1": {
+      "artifact": "L1/artifacts/f733ded73d4f498327480d232e415465c0f5654a69b431da081f83998b49ead2/analysis.json",
+      "coverage": {
+        "apk_yara_rules": 1,
+        "decompiled_files": 263,
+        "ghidra_attempted": false,
+        "ghidra_available": false,
+        "ghidra_ok": false,
+        "source_findings": 0
+      },
+      "gaps": [],
+      "status": "complete",
+      "summary": {
+        "categories": [
+          "other"
+        ],
+        "engine": "jadx+yara",
+        "finding_count": 1,
+        "ruleset_version": "614d58d9a5b9",
+        "severity_counts": {
+          "critical": 0,
+          "high": 0,
+          "info": 0,
+          "low": 1,
+          "medium": 0
+        },
+        "track": "track1_jadx"
+      },
+      "updated_at": "2026-08-08T18:47:47.677783+00:00"
+    },
+    "l2": {
+      "status": "not_attempted"
+    },
+    "l3": {
+      "status": "not_attempted"
+    },
+    "l4": {
+      "status": "not_attempted"
+    },
+    "l5": {
+      "status": "not_attempted"
+    },
+    "l6": {
+      "status": "not_attempted"
+    }
+  },
+  "schema_version": "apk-sentinel-0.2",
+  "sha256": "f733ded73d4f498327480d232e415465c0f5654a69b431da081f83998b49ead2",
+  "updated_at": "2026-08-08T18:47:47.678025+00:00"
+}

@@ -1,0 +1,89 @@
+{
+  "family": "Anubis",
+  "source_file": "C:\\Users\\DELL\\AppData\\Local\\Temp\\tmpxq64q4fx\\d7511298f5f6c7205eb753ecd7a4e0070e9f4e353f8e6c94ef3339b4a1886b73.apk",
+  "fingerprint": {
+    "md5": "ade1103bc0846281305ec85703ee7308",
+    "sha256": "d7511298f5f6c7205eb753ecd7a4e0070e9f4e353f8e6c94ef3339b4a1886b73"
+  },
+  "manifest": {
+    "package_name": "ccjwdjfzljugjox.urzjhgxxhxj.fhdbxploovycj",
+    "app_label": "20GB HEDIYE INTERNET",
+    "version_name": "1.0",
+    "version_code": "1",
+    "min_sdk": "15",
+    "target_sdk": "28",
+    "permissions": [
+      "android.permission.ACCESS_COARSE_LOCATION",
+      "android.permission.ACCESS_FINE_LOCATION",
+      "android.permission.ACCESS_NETWORK_STATE",
+      "android.permission.ACCESS_WIFI_STATE",
+      "android.permission.CALL_PHONE",
+      "android.permission.CHANGE_NETWORK_STATE",
+      "android.permission.CHANGE_WIFI_STATE",
+      "android.permission.FOREGROUND_SERVICE",
+      "android.permission.GET_TASKS",
+      "android.permission.INTERNET",
+      "android.permission.KILL_BACKGROUND_PROCESSES",
+      "android.permission.MODIFY_AUDIO_SETTINGS",
+      "android.permission.MODIFY_PHONE_STATE",
+      "android.permission.PACKAGE_USAGE_STATS",
+      "android.permission.READ_CONTACTS",
+      "android.permission.READ_EXTERNAL_STORAGE",
+      "android.permission.READ_PHONE_STATE",
+      "android.permission.READ_SMS",
+      "android.permission.RECEIVE_BOOT_COMPLETED",
+      "android.permission.RECEIVE_SMS",
+      "android.permission.RECORD_AUDIO",
+      "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS",
+      "android.permission.SEND_SMS",
+      "android.permission.SYSTEM_ALERT_WINDOW",
+      "android.permission.WAKE_LOCK",
+      "android.permission.WRITE_EXTERNAL_STORAGE",
+      "android.permission.WRITE_SMS"
+    ],
+    "permission_count": 27,
+    "high_risk_permissions": [
+      "android.permission.ACCESS_COARSE_LOCATION",
+      "android.permission.ACCESS_FINE_LOCATION",
+      "android.permission.CALL_PHONE",
+      "android.permission.READ_CONTACTS",
+      "android.permission.READ_EXTERNAL_STORAGE",
+      "android.permission.READ_PHONE_STATE",
+      "android.permission.READ_SMS",
+      "android.permission.RECEIVE_BOOT_COMPLETED",
+      "android.permission.RECEIVE_SMS",
+      "android.permission.RECORD_AUDIO",
+      "android.permission.SEND_SMS",
+      "android.permission.SYSTEM_ALERT_WINDOW",
+      "android.permission.WRITE_EXTERNAL_STORAGE"
+    ],
+    "high_risk_permission_count": 13
+  },
+  "icon": {
+    "present": true,
+    "phash": "80f8c2ece0beb2dc",
+    "source": "res/mipmap-xxxhdpi-v4/ic_launcher.png",
+    "saved_path": "dataset\\Anubis\\d7511298f5f6c7205eb753ecd7a4e0070e9f4e353f8e6c94ef3339b4a1886b73\\icon.png"
+  },
+  "routing": {
+    "track": "track1_jadx",
+    "dex_files": [
+      "classes.dex"
+    ],
+    "dex_count": 1,
+    "native_libs": [],
+    "native_lib_count": 0,
+    "native_arches": [],
+    "framework_indicators": [],
+    "packing_signals": [],
+    "routing_decisions": [
+      {
+        "engine": "jadx",
+        "targets": [
+          "classes.dex"
+        ],
+        "reason": "Dalvik bytecode present; decompile smali to Java for static triage."
+      }
+    ]
+  }
+}

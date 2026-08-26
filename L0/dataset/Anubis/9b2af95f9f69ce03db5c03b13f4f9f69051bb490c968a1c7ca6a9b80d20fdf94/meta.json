@@ -1,0 +1,80 @@
+{
+  "family": "Anubis",
+  "source_file": "C:\\Users\\DELL\\AppData\\Local\\Temp\\tmpdygm3erg\\9b2af95f9f69ce03db5c03b13f4f9f69051bb490c968a1c7ca6a9b80d20fdf94.apk",
+  "fingerprint": {
+    "md5": "f871ad7dfd6080add682a457b468b766",
+    "sha256": "9b2af95f9f69ce03db5c03b13f4f9f69051bb490c968a1c7ca6a9b80d20fdf94"
+  },
+  "manifest": {
+    "package_name": "wocwvy.czyxoxmbauu.slsa",
+    "app_label": "Ayarlar(MN)",
+    "version_name": "1.0",
+    "version_code": "1",
+    "min_sdk": "15",
+    "target_sdk": "27",
+    "permissions": [
+      "android.permission.ACCESS_FINE_LOCATION",
+      "android.permission.ACCESS_NETWORK_STATE",
+      "android.permission.CALL_PHONE",
+      "android.permission.GET_TASKS",
+      "android.permission.INTERNET",
+      "android.permission.PACKAGE_USAGE_STATS",
+      "android.permission.READ_CONTACTS",
+      "android.permission.READ_EXTERNAL_STORAGE",
+      "android.permission.READ_PHONE_STATE",
+      "android.permission.READ_SMS",
+      "android.permission.RECEIVE_BOOT_COMPLETED",
+      "android.permission.RECEIVE_SMS",
+      "android.permission.RECORD_AUDIO",
+      "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS",
+      "android.permission.SEND_SMS",
+      "android.permission.SYSTEM_ALERT_WINDOW",
+      "android.permission.WAKE_LOCK",
+      "android.permission.WRITE_EXTERNAL_STORAGE",
+      "android.permission.WRITE_SMS"
+    ],
+    "permission_count": 19,
+    "high_risk_permissions": [
+      "android.permission.ACCESS_FINE_LOCATION",
+      "android.permission.CALL_PHONE",
+      "android.permission.READ_CONTACTS",
+      "android.permission.READ_EXTERNAL_STORAGE",
+      "android.permission.READ_PHONE_STATE",
+      "android.permission.READ_SMS",
+      "android.permission.RECEIVE_BOOT_COMPLETED",
+      "android.permission.RECEIVE_SMS",
+      "android.permission.RECORD_AUDIO",
+      "android.permission.SEND_SMS",
+      "android.permission.SYSTEM_ALERT_WINDOW",
+      "android.permission.WRITE_EXTERNAL_STORAGE"
+    ],
+    "high_risk_permission_count": 12
+  },
+  "icon": {
+    "present": true,
+    "phash": "c0993c693b36e789",
+    "source": "res/mipmap-xxxhdpi/ic_launcher.png",
+    "saved_path": "dataset\\Anubis\\9b2af95f9f69ce03db5c03b13f4f9f69051bb490c968a1c7ca6a9b80d20fdf94\\icon.png"
+  },
+  "routing": {
+    "track": "track1_jadx",
+    "dex_files": [
+      "classes.dex"
+    ],
+    "dex_count": 1,
+    "native_libs": [],
+    "native_lib_count": 0,
+    "native_arches": [],
+    "framework_indicators": [],
+    "packing_signals": [],
+    "routing_decisions": [
+      {
+        "engine": "jadx",
+        "targets": [
+          "classes.dex"
+        ],
+        "reason": "Dalvik bytecode present; decompile smali to Java for static triage."
+      }
+    ]
+  }
+}

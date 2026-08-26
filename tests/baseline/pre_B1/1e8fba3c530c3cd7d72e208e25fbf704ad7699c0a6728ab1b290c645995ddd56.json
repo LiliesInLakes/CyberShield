@@ -1,0 +1,407 @@
+{
+  "analysis_gaps": [
+    "decompilation_partial",
+    "detonation_not_attempted"
+  ],
+  "counts": {
+    "by_category": {
+      "certificate_anomaly": 1,
+      "other": 3,
+      "phishing_impersonation": 2
+    },
+    "by_layer": {
+      "l0": 3,
+      "l1": 3
+    },
+    "by_severity": {
+      "critical": 1,
+      "high": 3,
+      "low": 1,
+      "medium": 1
+    },
+    "certificate_anomaly": 1,
+    "findings": 6,
+    "malware_category": 2
+  },
+  "created_at": "2026-08-08T19:17:34.863064+00:00",
+  "findings": [
+    {
+      "category": "phishing_impersonation",
+      "detail": {
+        "entity": "ICICI Bank",
+        "l0_finding": {
+          "claims": [
+            {
+              "entity": "ICICI Bank",
+              "matched_segments": [
+                "imobile"
+              ],
+              "official_package": "com.csam.icici.bank.imobile",
+              "type": "package_brand_segment"
+            }
+          ],
+          "detail": "App presents itself as ICICI Bank (package_brand_segment) but is not an official ICICI Bank package. Signer is anomalous.",
+          "entities": [
+            "ICICI Bank"
+          ],
+          "entity": "ICICI Bank",
+          "severity": "critical",
+          "type": "brand_impersonation"
+        },
+        "l0_finding_type": "brand_impersonation",
+        "spine_key": "brand_impersonation:ICICI Bank"
+      },
+      "engine": "l0_impersonation",
+      "evidence": "[brand_impersonation] App presents itself as ICICI Bank (package_brand_segment) but is not an official ICICI Bank package. Signer is anomalous.",
+      "fingerprint": "d25a411444b9",
+      "id": "F001",
+      "layer": "l0",
+      "location": "AndroidManifest.xml",
+      "mitre_techniques": [
+        "T1655",
+        "T1660"
+      ],
+      "observation": "inferred",
+      "severity": "critical"
+    },
+    {
+      "category": "certificate_anomaly",
+      "detail": {
+        "l0_finding": {
+          "anomalies": [
+            "debug_keystore",
+            "vendor_claiming_dn"
+          ],
+          "detail": "APK signed with an Android debug keystore \u2014 never used for legitimate distribution. App claims to be ICICI Bank.",
+          "severity": "high",
+          "subject": "Common Name: Android Debug, Organization: Android, Country: US",
+          "type": "cert_debug_keystore"
+        },
+        "l0_finding_type": "cert_debug_keystore",
+        "spine_key": "cert_debug_keystore"
+      },
+      "engine": "l0_impersonation",
+      "evidence": "[cert_debug_keystore] APK signed with an Android debug keystore \u2014 never used for legitimate distribution. App claims to be ICICI Bank.",
+      "fingerprint": "824885a094cd",
+      "id": "F002",
+      "layer": "l0",
+      "location": "META-INF/ (signing block)",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "high"
+    },
+    {
+      "category": "phishing_impersonation",
+      "detail": {
+        "entity": "ICICI Bank",
+        "l0_finding": {
+          "bank": "ICICI Bank",
+          "detail": "App label closely mimics trusted bank brand.",
+          "severity": "high",
+          "type": "label_spoof"
+        },
+        "l0_finding_type": "label_spoof",
+        "spine_key": "label_spoof:ICICI Bank"
+      },
+      "engine": "l0_impersonation",
+      "evidence": "[label_spoof] App label closely mimics trusted bank brand.",
+      "fingerprint": "a6910ad8bfae",
+      "id": "F003",
+      "layer": "l0",
+      "location": "AndroidManifest.xml",
+      "mitre_techniques": [
+        "T1655",
+        "T1660"
+      ],
+      "observation": "inferred",
+      "severity": "high"
+    },
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 1,
+        "locations": [
+          "sources/c/b/a/b/e/h.java"
+        ],
+        "match_count": 2,
+        "matched_string_ids": [
+          "$dc2"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$dc2",
+            "location": "sources/c/b/a/b/e/h.java",
+            "snippet": "PathClassLoader"
+          },
+          {
+            "id": "$dc2",
+            "location": "sources/c/b/a/b/e/h.java",
+            "snippet": "PathClassLoader"
+          }
+        ],
+        "scopes": [
+          "source"
+        ],
+        "yara_rule": "Android_Dynamic_CodeLoading"
+      },
+      "engine": "yara",
+      "evidence": "[Android_Dynamic_CodeLoading] Dynamic class loading detected \u2014 potential code injection or tampering -> PathClassLoader",
+      "fingerprint": "ca98036edd87",
+      "id": "F004",
+      "layer": "l1",
+      "location": "sources/c/b/a/b/e/h.java",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "high"
+    },
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 4,
+        "locations": [
+          "sources/c/b/a/c/a.java",
+          "sources/c/b/a/c/a0/i.java",
+          "sources/b/h/l/i.java",
+          "sources/b/b/g/z.java"
+        ],
+        "match_count": 9,
+        "matched_string_ids": [
+          "$pw1"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$pw1",
+            "location": "sources/c/b/a/c/a.java",
+            "snippet": ".password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/c/b/a/c/a.java",
+            "snippet": ".password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/c/b/a/c/a.java",
+            "snippet": ".password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/c/b/a/c/a.java",
+            "snippet": ".password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/c/b/a/c/a.java",
+            "snippet": ".password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/c/b/a/c/a0/i.java",
+            "snippet": ".Password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/c/b/a/c/a0/i.java",
+            "snippet": ".password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/b/h/l/i.java",
+            "snippet": ".Password"
+          }
+        ],
+        "scopes": [
+          "source"
+        ],
+        "yara_rule": "Android_Secrets_Hardcoded"
+      },
+      "engine": "yara",
+      "evidence": "[Android_Secrets_Hardcoded] Potential hardcoded credential or secret \u2014 review for plaintext secrets -> .password",
+      "fingerprint": "cc1927d9d7c8",
+      "id": "F005",
+      "layer": "l1",
+      "location": "sources/c/b/a/c/a.java",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "medium"
+    },
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 1,
+        "locations": [
+          "sample.apk"
+        ],
+        "match_count": 829,
+        "matched_string_ids": [
+          "$cert1",
+          "$cert2",
+          "$cert4",
+          "$classes",
+          "$hex_cd",
+          "$hex_eocd",
+          "$hex_zip",
+          "$manifest",
+          "$resources"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$manifest",
+            "location": "sample.apk",
+            "snippet": "AndroidManifest.xml"
+          },
+          {
+            "id": "$manifest",
+            "location": "sample.apk",
+            "snippet": "AndroidManifest.xml"
+          },
+          {
+            "id": "$classes",
+            "location": "sample.apk",
+            "snippet": "classes.dex"
+          },
+          {
+            "id": "$classes",
+            "location": "sample.apk",
+            "snippet": "classes.dex"
+          },
+          {
+            "id": "$resources",
+            "location": "sample.apk",
+            "snippet": "resources.arsc"
+          },
+          {
+            "id": "$resources",
+            "location": "sample.apk",
+            "snippet": "resources.arsc"
+          },
+          {
+            "id": "$cert1",
+            "location": "sample.apk",
+            "snippet": "META-INF/"
+          },
+          {
+            "id": "$cert1",
+            "location": "sample.apk",
+            "snippet": "META-INF/"
+          }
+        ],
+        "scopes": [
+          "container"
+        ],
+        "yara_rule": "APK_Valid_Structure_Check"
+      },
+      "engine": "yara",
+      "evidence": "[APK_Valid_Structure_Check] Validates basic APK file structure integrity -> AndroidManifest.xml",
+      "fingerprint": "a983bb24584a",
+      "id": "F006",
+      "layer": "l1",
+      "location": "sample.apk",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "low"
+    }
+  ],
+  "identity": {
+    "app_label": "iMobile",
+    "impersonates": "ICICI Bank",
+    "md5": "78745bddd887cb4895f06ab2369a8cce",
+    "package": "direct.uujgiq.imobile",
+    "sha256": "1e8fba3c530c3cd7d72e208e25fbf704ad7699c0a6728ab1b290c645995ddd56",
+    "source_apk": "/home/nightwings/cybershield/CyberShield/corpus/_work/s875075747275/sample.apk",
+    "version_name": "1.0"
+  },
+  "layers": {
+    "l0": {
+      "artifact": "L0/artifacts/1e8fba3c530c3cd7d72e208e25fbf704ad7699c0a6728ab1b290c645995ddd56/evidence.json",
+      "coverage": {
+        "certificate_parsed": true,
+        "icon_extracted": true,
+        "manifest_parsed": true,
+        "permission_count": 26,
+        "reputation_checked": false
+      },
+      "gaps": [],
+      "status": "complete",
+      "summary": {
+        "cert_anomalies": [
+          "debug_keystore",
+          "vendor_claiming_dn"
+        ],
+        "cert_signal": {
+          "cert_detail": "Signer anomalies: debug_keystore, vendor_claiming_dn",
+          "cert_in_whitelist": false,
+          "cert_weight": -0.9
+        },
+        "claimed_entity": "ICICI Bank",
+        "matched_bank": null,
+        "reputation_hit": false,
+        "smoking_gun_inputs": {
+          "brand_claim": true,
+          "cert_anomalies": [
+            "debug_keystore",
+            "vendor_claiming_dn"
+          ],
+          "claimed_entity": "ICICI Bank",
+          "sms_trifecta": true
+        },
+        "track": "track1_jadx",
+        "verdict": "impersonation_likely"
+      },
+      "updated_at": "2026-08-08T19:17:34.863094+00:00"
+    },
+    "l1": {
+      "artifact": "L1/artifacts/1e8fba3c530c3cd7d72e208e25fbf704ad7699c0a6728ab1b290c645995ddd56/analysis.json",
+      "coverage": {
+        "apk_yara_rules": 1,
+        "decompiled_files": 1879,
+        "ghidra_attempted": false,
+        "ghidra_available": false,
+        "ghidra_ok": false,
+        "source_findings": 2
+      },
+      "gaps": [
+        "decompilation_partial"
+      ],
+      "status": "partial",
+      "summary": {
+        "categories": [
+          "other"
+        ],
+        "engine": "jadx+yara",
+        "finding_count": 3,
+        "ruleset_version": "614d58d9a5b9",
+        "severity_counts": {
+          "critical": 0,
+          "high": 1,
+          "info": 0,
+          "low": 1,
+          "medium": 1
+        },
+        "track": "track1_jadx"
+      },
+      "updated_at": "2026-08-08T19:17:44.076407+00:00"
+    },
+    "l2": {
+      "status": "not_attempted"
+    },
+    "l3": {
+      "status": "not_attempted"
+    },
+    "l4": {
+      "status": "not_attempted"
+    },
+    "l5": {
+      "status": "not_attempted"
+    },
+    "l6": {
+      "status": "not_attempted"
+    }
+  },
+  "schema_version": "apk-sentinel-0.2",
+  "sha256": "1e8fba3c530c3cd7d72e208e25fbf704ad7699c0a6728ab1b290c645995ddd56",
+  "updated_at": "2026-08-08T19:17:44.076658+00:00"
+}

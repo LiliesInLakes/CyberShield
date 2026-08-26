@@ -1,0 +1,941 @@
+{
+  "description": "Local offline threat cache for L0 reputation lookups. Maps sha256 -> record. On-prem safe: no data leaves the perimeter. Seeded from MalwareDatabase repo (filenames are sample sha256). Optional VirusTotal/MalwareBazaar enrichment runs only when respective key is set.",
+  "hashes": {
+    "b18af2a0e44d7634bbcdf93664d9c78a2695e050393fcfbb5e8b91f902d194a4": {
+      "verdict": "known_test_sample",
+      "note": "InsecureBankv2 - intentional vulnerable training app, not real malware.",
+      "tags": [
+        "training",
+        "insecure"
+      ]
+    },
+    "055a295ad0700f072699b3e299aa19da42c4b34c96ff4e6224c6e0c3775778a3": {
+      "verdict": "known_malware",
+      "families": [
+        "AbereBot"
+      ],
+      "note": "MalwareDatabase family: AbereBot",
+      "tags": [
+        "malware",
+        "aberebot"
+      ]
+    },
+    "38ff459a46e9ea6d63a83c1eddb640626fef562cd1bcb0ab3823c4770d07d0fb": {
+      "verdict": "known_malware",
+      "families": [
+        "AbereBot"
+      ],
+      "note": "MalwareDatabase family: AbereBot",
+      "tags": [
+        "malware",
+        "aberebot"
+      ]
+    },
+    "8bef7b86043f758a775a9cf4080f5b87d50df4778d03ecd94989f98cc5c91e75": {
+      "verdict": "known_malware",
+      "families": [
+        "AbereBot"
+      ],
+      "note": "MalwareDatabase family: AbereBot",
+      "tags": [
+        "malware",
+        "aberebot"
+      ]
+    },
+    "9afaa372d732d9a920e8dc68ccc243a248f839f52dac33da41f69f2ba0941906": {
+      "verdict": "known_malware",
+      "families": [
+        "AbereBot"
+      ],
+      "note": "MalwareDatabase family: AbereBot",
+      "tags": [
+        "malware",
+        "aberebot"
+      ]
+    },
+    "a0de1add961f3a9bf6e2e391489fdbac244932352421055f23f34c93c82b8856": {
+      "verdict": "known_malware",
+      "families": [
+        "AbereBot"
+      ],
+      "note": "MalwareDatabase family: AbereBot",
+      "tags": [
+        "malware",
+        "aberebot"
+      ]
+    },
+    "c404340baa0e1322364c75898e7ffefcabb660bab01979c22ebd98a502bb2310": {
+      "verdict": "known_malware",
+      "families": [
+        "AbereBot",
+        "Hydra"
+      ],
+      "note": "MalwareDatabase family: AbereBot",
+      "tags": [
+        "malware",
+        "aberebot"
+      ]
+    },
+    "ee20d6abcf80df3a02c99b977ae6c948d2449f573daa9204ccc9fab6825883f3": {
+      "verdict": "known_malware",
+      "families": [
+        "AbereBot"
+      ],
+      "note": "MalwareDatabase family: AbereBot",
+      "tags": [
+        "malware",
+        "aberebot"
+      ]
+    },
+    "1236be7fd1385b2543205404d96f37bded28a626d27d1e0a1dd4c570ef6dd2ad": {
+      "verdict": "known_malware",
+      "families": [
+        "Alienbot"
+      ],
+      "note": "MalwareDatabase family: Alienbot",
+      "tags": [
+        "malware",
+        "alienbot"
+      ]
+    },
+    "1cd7bab3a22cf44741925eb1ee5f969ccca01ff78ce6f3f010fdf6f93875c8fb": {
+      "verdict": "known_malware",
+      "families": [
+        "Alienbot"
+      ],
+      "note": "MalwareDatabase family: Alienbot",
+      "tags": [
+        "malware",
+        "alienbot"
+      ]
+    },
+    "8d4ba01befd0bb33459d7232c376cfb036c68857433ecc05a3f127b8edd64a66": {
+      "verdict": "known_malware",
+      "families": [
+        "Alienbot"
+      ],
+      "note": "MalwareDatabase family: Alienbot",
+      "tags": [
+        "malware",
+        "alienbot"
+      ]
+    },
+    "e3ae7cb2eaa532da35412d2d96ec08b02a907678f18518c9e7d3dd59ddd96e67": {
+      "verdict": "known_malware",
+      "families": [
+        "Alienbot"
+      ],
+      "note": "MalwareDatabase family: Alienbot",
+      "tags": [
+        "malware",
+        "alienbot"
+      ]
+    },
+    "f808d05653ae38eef70954a583c9cacdf5d43bd28e73e689174d47c73e431da6": {
+      "verdict": "known_malware",
+      "families": [
+        "Alienbot"
+      ],
+      "note": "MalwareDatabase family: Alienbot",
+      "tags": [
+        "malware",
+        "alienbot"
+      ]
+    },
+    "3f00206aaed4612ce4655152b972aeb2787ca4133aeacc8c9acd8c4d38ea3f79": {
+      "verdict": "known_malware",
+      "families": [
+        "Anubis"
+      ],
+      "note": "MalwareDatabase family: Anubis",
+      "tags": [
+        "malware",
+        "anubis"
+      ]
+    },
+    "63263048a73fd8b6e37431688a331a2a88e8fc86848bfb4ba09751f2e7ab8f5c": {
+      "verdict": "known_malware",
+      "families": [
+        "Anubis"
+      ],
+      "note": "MalwareDatabase family: Anubis",
+      "tags": [
+        "malware",
+        "anubis"
+      ]
+    },
+    "7138689203dc5a2fe9cfcb84c39885e4b53eec9a72f37e36ddee61490f8217ca": {
+      "verdict": "known_malware",
+      "families": [
+        "Anubis"
+      ],
+      "note": "MalwareDatabase family: Anubis",
+      "tags": [
+        "malware",
+        "anubis"
+      ]
+    },
+    "9b2af95f9f69ce03db5c03b13f4f9f69051bb490c968a1c7ca6a9b80d20fdf94": {
+      "verdict": "known_malware",
+      "families": [
+        "Anubis"
+      ],
+      "note": "MalwareDatabase family: Anubis",
+      "tags": [
+        "malware",
+        "anubis"
+      ]
+    },
+    "d7511298f5f6c7205eb753ecd7a4e0070e9f4e353f8e6c94ef3339b4a1886b73": {
+      "verdict": "known_malware",
+      "families": [
+        "Anubis",
+        "Unknown"
+      ],
+      "note": "MalwareDatabase family: Anubis",
+      "tags": [
+        "malware",
+        "anubis"
+      ]
+    },
+    "40038ced4b0bb94a60f9f7ed996b98874f0ca83eacbc159d222931f4fd4a9802": {
+      "verdict": "known_malware",
+      "families": [
+        "Backdoor"
+      ],
+      "note": "MalwareDatabase family: Backdoor",
+      "tags": [
+        "malware",
+        "backdoor"
+      ]
+    },
+    "bc850c692e84f67ec59c08e6e893e479b6b1a24a5b4097dfa3c70396c9bb9b40": {
+      "verdict": "known_malware",
+      "families": [
+        "Backdoor",
+        "Unknown"
+      ],
+      "note": "MalwareDatabase family: Backdoor",
+      "tags": [
+        "malware",
+        "backdoor"
+      ]
+    },
+    "486d6a713d8c907df70a919729ac685328ab91a8977c2e352165640c4bd4d507": {
+      "verdict": "known_malware",
+      "families": [
+        "BankBot"
+      ],
+      "note": "MalwareDatabase family: BankBot",
+      "tags": [
+        "malware",
+        "bankbot"
+      ]
+    },
+    "a8c9c4f38f72cf8cd3cd819936f1c1ea9670541ded180327f7b096a3370f2186": {
+      "verdict": "known_malware",
+      "families": [
+        "BankBot"
+      ],
+      "note": "MalwareDatabase family: BankBot",
+      "tags": [
+        "malware",
+        "bankbot"
+      ]
+    },
+    "d97aab6e351401596e170f056c3833bfd709cf44a2db97739a9129910fe2ece1": {
+      "verdict": "known_malware",
+      "families": [
+        "BankBot"
+      ],
+      "note": "MalwareDatabase family: BankBot",
+      "tags": [
+        "malware",
+        "bankbot"
+      ]
+    },
+    "e30a471eb9b435c0bd1c0cd077b3ff78f114bd77cfe922f061b09d6a2ab34ff5": {
+      "verdict": "known_malware",
+      "families": [
+        "BankBot"
+      ],
+      "note": "MalwareDatabase family: BankBot",
+      "tags": [
+        "malware",
+        "bankbot"
+      ]
+    },
+    "19278db5549027a224f9436c45ffdf0a0dc5ac630335fb2d9ff9d44da0f267b0": {
+      "verdict": "known_malware",
+      "families": [
+        "Banker"
+      ],
+      "note": "MalwareDatabase family: Banker",
+      "tags": [
+        "malware",
+        "banker"
+      ]
+    },
+    "87cff4f61b32306eaec1f50af02d0521937aadd6f1c1a3b3d5ea177ebe690f47": {
+      "verdict": "known_malware",
+      "families": [
+        "Banker"
+      ],
+      "note": "MalwareDatabase family: Banker",
+      "tags": [
+        "malware",
+        "banker"
+      ]
+    },
+    "94b8ba79b4c51fe93ada27e635ce9dcf6b43eaa7b416c59019e69e002a5ea66a": {
+      "verdict": "known_malware",
+      "families": [
+        "Banker"
+      ],
+      "note": "MalwareDatabase family: Banker",
+      "tags": [
+        "malware",
+        "banker"
+      ]
+    },
+    "ace6940e4bf7b2b1b07d601166453730252c2a873fd57609e686a1cd2b9c3690": {
+      "verdict": "known_malware",
+      "families": [
+        "Banker"
+      ],
+      "note": "MalwareDatabase family: Banker",
+      "tags": [
+        "malware",
+        "banker"
+      ]
+    },
+    "dafc457d7005b4cbdadf7c0060bc8350e83306a564dc279feb701e55d1c13532": {
+      "verdict": "known_malware",
+      "families": [
+        "Banker"
+      ],
+      "note": "MalwareDatabase family: Banker",
+      "tags": [
+        "malware",
+        "banker"
+      ]
+    },
+    "03c67802e809e75a774527c60517a5ba7ffdd496bb5efba91e231c45d4a971f8": {
+      "verdict": "known_malware",
+      "families": [
+        "Cerberus"
+      ],
+      "note": "MalwareDatabase family: Cerberus",
+      "tags": [
+        "malware",
+        "cerberus"
+      ]
+    },
+    "551ca24f79e33a76136064d2b6782ca3d86ba68cd4abfc47210c06e563f3e4d8": {
+      "verdict": "known_malware",
+      "families": [
+        "Cerberus"
+      ],
+      "note": "MalwareDatabase family: Cerberus",
+      "tags": [
+        "malware",
+        "cerberus"
+      ]
+    },
+    "b1cd0d501d8a0022d2ce360cb601f171d8938af613e13814e0af68e79a77c3a9": {
+      "verdict": "known_malware",
+      "families": [
+        "Cerberus"
+      ],
+      "note": "MalwareDatabase family: Cerberus",
+      "tags": [
+        "malware",
+        "cerberus"
+      ]
+    },
+    "c7d855979c61bafc116d1c0bfe6d87a1683bea96eecca3820bf0be954b80a237": {
+      "verdict": "known_malware",
+      "families": [
+        "Cerberus"
+      ],
+      "note": "MalwareDatabase family: Cerberus",
+      "tags": [
+        "malware",
+        "cerberus"
+      ]
+    },
+    "462e131e3b1b3e72f475374496bd6d0067fb271b78d25302f4798764e961e529": {
+      "verdict": "known_malware",
+      "families": [
+        "Covid"
+      ],
+      "note": "MalwareDatabase family: Covid",
+      "tags": [
+        "malware",
+        "covid"
+      ]
+    },
+    "8a87cfe676d177061c0b3cbb9bdde4cabee0f1af369bbf8e2d9088294ba9d3b1": {
+      "verdict": "known_malware",
+      "families": [
+        "Covid"
+      ],
+      "note": "MalwareDatabase family: Covid",
+      "tags": [
+        "malware",
+        "covid"
+      ]
+    },
+    "a754c35dd09677b0b96d8a0dad5c9c5fdd28abd8cf2d8d38a9bd945ca8362e02": {
+      "verdict": "known_malware",
+      "families": [
+        "Covid"
+      ],
+      "note": "MalwareDatabase family: Covid",
+      "tags": [
+        "malware",
+        "covid"
+      ]
+    },
+    "771ece065c373f260af388348d6ace3f8d10f3b1c9f743f4e66e8b1d7ee81e89": {
+      "verdict": "known_malware",
+      "families": [
+        "FacebookStealer"
+      ],
+      "note": "MalwareDatabase family: FacebookStealer",
+      "tags": [
+        "malware",
+        "facebookstealer"
+      ]
+    },
+    "819d3fd5d74a3a6852290ce70a2060cd91682479edde7718c7335c0751e33cd1": {
+      "verdict": "known_malware",
+      "families": [
+        "FacebookStealer"
+      ],
+      "note": "MalwareDatabase family: FacebookStealer",
+      "tags": [
+        "malware",
+        "facebookstealer"
+      ]
+    },
+    "8b5447e14a9dd10091cd75d704a5b2b59180bd441337424b3f96ba006e7ce59c": {
+      "verdict": "known_malware",
+      "families": [
+        "FacebookStealer"
+      ],
+      "note": "MalwareDatabase family: FacebookStealer",
+      "tags": [
+        "malware",
+        "facebookstealer"
+      ]
+    },
+    "af3cb221806a2e4106b17942c9510fde5041b89d3f859c6854986e85e85a3d09": {
+      "verdict": "known_malware",
+      "families": [
+        "FacebookStealer"
+      ],
+      "note": "MalwareDatabase family: FacebookStealer",
+      "tags": [
+        "malware",
+        "facebookstealer"
+      ]
+    },
+    "fe3ce1cce2e7b3d0ff2b316dbc70941213ef13c026fc8808c7a62b1d83d8821e": {
+      "verdict": "known_malware",
+      "families": [
+        "FacebookStealer"
+      ],
+      "note": "MalwareDatabase family: FacebookStealer",
+      "tags": [
+        "malware",
+        "facebookstealer"
+      ]
+    },
+    "09b39e9a305c4dde358d426ad42026c56048b05b22a1fc6e1c99e51155d57411": {
+      "verdict": "known_malware",
+      "families": [
+        "FakeCop"
+      ],
+      "note": "MalwareDatabase family: FakeCop",
+      "tags": [
+        "malware",
+        "fakecop"
+      ]
+    },
+    "0b466d974dd468144e67101bbc6e2ca45ea0ac47a81e1f3f211a6087633349ba": {
+      "verdict": "known_malware",
+      "families": [
+        "FakeCop"
+      ],
+      "note": "MalwareDatabase family: FakeCop",
+      "tags": [
+        "malware",
+        "fakecop"
+      ]
+    },
+    "2de1131d83031bd697ae286f0a5fe2fc6035ccf932399fd7ddcd3c1b01b67c39": {
+      "verdict": "known_malware",
+      "families": [
+        "FakeCop"
+      ],
+      "note": "MalwareDatabase family: FakeCop",
+      "tags": [
+        "malware",
+        "fakecop"
+      ]
+    },
+    "a9e41105f31815342b3f8a9e79982bdabf33a69d6c019a2537d5b2a7148b8aaa": {
+      "verdict": "known_malware",
+      "families": [
+        "FakeCop"
+      ],
+      "note": "MalwareDatabase family: FakeCop",
+      "tags": [
+        "malware",
+        "fakecop"
+      ]
+    },
+    "28c11bb998bf8c023a212c6518b4f8219c8583c2e79fc87d76be6fcad51b522f": {
+      "verdict": "known_malware",
+      "families": [
+        "FluBot"
+      ],
+      "note": "MalwareDatabase family: FluBot",
+      "tags": [
+        "malware",
+        "flubot"
+      ]
+    },
+    "2c74efb0e8304948e56f4ccb1ced6c05734842ecdc95628decacfa74d06baf6c": {
+      "verdict": "known_malware",
+      "families": [
+        "FluBot"
+      ],
+      "note": "MalwareDatabase family: FluBot",
+      "tags": [
+        "malware",
+        "flubot"
+      ]
+    },
+    "44ea6e68941e2f3716ecaa178775d5e81008edc7a969d40c90baf85a862a7a57": {
+      "verdict": "known_malware",
+      "families": [
+        "FluBot"
+      ],
+      "note": "MalwareDatabase family: FluBot",
+      "tags": [
+        "malware",
+        "flubot"
+      ]
+    },
+    "607ceb008d54328c885339fc2d793286834e887b2a328129455343bb8867698b": {
+      "verdict": "known_malware",
+      "families": [
+        "FluBot"
+      ],
+      "note": "MalwareDatabase family: FluBot",
+      "tags": [
+        "malware",
+        "flubot"
+      ]
+    },
+    "6323ac65167e8d48c3bd6c8b839eb600b5b9be9b942e582640147be8d98cedb6": {
+      "verdict": "known_malware",
+      "families": [
+        "FluBot"
+      ],
+      "note": "MalwareDatabase family: FluBot",
+      "tags": [
+        "malware",
+        "flubot"
+      ]
+    },
+    "6a03efa4ffa38032edfb5b604672e8c9e01a324f8857b5848e8160593dfb325e": {
+      "verdict": "known_malware",
+      "families": [
+        "FluBot"
+      ],
+      "note": "MalwareDatabase family: FluBot",
+      "tags": [
+        "malware",
+        "flubot"
+      ]
+    },
+    "831334e1e49ec7a25375562688543ee75b2b3cc7352afc019856342def52476b": {
+      "verdict": "known_malware",
+      "families": [
+        "FluBot"
+      ],
+      "note": "MalwareDatabase family: FluBot",
+      "tags": [
+        "malware",
+        "flubot"
+      ]
+    },
+    "89025ff12018ed90a709f3c8bf47b803c5c5b2b533858bda398fca3e1d6140f1": {
+      "verdict": "known_malware",
+      "families": [
+        "FluBot"
+      ],
+      "note": "MalwareDatabase family: FluBot",
+      "tags": [
+        "malware",
+        "flubot"
+      ]
+    },
+    "a0181864eed9294cac0d278fa0eadabe68b3adb333eeb2e26cc082836f82489d": {
+      "verdict": "known_malware",
+      "families": [
+        "FluBot"
+      ],
+      "note": "MalwareDatabase family: FluBot",
+      "tags": [
+        "malware",
+        "flubot"
+      ]
+    },
+    "fc45b5f85cee56830a9f7e3001dca42026a9691445afa8f429b57203fc47a1b2": {
+      "verdict": "known_malware",
+      "families": [
+        "FluBot"
+      ],
+      "note": "MalwareDatabase family: FluBot",
+      "tags": [
+        "malware",
+        "flubot"
+      ]
+    },
+    "fe52bed001f28a4b218bcd0ad31b92fb59022778cf68a1445cf3e8c612a5e04c": {
+      "verdict": "known_malware",
+      "families": [
+        "FluBot"
+      ],
+      "note": "MalwareDatabase family: FluBot",
+      "tags": [
+        "malware",
+        "flubot"
+      ]
+    },
+    "007b5f204f5adfa631bab173a413a849da6d36cb198e9112777facdd090258f2": {
+      "verdict": "known_malware",
+      "families": [
+        "Hydra"
+      ],
+      "note": "MalwareDatabase family: Hydra",
+      "tags": [
+        "malware",
+        "hydra"
+      ]
+    },
+    "9cbdd422daf93e15b2135f0f6feebf7428eaaaba4aeaf18c12e882e67a849c89": {
+      "verdict": "known_malware",
+      "families": [
+        "Hydra"
+      ],
+      "note": "MalwareDatabase family: Hydra",
+      "tags": [
+        "malware",
+        "hydra"
+      ]
+    },
+    "c4844236e849260e5bd9d1a1d548c11667bc9f7c8c645c0a36180287a4fd48a7": {
+      "verdict": "known_malware",
+      "families": [
+        "Hydra"
+      ],
+      "note": "MalwareDatabase family: Hydra",
+      "tags": [
+        "malware",
+        "hydra"
+      ]
+    },
+    "e80cb43578f6a8b2ded95c8a2e86076f3661d60e2f18ebd1f094308e1d593c87": {
+      "verdict": "known_malware",
+      "families": [
+        "Hydra"
+      ],
+      "note": "MalwareDatabase family: Hydra",
+      "tags": [
+        "malware",
+        "hydra"
+      ]
+    },
+    "c18c5ca32b80d4b595500853e1899d03edbe954d1e79da14f167aa888918d547": {
+      "verdict": "known_malware",
+      "families": [
+        "Locker",
+        "Unknown"
+      ],
+      "note": "MalwareDatabase family: Locker",
+      "tags": [
+        "malware",
+        "locker"
+      ]
+    },
+    "17e50f14e1c106d9a6495cbf84e9ebca510b049de7c74a27a483ecf32f54d091": {
+      "verdict": "known_malware",
+      "families": [
+        "Pegasus"
+      ],
+      "note": "MalwareDatabase family: Pegasus",
+      "tags": [
+        "malware",
+        "pegasus"
+      ]
+    },
+    "316fac5ae2d4e250b1c0f10b4388fa2c6c3407b118e539a7d865613e373628d9": {
+      "verdict": "known_malware",
+      "families": [
+        "Pegasus"
+      ],
+      "note": "MalwareDatabase family: Pegasus",
+      "tags": [
+        "malware",
+        "pegasus"
+      ]
+    },
+    "bd8cda80aaee3e4a17e9967a1c062ac5c8e4aefd7eaa3362f54044c2c94db52a": {
+      "verdict": "known_malware",
+      "families": [
+        "Pegasus"
+      ],
+      "note": "MalwareDatabase family: Pegasus",
+      "tags": [
+        "malware",
+        "pegasus"
+      ]
+    },
+    "fa538fc20af8aa198db5e932b2afaf9710633a49cf3e19b7465175520e3e8b47": {
+      "verdict": "known_malware",
+      "families": [
+        "Pegasus"
+      ],
+      "note": "MalwareDatabase family: Pegasus",
+      "tags": [
+        "malware",
+        "pegasus"
+      ]
+    },
+    "4f1822817690d89943e7e57468ab4366e360772c0adce67bf74a7224b3732dee": {
+      "verdict": "known_malware",
+      "families": [
+        "Sharkbot"
+      ],
+      "note": "MalwareDatabase family: Sharkbot",
+      "tags": [
+        "malware",
+        "sharkbot"
+      ]
+    },
+    "57f8a57320eeed2f5b5a316d67319191ce717cc51384318966b61f95722e275f": {
+      "verdict": "known_malware",
+      "families": [
+        "Sharkbot"
+      ],
+      "note": "MalwareDatabase family: Sharkbot",
+      "tags": [
+        "malware",
+        "sharkbot"
+      ]
+    },
+    "6aefc2c4727ce80f03867f356df462f1a1ce21c72801b877fdb95e67cd00d6a4": {
+      "verdict": "known_malware",
+      "families": [
+        "Sharkbot"
+      ],
+      "note": "MalwareDatabase family: Sharkbot",
+      "tags": [
+        "malware",
+        "sharkbot"
+      ]
+    },
+    "8f45831b1df8fe44111e35b05271f6ec1796b03c104a67cd6481bf93f2affe86": {
+      "verdict": "known_malware",
+      "families": [
+        "Sharkbot"
+      ],
+      "note": "MalwareDatabase family: Sharkbot",
+      "tags": [
+        "malware",
+        "sharkbot"
+      ]
+    },
+    "bee3fc6b875e49edaa983ef9d38d0bcafe82abca82e684ef4fdca6df0c695c8b": {
+      "verdict": "known_malware",
+      "families": [
+        "Sharkbot"
+      ],
+      "note": "MalwareDatabase family: Sharkbot",
+      "tags": [
+        "malware",
+        "sharkbot"
+      ]
+    },
+    "c385020ef9e6e04ad08757324f78963378675a1bdb57a4de0fd525cffe7f2139": {
+      "verdict": "known_malware",
+      "families": [
+        "SMS Stealer"
+      ],
+      "note": "MalwareDatabase family: SMS Stealer",
+      "tags": [
+        "malware",
+        "sms stealer"
+      ]
+    },
+    "25f8c85774f2c0cfb7122f2a1de2301498c70c239a42d0cd9399c904c22a35b9": {
+      "verdict": "known_malware",
+      "families": [
+        "Spy"
+      ],
+      "note": "MalwareDatabase family: Spy",
+      "tags": [
+        "malware",
+        "spy"
+      ]
+    },
+    "557aed501642b5f3a19a4a63dea96eedf806930be02a0aef3fa304dd57d8c1ab": {
+      "verdict": "known_malware",
+      "families": [
+        "Spy"
+      ],
+      "note": "MalwareDatabase family: Spy",
+      "tags": [
+        "malware",
+        "spy"
+      ]
+    },
+    "7843d056e42bc194275b946226418c1dd1929b4ae9438a20846d4deb67e6682a": {
+      "verdict": "known_malware",
+      "families": [
+        "Spy"
+      ],
+      "note": "MalwareDatabase family: Spy",
+      "tags": [
+        "malware",
+        "spy"
+      ]
+    },
+    "faa0efaad40e78bf27ca529171aaf0551db998a276d4ff501209d1f5ef830dfb": {
+      "verdict": "known_malware",
+      "families": [
+        "Spy"
+      ],
+      "note": "MalwareDatabase family: Spy",
+      "tags": [
+        "malware",
+        "spy"
+      ]
+    },
+    "308854628ee791468c30ec49a0f48bf46a1ee9d615c3efa444506b43a0615e4d": {
+      "verdict": "known_malware",
+      "families": [
+        "Teabot"
+      ],
+      "note": "MalwareDatabase family: Teabot",
+      "tags": [
+        "malware",
+        "teabot"
+      ]
+    },
+    "9f2d916b1e0ee486f5a49e3e9887eae59dbdca0a554139ae9a4dc8edc2f12de0": {
+      "verdict": "known_malware",
+      "families": [
+        "Teabot"
+      ],
+      "note": "MalwareDatabase family: Teabot",
+      "tags": [
+        "malware",
+        "teabot"
+      ]
+    },
+    "a34c1e334e9d76e97b8e8ac6b88bbc45cbed7ab7fc3a62e2f348c940136778af": {
+      "verdict": "known_malware",
+      "families": [
+        "Teabot"
+      ],
+      "note": "MalwareDatabase family: Teabot",
+      "tags": [
+        "malware",
+        "teabot"
+      ]
+    },
+    "b74b65f68641feb46d22fddb595fff57cba53f5e3d4d780f4b1bf9b2682a9230": {
+      "verdict": "known_malware",
+      "families": [
+        "Teabot"
+      ],
+      "note": "MalwareDatabase family: Teabot",
+      "tags": [
+        "malware",
+        "teabot"
+      ]
+    },
+    "b88e7421bc61f4ce20c0694418fc97c1e77cfd3f2053857f87cc47512a55c3d3": {
+      "verdict": "known_malware",
+      "families": [
+        "Teabot"
+      ],
+      "note": "MalwareDatabase family: Teabot",
+      "tags": [
+        "malware",
+        "teabot"
+      ]
+    },
+    "8210a17f11382b0ef4a13e9c64668a40e5f45c1f319d4f02031cc13fca5cd43f": {
+      "verdict": "known_malware",
+      "families": [
+        "Trojan"
+      ],
+      "note": "MalwareDatabase family: Trojan",
+      "tags": [
+        "malware",
+        "trojan"
+      ]
+    },
+    "f76524d907aa6b2e6f192e3e513622ab31489997d0754df775f9f5e8e111e3e4": {
+      "verdict": "known_malware",
+      "families": [
+        "Trojan"
+      ],
+      "note": "MalwareDatabase family: Trojan",
+      "tags": [
+        "malware",
+        "trojan"
+      ]
+    },
+    "28aea3958aa8c2290c5131bb19c5713c851b56389bcb13799b9f8b73efe57e1f": {
+      "verdict": "known_malware",
+      "families": [
+        "Unknown"
+      ],
+      "note": "MalwareDatabase family: Unknown",
+      "tags": [
+        "malware",
+        "unknown"
+      ]
+    },
+    "70df22a25cbb8715f1d3dd693123ac92203b3a27dfc6c7fa0e48239cf15cbf02": {
+      "verdict": "known_malware",
+      "families": [
+        "Unknown"
+      ],
+      "note": "MalwareDatabase family: Unknown",
+      "tags": [
+        "malware",
+        "unknown"
+      ]
+    },
+    "fbf2041ea0f0d1942a695fb504521cc0e52b4ab947576653526d2264c15c0b6d": {
+      "verdict": "known_malware",
+      "families": [
+        "Unknown"
+      ],
+      "note": "MalwareDatabase family: Unknown",
+      "tags": [
+        "malware",
+        "unknown"
+      ]
+    }
+  }
+}

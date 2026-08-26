@@ -1,0 +1,319 @@
+{
+  "1256daaa655c724f4e7e44b911b03dfcf46d860a8d1084b99830caa03d778053": {
+    "certificate_anomaly": 0,
+    "class": "benign",
+    "entity": null,
+    "findings": 6,
+    "l0_verdict": null,
+    "l1_rules": [
+      "APK_Anomalous_Multiple_DEX_Files",
+      "APK_Valid_Structure_Check",
+      "Android_Crypto_StaticIV",
+      "Android_Crypto_WeakAlgorithm",
+      "Android_SSL_TrustAll",
+      "Android_Secrets_Hardcoded"
+    ],
+    "malware_category": 0,
+    "source": "testing_apps/good_apps/com.pennywiseai.tracker_99.apk"
+  },
+  "138ecc53e707712ac822f3f721183394988f8a38436ad0abcf55ed1cf5697a6a": {
+    "certificate_anomaly": 1,
+    "class": "india_malware",
+    "entity": null,
+    "findings": 7,
+    "l0_verdict": "impersonation_suspected",
+    "l1_rules": [
+      "APK_Valid_Structure_Check",
+      "Android_Crypto_StaticIV",
+      "Android_SSL_TrustAll",
+      "Android_Secrets_Hardcoded",
+      "Android_WebView_JavaScriptEnabled",
+      "Android_WebView_JavascriptInterface"
+    ],
+    "malware_category": 0,
+    "source": "AndroidMalware_2021/mayJioTarget.zip!f9e5fac6a4873f0d74ae37b246692a40.apk"
+  },
+  "16284cad1b5a36e2d2ea9f67f5c772af01b64d785f181fd31d2e2bec2d98ce98": {
+    "certificate_anomaly": 1,
+    "class": "india_malware",
+    "entity": null,
+    "findings": 4,
+    "l0_verdict": "impersonation_suspected",
+    "l1_rules": [
+      "APK_Valid_Structure_Check",
+      "Android_Dynamic_CodeLoading",
+      "Android_Secrets_Hardcoded"
+    ],
+    "malware_category": 0,
+    "source": "AndroidMalware_2021/sepTaxPayer.zip!e014b41953876c61ee1323ffa1823578.apk"
+  },
+  "1da8bf57d266109f9a07c01bf7111a1975ce01f190b9d914bcd3ae3dbef96f21": {
+    "certificate_anomaly": 0,
+    "class": "vuln",
+    "entity": null,
+    "findings": 2,
+    "l0_verdict": null,
+    "l1_rules": [
+      "APK_Valid_Structure_Check",
+      "Android_Secrets_Hardcoded"
+    ],
+    "malware_category": 0,
+    "source": "testing_apps/vuln/uncrackable-level1.apk"
+  },
+  "1e8fba3c530c3cd7d72e208e25fbf704ad7699c0a6728ab1b290c645995ddd56": {
+    "certificate_anomaly": 1,
+    "class": "india_malware",
+    "entity": "ICICI Bank",
+    "findings": 6,
+    "l0_verdict": "impersonation_likely",
+    "l1_rules": [
+      "APK_Valid_Structure_Check",
+      "Android_Dynamic_CodeLoading",
+      "Android_Secrets_Hardcoded"
+    ],
+    "malware_category": 2,
+    "source": "AndroidMalware_2021/sepTaxPayer.zip!78745bddd887cb4895f06ab2369a8cce.apk"
+  },
+  "3f69bc4b7fc50db582b13835206d2480acc66919db9123b37cf97f7f3da3b443": {
+    "certificate_anomaly": 1,
+    "class": "india_malware",
+    "entity": "Aarogya Setu",
+    "findings": 4,
+    "l0_verdict": "impersonation_likely",
+    "l1_rules": [
+      "APK_Valid_Structure_Check"
+    ],
+    "malware_category": 2,
+    "source": "AndroidMalware_2020/fakeAarogyaSetu.zip!bfa19e91bb4b25d34ac10ad7b9fc5df2"
+  },
+  "4c7980ef1f6cc29508f38417c2a5b5b7721eeb4a3d7f00a0c1a08f5192fa6ddd": {
+    "certificate_anomaly": 0,
+    "class": "vuln",
+    "entity": null,
+    "findings": 1,
+    "l0_verdict": null,
+    "l1_rules": [
+      "APK_Valid_Structure_Check"
+    ],
+    "malware_category": 0,
+    "source": "testing_apps/vuln/uncrackable-level2.apk"
+  },
+  "57887e1d1e119939eec0e929801b049f8037cf90d2accab479a48f0d4dd2c19a": {
+    "certificate_anomaly": 1,
+    "class": "vuln",
+    "entity": null,
+    "findings": 7,
+    "l0_verdict": null,
+    "l1_rules": [
+      "APK_Valid_Structure_Check",
+      "Android_Crypto_StaticIV",
+      "Android_Dynamic_CodeLoading",
+      "Android_SSL_TrustAll",
+      "Android_Secrets_Hardcoded",
+      "Android_WebView_JavaScriptEnabled"
+    ],
+    "malware_category": 0,
+    "source": "testing_apps/vuln/pivaa.apk"
+  },
+  "65d5dea69a514bfc17cba435eccfc3028ff64923fbc825ff8411ed69b9137070": {
+    "certificate_anomaly": 1,
+    "class": "india_malware",
+    "entity": "ICICI Bank",
+    "findings": 5,
+    "l0_verdict": "impersonation_likely",
+    "l1_rules": [
+      "APK_Valid_Structure_Check",
+      "Android_Crypto_StaticIV",
+      "Android_Secrets_Hardcoded"
+    ],
+    "malware_category": 1,
+    "source": "AndroidMalware_2022/Sep_infoStealer.zip!6903e41347af87f4c4865c90f2217ea8.apk"
+  },
+  "6eed09c33ecc66299cb741e5f0c90bad4a03a99d0475064c586a667e4af4bee2": {
+    "certificate_anomaly": 0,
+    "class": "india_malware",
+    "entity": "Paytm",
+    "findings": 7,
+    "l0_verdict": "impersonation_suspected",
+    "l1_rules": [
+      "APK_Valid_Structure_Check",
+      "Android_Crypto_StaticIV",
+      "Android_Dynamic_CodeLoading",
+      "Android_Secrets_Hardcoded",
+      "Android_WebView_JavaScriptEnabled",
+      "Android_WebView_JavascriptInterface"
+    ],
+    "malware_category": 1,
+    "source": "AndroidMalware_2020/march_CovidSMSWorm.zip!a2fba41933c2043ccc99f1e4dca83cd0"
+  },
+  "7154ff1166085571073f736aa8664334697e035e11a47f77ecd220aa03855f89": {
+    "certificate_anomaly": 1,
+    "class": "india_malware",
+    "entity": null,
+    "findings": 7,
+    "l0_verdict": "impersonation_suspected",
+    "l1_rules": [
+      "APK_Valid_Structure_Check",
+      "Android_Crypto_StaticIV",
+      "Android_SSL_TrustAll",
+      "Android_Secrets_Hardcoded",
+      "Android_WebView_JavaScriptEnabled",
+      "Android_WebView_JavascriptInterface"
+    ],
+    "malware_category": 0,
+    "source": "AndroidMalware_2021/mayJioTarget.zip!b9db0c60100099d860b9ef42e6b3903a.apk"
+  },
+  "734048bfa55f48a05326dc01295617d932954c02527b8cb0c446234e1a2ac0f7": {
+    "certificate_anomaly": 1,
+    "class": "india_malware",
+    "entity": "ICICI Bank",
+    "findings": 5,
+    "l0_verdict": "impersonation_likely",
+    "l1_rules": [
+      "APK_Valid_Structure_Check",
+      "Android_Crypto_StaticIV",
+      "Android_Secrets_Hardcoded"
+    ],
+    "malware_category": 1,
+    "source": "AndroidMalware_2022/Sep_infoStealer.zip!9c71f5ad54bc05c6253c23596893f587.apk"
+  },
+  "76ea31ed6b2120f42edf174ebdc39fab0f53ac91fef77eb83678bff0ebff4dc0": {
+    "certificate_anomaly": 1,
+    "class": "india_malware",
+    "entity": "Aarogya Setu",
+    "findings": 4,
+    "l0_verdict": "impersonation_likely",
+    "l1_rules": [
+      "APK_Valid_Structure_Check"
+    ],
+    "malware_category": 2,
+    "source": "AndroidMalware_2020/fakeAarogyaSetu.zip!e5e44ac40123023eebd5caf9662f05d1"
+  },
+  "885d07d1532dcce08ae8e0751793ec30ed0152eee3c1321e2d051b2f0e3fa3d7": {
+    "certificate_anomaly": 1,
+    "class": "india_malware",
+    "entity": "Aarogya Setu",
+    "findings": 4,
+    "l0_verdict": "impersonation_likely",
+    "l1_rules": [
+      "APK_Valid_Structure_Check"
+    ],
+    "malware_category": 2,
+    "source": "AndroidMalware_2020/fakeAarogyaSetu.zip!df5698d5aef850b217cbbfa9789bd347"
+  },
+  "8f05ecbb5f9fe721dfcd380669ab7ebb1dffc433ee0c4d5dce9936afa69564b0": {
+    "certificate_anomaly": 1,
+    "class": "india_malware",
+    "entity": "State Bank of India",
+    "findings": 4,
+    "l0_verdict": "impersonation_likely",
+    "l1_rules": [
+      "APK_Valid_Structure_Check",
+      "Android_Secrets_Hardcoded"
+    ],
+    "malware_category": 1,
+    "source": "AndroidMalware_2021/novTargetedIndianBanks.zip!232d093de2029d293393613b2627b97b.apk"
+  },
+  "ae1ce24adbf01b9b0fda2da6dfc58e643588f5e3d10b20464194c8c25b0dfb76": {
+    "certificate_anomaly": 0,
+    "class": "benign",
+    "entity": null,
+    "findings": 2,
+    "l0_verdict": null,
+    "l1_rules": [
+      "Android_Secrets_Hardcoded",
+      "Android_WebView_JavaScriptEnabled"
+    ],
+    "malware_category": 0,
+    "source": "testing_apps/good_apps/com.module.notelycompose.android_33.apk"
+  },
+  "b161760381522ffc61925c8978d633a9644a6a14b8c5f391dd90461251ec5d5f": {
+    "certificate_anomaly": 0,
+    "class": "benign",
+    "entity": null,
+    "findings": 5,
+    "l0_verdict": null,
+    "l1_rules": [
+      "APK_Anomalous_Multiple_DEX_Files",
+      "APK_Valid_Structure_Check",
+      "Android_Secrets_Hardcoded",
+      "Android_WebView_JavaScriptEnabled",
+      "Android_WebView_JavascriptInterface"
+    ],
+    "malware_category": 0,
+    "source": "testing_apps/good_apps/me.proton.android.lumo_50.apk"
+  },
+  "b18af2a0e44d7634bbcdf93664d9c78a2695e050393fcfbb5e8b91f902d194a4": {
+    "certificate_anomaly": 0,
+    "class": "vuln",
+    "entity": null,
+    "findings": 4,
+    "l0_verdict": null,
+    "l1_rules": [
+      "APK_Valid_Structure_Check",
+      "Android_Crypto_StaticIV",
+      "Android_Secrets_Hardcoded",
+      "Android_WebView_JavaScriptEnabled"
+    ],
+    "malware_category": 0,
+    "source": "testing_apps/vuln/InsecureBankv2.apk"
+  },
+  "b4df57d563d3e091f0689407485f99f4bd67df423d3a3ce9b27d221d7f52b459": {
+    "certificate_anomaly": 0,
+    "class": "benign",
+    "entity": null,
+    "findings": 4,
+    "l0_verdict": null,
+    "l1_rules": [
+      "APK_Valid_Structure_Check",
+      "Android_Secrets_Hardcoded",
+      "Android_WebView_JavaScriptEnabled",
+      "Android_WebView_JavascriptInterface"
+    ],
+    "malware_category": 0,
+    "source": "testing_apps/good_apps/org.diekaiju.duckassist_245.apk"
+  },
+  "da4e28acdadfa2924ae0001d9cfbec8c8cc8fd2480236b0da6e9bc7509c921bd": {
+    "certificate_anomaly": 1,
+    "class": "india_malware",
+    "entity": "ICICI Bank",
+    "findings": 5,
+    "l0_verdict": "impersonation_likely",
+    "l1_rules": [
+      "APK_Valid_Structure_Check",
+      "Android_Crypto_StaticIV",
+      "Android_Secrets_Hardcoded"
+    ],
+    "malware_category": 1,
+    "source": "AndroidMalware_2022/Sep_infoStealer.zip!b301c4b060dadf887e53d671aa6a7aff.apk"
+  },
+  "e17f4fc412f2d30169c6da41687bebbbdb390969a38458143c11474a08afec50": {
+    "certificate_anomaly": 1,
+    "class": "india_malware",
+    "entity": null,
+    "findings": 7,
+    "l0_verdict": "impersonation_suspected",
+    "l1_rules": [
+      "APK_Valid_Structure_Check",
+      "Android_Crypto_StaticIV",
+      "Android_SSL_TrustAll",
+      "Android_Secrets_Hardcoded",
+      "Android_WebView_JavaScriptEnabled",
+      "Android_WebView_JavascriptInterface"
+    ],
+    "malware_category": 0,
+    "source": "AndroidMalware_2021/mayJioTarget.zip!2cd7e237cbf99e483573c11a11db9223.apk"
+  },
+  "f733ded73d4f498327480d232e415465c0f5654a69b431da081f83998b49ead2": {
+    "certificate_anomaly": 1,
+    "class": "india_malware",
+    "entity": "Aarogya Setu",
+    "findings": 3,
+    "l0_verdict": "impersonation_likely",
+    "l1_rules": [
+      "APK_Valid_Structure_Check"
+    ],
+    "malware_category": 1,
+    "source": "AndroidMalware_2020/fakeAarogyaSetu.zip!bbe84ba545d652d9e06635a6e89d48b5"
+  }
+}

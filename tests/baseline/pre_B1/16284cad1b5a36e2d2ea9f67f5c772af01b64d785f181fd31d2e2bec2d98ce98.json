@@ -1,0 +1,339 @@
+{
+  "analysis_gaps": [
+    "decompilation_partial",
+    "detonation_not_attempted"
+  ],
+  "counts": {
+    "by_category": {
+      "certificate_anomaly": 1,
+      "other": 3
+    },
+    "by_layer": {
+      "l0": 1,
+      "l1": 3
+    },
+    "by_severity": {
+      "high": 2,
+      "low": 1,
+      "medium": 1
+    },
+    "certificate_anomaly": 1,
+    "findings": 4,
+    "malware_category": 0
+  },
+  "created_at": "2026-08-08T19:17:44.324050+00:00",
+  "findings": [
+    {
+      "category": "certificate_anomaly",
+      "detail": {
+        "l0_finding": {
+          "anomalies": [
+            "debug_keystore",
+            "vendor_claiming_dn"
+          ],
+          "detail": "APK signed with an Android debug keystore \u2014 never used for legitimate distribution.",
+          "severity": "high",
+          "subject": "Common Name: Android Debug, Organization: Android, Country: US",
+          "type": "cert_debug_keystore"
+        },
+        "l0_finding_type": "cert_debug_keystore",
+        "spine_key": "cert_debug_keystore"
+      },
+      "engine": "l0_impersonation",
+      "evidence": "[cert_debug_keystore] APK signed with an Android debug keystore \u2014 never used for legitimate distribution.",
+      "fingerprint": "824885a094cd",
+      "id": "F001",
+      "layer": "l0",
+      "location": "META-INF/ (signing block)",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "high"
+    },
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 1,
+        "locations": [
+          "sources/d/b/a/b/e/h.java"
+        ],
+        "match_count": 2,
+        "matched_string_ids": [
+          "$dc2"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$dc2",
+            "location": "sources/d/b/a/b/e/h.java",
+            "snippet": "PathClassLoader"
+          },
+          {
+            "id": "$dc2",
+            "location": "sources/d/b/a/b/e/h.java",
+            "snippet": "PathClassLoader"
+          }
+        ],
+        "scopes": [
+          "source"
+        ],
+        "yara_rule": "Android_Dynamic_CodeLoading"
+      },
+      "engine": "yara",
+      "evidence": "[Android_Dynamic_CodeLoading] Dynamic class loading detected \u2014 potential code injection or tampering -> PathClassLoader",
+      "fingerprint": "ca98036edd87",
+      "id": "F002",
+      "layer": "l1",
+      "location": "sources/d/b/a/b/e/h.java",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "high"
+    },
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 4,
+        "locations": [
+          "sources/d/b/a/c/a.java",
+          "sources/d/b/a/c/x/h.java",
+          "sources/c/g/l/i.java",
+          "sources/c/b/g/q.java"
+        ],
+        "match_count": 9,
+        "matched_string_ids": [
+          "$pw1"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$pw1",
+            "location": "sources/d/b/a/c/a.java",
+            "snippet": ".password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/d/b/a/c/a.java",
+            "snippet": ".password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/d/b/a/c/a.java",
+            "snippet": ".password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/d/b/a/c/a.java",
+            "snippet": ".password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/d/b/a/c/a.java",
+            "snippet": ".password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/d/b/a/c/x/h.java",
+            "snippet": ".Password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/d/b/a/c/x/h.java",
+            "snippet": ".password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/c/g/l/i.java",
+            "snippet": ".Password"
+          }
+        ],
+        "scopes": [
+          "source"
+        ],
+        "yara_rule": "Android_Secrets_Hardcoded"
+      },
+      "engine": "yara",
+      "evidence": "[Android_Secrets_Hardcoded] Potential hardcoded credential or secret \u2014 review for plaintext secrets -> .password",
+      "fingerprint": "cc1927d9d7c8",
+      "id": "F003",
+      "layer": "l1",
+      "location": "sources/d/b/a/c/a.java",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "medium"
+    },
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 1,
+        "locations": [
+          "sample.apk"
+        ],
+        "match_count": 833,
+        "matched_string_ids": [
+          "$cert1",
+          "$cert2",
+          "$cert4",
+          "$classes",
+          "$hex_cd",
+          "$hex_eocd",
+          "$hex_zip",
+          "$manifest",
+          "$resources"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$manifest",
+            "location": "sample.apk",
+            "snippet": "AndroidManifest.xml"
+          },
+          {
+            "id": "$manifest",
+            "location": "sample.apk",
+            "snippet": "AndroidManifest.xml"
+          },
+          {
+            "id": "$classes",
+            "location": "sample.apk",
+            "snippet": "classes.dex"
+          },
+          {
+            "id": "$classes",
+            "location": "sample.apk",
+            "snippet": "classes.dex"
+          },
+          {
+            "id": "$resources",
+            "location": "sample.apk",
+            "snippet": "resources.arsc"
+          },
+          {
+            "id": "$resources",
+            "location": "sample.apk",
+            "snippet": "resources.arsc"
+          },
+          {
+            "id": "$cert1",
+            "location": "sample.apk",
+            "snippet": "META-INF/"
+          },
+          {
+            "id": "$cert1",
+            "location": "sample.apk",
+            "snippet": "META-INF/"
+          }
+        ],
+        "scopes": [
+          "container"
+        ],
+        "yara_rule": "APK_Valid_Structure_Check"
+      },
+      "engine": "yara",
+      "evidence": "[APK_Valid_Structure_Check] Validates basic APK file structure integrity -> AndroidManifest.xml",
+      "fingerprint": "a983bb24584a",
+      "id": "F004",
+      "layer": "l1",
+      "location": "sample.apk",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "low"
+    }
+  ],
+  "identity": {
+    "app_label": "certificate",
+    "md5": "e014b41953876c61ee1323ffa1823578",
+    "package": "alstom.zjeubopqf.certificate",
+    "sha256": "16284cad1b5a36e2d2ea9f67f5c772af01b64d785f181fd31d2e2bec2d98ce98",
+    "source_apk": "/home/nightwings/cybershield/CyberShield/corpus/_work/s883065397560/sample.apk",
+    "version_name": "1.0"
+  },
+  "layers": {
+    "l0": {
+      "artifact": "L0/artifacts/16284cad1b5a36e2d2ea9f67f5c772af01b64d785f181fd31d2e2bec2d98ce98/evidence.json",
+      "coverage": {
+        "certificate_parsed": true,
+        "icon_extracted": true,
+        "manifest_parsed": true,
+        "permission_count": 25,
+        "reputation_checked": false
+      },
+      "gaps": [],
+      "status": "complete",
+      "summary": {
+        "cert_anomalies": [
+          "debug_keystore",
+          "vendor_claiming_dn"
+        ],
+        "cert_signal": {
+          "cert_detail": "Signer anomalies: debug_keystore, vendor_claiming_dn",
+          "cert_in_whitelist": false,
+          "cert_weight": -0.5
+        },
+        "claimed_entity": null,
+        "matched_bank": null,
+        "reputation_hit": false,
+        "smoking_gun_inputs": {
+          "brand_claim": false,
+          "cert_anomalies": [
+            "debug_keystore",
+            "vendor_claiming_dn"
+          ],
+          "claimed_entity": null,
+          "sms_trifecta": true
+        },
+        "track": "track1_jadx",
+        "verdict": "impersonation_suspected"
+      },
+      "updated_at": "2026-08-08T19:17:44.324079+00:00"
+    },
+    "l1": {
+      "artifact": "L1/artifacts/16284cad1b5a36e2d2ea9f67f5c772af01b64d785f181fd31d2e2bec2d98ce98/analysis.json",
+      "coverage": {
+        "apk_yara_rules": 1,
+        "decompiled_files": 1727,
+        "ghidra_attempted": false,
+        "ghidra_available": false,
+        "ghidra_ok": false,
+        "source_findings": 2
+      },
+      "gaps": [
+        "decompilation_partial"
+      ],
+      "status": "partial",
+      "summary": {
+        "categories": [
+          "other"
+        ],
+        "engine": "jadx+yara",
+        "finding_count": 3,
+        "ruleset_version": "614d58d9a5b9",
+        "severity_counts": {
+          "critical": 0,
+          "high": 1,
+          "info": 0,
+          "low": 1,
+          "medium": 1
+        },
+        "track": "track1_jadx"
+      },
+      "updated_at": "2026-08-08T19:17:53.289616+00:00"
+    },
+    "l2": {
+      "status": "not_attempted"
+    },
+    "l3": {
+      "status": "not_attempted"
+    },
+    "l4": {
+      "status": "not_attempted"
+    },
+    "l5": {
+      "status": "not_attempted"
+    },
+    "l6": {
+      "status": "not_attempted"
+    }
+  },
+  "schema_version": "apk-sentinel-0.2",
+  "sha256": "16284cad1b5a36e2d2ea9f67f5c772af01b64d785f181fd31d2e2bec2d98ce98",
+  "updated_at": "2026-08-08T19:17:53.289826+00:00"
+}

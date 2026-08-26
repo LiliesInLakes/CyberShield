@@ -1,0 +1,65 @@
+{
+  "sha256": "ae1ce24adbf01b9b0fda2da6dfc58e643588f5e3d10b20464194c8c25b0dfb76",
+  "source_apk": "testing_apps/good_apps/com.module.notelycompose.android_33.apk",
+  "engine": "jadx+ghidra",
+  "track": "track1_jadx_then_track2_ghidra",
+  "generated_at": "2026-08-07T05:12:14.754357+00:00",
+  "findings": [
+    {
+      "engine": "yara_source",
+      "category": "other",
+      "severity": "high",
+      "evidence": "[Android_WebView_JavaScriptEnabled] WebView has JavaScript enabled \u2014 increases XSS attack surface -> setJavaScriptEnabled",
+      "location": "sources/com/module/notelycompose/platform/WebViewContent_androidKt.java:$jse",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "detail": {
+        "yara_rule": "Android_WebView_JavaScriptEnabled",
+        "source_file": "sources/com/module/notelycompose/platform/WebViewContent_androidKt.java"
+      }
+    },
+    {
+      "engine": "yara_source",
+      "category": "other",
+      "severity": "medium",
+      "evidence": "[Android_Clipboard_Hijacker] Detects clipboard monitoring and content replacement (clipper malware) -> ClipboardManager",
+      "location": "sources/com/module/notelycompose/platform/PlatformUtils.java:$clip1",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "detail": {
+        "yara_rule": "Android_Clipboard_Hijacker",
+        "source_file": "sources/com/module/notelycompose/platform/PlatformUtils.java"
+      }
+    },
+    {
+      "engine": "yara_source",
+      "category": "other",
+      "severity": "medium",
+      "evidence": "[Android_Secrets_Hardcoded] Potential hardcoded credential or secret \u2014 review for plaintext secrets -> .password",
+      "location": "sources/com/google/android/material/R.java:$pw1",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "detail": {
+        "yara_rule": "Android_Secrets_Hardcoded",
+        "source_file": "sources/com/google/android/material/R.java"
+      }
+    }
+  ],
+  "artifacts": {
+    "decompiled_src": "/home/nightwings/cybershield/CyberShield/L1/artifacts/ae1ce24adbf01b9b0fda2da6dfc58e643588f5e3d10b20464194c8c25b0dfb76/jadx_src"
+  },
+  "summary": {
+    "finding_count": 3,
+    "severity_counts": {
+      "info": 0,
+      "low": 0,
+      "medium": 2,
+      "high": 1,
+      "critical": 0
+    },
+    "categories": [
+      "other"
+    ],
+    "ghidra_run": false
+  }
+}

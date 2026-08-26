@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Virtual environment
+env/
+.env
+.env.local
+
+# Secrets — API keys live here, never in tracked files
+*.key
+secrets/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Project-specific
+L0/artifacts/
+L1/artifacts/
+**/artifacts/
+
+# Tools (downloaded binaries)
+tools/jdk*/
+tools/jadx*/
+tools/jadx-jre*/
+tools/platform-tools*/
+tools/ghidra/ghidra_*_PUBLIC/
+tools/android-sdk/
+tools/frida-server
+
+# APK test files (via LFS)
+# *.apk
+
+# Temp files
+*.log
+*.tmp
+
+# Live malware corpus — NEVER commit. Samples stay password-zipped at rest.
+corpus/
+
+# A4 outputs are regenerable from the spines; the frozen baselines are not.
+L5/weights/
+docs/reports/

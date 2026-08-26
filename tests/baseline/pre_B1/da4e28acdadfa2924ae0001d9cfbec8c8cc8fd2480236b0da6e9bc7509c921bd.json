@@ -1,0 +1,386 @@
+{
+  "analysis_gaps": [
+    "decompilation_partial",
+    "detonation_not_attempted"
+  ],
+  "counts": {
+    "by_category": {
+      "certificate_anomaly": 1,
+      "other": 3,
+      "phishing_impersonation": 1
+    },
+    "by_layer": {
+      "l0": 2,
+      "l1": 3
+    },
+    "by_severity": {
+      "critical": 1,
+      "high": 1,
+      "low": 1,
+      "medium": 2
+    },
+    "certificate_anomaly": 1,
+    "findings": 5,
+    "malware_category": 1
+  },
+  "created_at": "2026-08-08T19:18:44.089149+00:00",
+  "findings": [
+    {
+      "category": "phishing_impersonation",
+      "detail": {
+        "entity": "ICICI Bank",
+        "l0_finding": {
+          "claims": [
+            {
+              "entity": "ICICI Bank",
+              "entity_package": "com.csam.icici.bank.imobile",
+              "matched_phrases": [],
+              "matched_tokens": [
+                "icici"
+              ],
+              "type": "label_brand_token"
+            }
+          ],
+          "detail": "App presents itself as ICICI Bank (label_brand_token) but is not an official ICICI Bank package. Signer is anomalous.",
+          "entities": [
+            "ICICI Bank"
+          ],
+          "entity": "ICICI Bank",
+          "severity": "critical",
+          "type": "brand_impersonation"
+        },
+        "l0_finding_type": "brand_impersonation",
+        "spine_key": "brand_impersonation:ICICI Bank"
+      },
+      "engine": "l0_impersonation",
+      "evidence": "[brand_impersonation] App presents itself as ICICI Bank (label_brand_token) but is not an official ICICI Bank package. Signer is anomalous.",
+      "fingerprint": "d25a411444b9",
+      "id": "F001",
+      "layer": "l0",
+      "location": "AndroidManifest.xml",
+      "mitre_techniques": [
+        "T1655",
+        "T1660"
+      ],
+      "observation": "inferred",
+      "severity": "critical"
+    },
+    {
+      "category": "certificate_anomaly",
+      "detail": {
+        "l0_finding": {
+          "anomalies": [
+            "debug_keystore",
+            "vendor_claiming_dn"
+          ],
+          "detail": "APK signed with an Android debug keystore \u2014 never used for legitimate distribution. App claims to be ICICI Bank.",
+          "severity": "high",
+          "subject": "Common Name: Android Debug, Organization: Android, Country: US",
+          "type": "cert_debug_keystore"
+        },
+        "l0_finding_type": "cert_debug_keystore",
+        "spine_key": "cert_debug_keystore"
+      },
+      "engine": "l0_impersonation",
+      "evidence": "[cert_debug_keystore] APK signed with an Android debug keystore \u2014 never used for legitimate distribution. App claims to be ICICI Bank.",
+      "fingerprint": "824885a094cd",
+      "id": "F002",
+      "layer": "l0",
+      "location": "META-INF/ (signing block)",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "high"
+    },
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 1,
+        "locations": [
+          "sources/s2/a.java"
+        ],
+        "match_count": 2,
+        "matched_string_ids": [
+          "$iv"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$iv",
+            "location": "sources/s2/a.java",
+            "snippet": "IvParameterSpec("
+          },
+          {
+            "id": "$iv",
+            "location": "sources/s2/a.java",
+            "snippet": "IvParameterSpec("
+          }
+        ],
+        "scopes": [
+          "source"
+        ],
+        "yara_rule": "Android_Crypto_StaticIV"
+      },
+      "engine": "yara",
+      "evidence": "[Android_Crypto_StaticIV] IvParameterSpec usage \u2014 verify IV is not hardcoded or static -> IvParameterSpec(",
+      "fingerprint": "499988df8c86",
+      "id": "F003",
+      "layer": "l1",
+      "location": "sources/s2/a.java",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "medium"
+    },
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 7,
+        "locations": [
+          "sources/m0/j.java",
+          "sources/v2/a.java",
+          "sources/p1/a.java",
+          "sources/s2/a.java",
+          "sources/r0/f.java",
+          "sources/com/example/test_app/AutoStartService.java",
+          "sources/com/google/android/material/textfield/c.java"
+        ],
+        "match_count": 12,
+        "matched_string_ids": [
+          "$pw1",
+          "$pw2"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$pw1",
+            "location": "sources/m0/j.java",
+            "snippet": ".Password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/v2/a.java",
+            "snippet": ".Password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/p1/a.java",
+            "snippet": ".password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/p1/a.java",
+            "snippet": ".password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/p1/a.java",
+            "snippet": ".password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/p1/a.java",
+            "snippet": ".password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/p1/a.java",
+            "snippet": ".password"
+          },
+          {
+            "id": "$pw2",
+            "location": "sources/s2/a.java",
+            "snippet": ".Secret"
+          }
+        ],
+        "scopes": [
+          "source"
+        ],
+        "yara_rule": "Android_Secrets_Hardcoded"
+      },
+      "engine": "yara",
+      "evidence": "[Android_Secrets_Hardcoded] Potential hardcoded credential or secret \u2014 review for plaintext secrets -> .Password",
+      "fingerprint": "cc1927d9d7c8",
+      "id": "F004",
+      "layer": "l1",
+      "location": "sources/m0/j.java",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "medium"
+    },
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 1,
+        "locations": [
+          "sample.apk"
+        ],
+        "match_count": 968,
+        "matched_string_ids": [
+          "$cert1",
+          "$cert2",
+          "$cert4",
+          "$classes",
+          "$hex_cd",
+          "$hex_eocd",
+          "$hex_zip",
+          "$manifest",
+          "$resources"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$manifest",
+            "location": "sample.apk",
+            "snippet": "AndroidManifest.xml"
+          },
+          {
+            "id": "$manifest",
+            "location": "sample.apk",
+            "snippet": "AndroidManifest.xml"
+          },
+          {
+            "id": "$classes",
+            "location": "sample.apk",
+            "snippet": "classes.dex"
+          },
+          {
+            "id": "$classes",
+            "location": "sample.apk",
+            "snippet": "classes.dex"
+          },
+          {
+            "id": "$resources",
+            "location": "sample.apk",
+            "snippet": "resources.arsc"
+          },
+          {
+            "id": "$resources",
+            "location": "sample.apk",
+            "snippet": "resources.arsc"
+          },
+          {
+            "id": "$cert1",
+            "location": "sample.apk",
+            "snippet": "META-INF/"
+          },
+          {
+            "id": "$cert1",
+            "location": "sample.apk",
+            "snippet": "META-INF/"
+          }
+        ],
+        "scopes": [
+          "container"
+        ],
+        "yara_rule": "APK_Valid_Structure_Check"
+      },
+      "engine": "yara",
+      "evidence": "[APK_Valid_Structure_Check] Validates basic APK file structure integrity -> AndroidManifest.xml",
+      "fingerprint": "a983bb24584a",
+      "id": "F005",
+      "layer": "l1",
+      "location": "sample.apk",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "low"
+    }
+  ],
+  "identity": {
+    "app_label": "ICICI Rewards",
+    "impersonates": "ICICI Bank",
+    "md5": "b301c4b060dadf887e53d671aa6a7aff",
+    "package": "com.example.test_app",
+    "sha256": "da4e28acdadfa2924ae0001d9cfbec8c8cc8fd2480236b0da6e9bc7509c921bd",
+    "source_apk": "/home/nightwings/cybershield/CyberShield/corpus/_work/s885226095265/sample.apk",
+    "version_name": "1.0"
+  },
+  "layers": {
+    "l0": {
+      "artifact": "L0/artifacts/da4e28acdadfa2924ae0001d9cfbec8c8cc8fd2480236b0da6e9bc7509c921bd/evidence.json",
+      "coverage": {
+        "certificate_parsed": true,
+        "icon_extracted": true,
+        "manifest_parsed": true,
+        "permission_count": 16,
+        "reputation_checked": false
+      },
+      "gaps": [],
+      "status": "complete",
+      "summary": {
+        "cert_anomalies": [
+          "debug_keystore",
+          "vendor_claiming_dn"
+        ],
+        "cert_signal": {
+          "cert_detail": "Signer anomalies: debug_keystore, vendor_claiming_dn",
+          "cert_in_whitelist": false,
+          "cert_weight": -0.9
+        },
+        "claimed_entity": "ICICI Bank",
+        "matched_bank": null,
+        "reputation_hit": false,
+        "smoking_gun_inputs": {
+          "brand_claim": true,
+          "cert_anomalies": [
+            "debug_keystore",
+            "vendor_claiming_dn"
+          ],
+          "claimed_entity": "ICICI Bank",
+          "sms_trifecta": false
+        },
+        "track": "track1_jadx",
+        "verdict": "impersonation_likely"
+      },
+      "updated_at": "2026-08-08T19:18:44.089186+00:00"
+    },
+    "l1": {
+      "artifact": "L1/artifacts/da4e28acdadfa2924ae0001d9cfbec8c8cc8fd2480236b0da6e9bc7509c921bd/analysis.json",
+      "coverage": {
+        "apk_yara_rules": 1,
+        "decompiled_files": 853,
+        "ghidra_attempted": false,
+        "ghidra_available": false,
+        "ghidra_ok": false,
+        "source_findings": 2
+      },
+      "gaps": [
+        "decompilation_partial"
+      ],
+      "status": "partial",
+      "summary": {
+        "categories": [
+          "other"
+        ],
+        "engine": "jadx+yara",
+        "finding_count": 3,
+        "ruleset_version": "614d58d9a5b9",
+        "severity_counts": {
+          "critical": 0,
+          "high": 0,
+          "info": 0,
+          "low": 1,
+          "medium": 2
+        },
+        "track": "track1_jadx"
+      },
+      "updated_at": "2026-08-08T19:18:48.887095+00:00"
+    },
+    "l2": {
+      "status": "not_attempted"
+    },
+    "l3": {
+      "status": "not_attempted"
+    },
+    "l4": {
+      "status": "not_attempted"
+    },
+    "l5": {
+      "status": "not_attempted"
+    },
+    "l6": {
+      "status": "not_attempted"
+    }
+  },
+  "schema_version": "apk-sentinel-0.2",
+  "sha256": "da4e28acdadfa2924ae0001d9cfbec8c8cc8fd2480236b0da6e9bc7509c921bd",
+  "updated_at": "2026-08-08T19:18:48.887333+00:00"
+}

@@ -1,0 +1,82 @@
+{
+  "family": "Hydra",
+  "source_file": "C:\\Users\\DELL\\AppData\\Local\\Temp\\tmpupttmb73\\c4844236e849260e5bd9d1a1d548c11667bc9f7c8c645c0a36180287a4fd48a7.apk",
+  "fingerprint": {
+    "md5": "9277a80e4e55c8d79db6f99406c792ec",
+    "sha256": "c4844236e849260e5bd9d1a1d548c11667bc9f7c8c645c0a36180287a4fd48a7"
+  },
+  "manifest": {
+    "package_name": "com.tdqjgkem.crspygc",
+    "app_label": "Video Player",
+    "version_name": "6.0",
+    "version_code": "6",
+    "min_sdk": "19",
+    "target_sdk": "24",
+    "permissions": [
+      "android.permission.ACCESS_NETWORK_STATE",
+      "android.permission.ACCESS_NOTIFICATION_POLICY",
+      "android.permission.ACCESS_WIFI_STATE",
+      "android.permission.CALL_PHONE",
+      "android.permission.CAPTURE_VIDEO_OUTPUT",
+      "android.permission.CHANGE_WIFI_STATE",
+      "android.permission.DISABLE_KEYGUARD",
+      "android.permission.INTERNET",
+      "android.permission.MODIFY_AUDIO_SETTINGS",
+      "android.permission.READ_CONTACTS",
+      "android.permission.READ_SMS",
+      "android.permission.RECEIVE_BOOT_COMPLETED",
+      "android.permission.RECEIVE_SMS",
+      "android.permission.REORDER_TASKS",
+      "android.permission.REQUEST_DELETE_PACKAGES",
+      "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS",
+      "android.permission.REQUEST_INSTALL_PACKAGES",
+      "android.permission.SEND_SMS",
+      "android.permission.SYSTEM_ALERT_WINDOW",
+      "android.permission.WAKE_LOCK",
+      "android.permission.WRITE_EXTERNAL_STORAGE",
+      "android.permission.WRITE_SMS"
+    ],
+    "permission_count": 22,
+    "high_risk_permissions": [
+      "android.permission.CALL_PHONE",
+      "android.permission.READ_CONTACTS",
+      "android.permission.READ_SMS",
+      "android.permission.RECEIVE_BOOT_COMPLETED",
+      "android.permission.RECEIVE_SMS",
+      "android.permission.REQUEST_INSTALL_PACKAGES",
+      "android.permission.SEND_SMS",
+      "android.permission.SYSTEM_ALERT_WINDOW",
+      "android.permission.WRITE_EXTERNAL_STORAGE"
+    ],
+    "high_risk_permission_count": 9
+  },
+  "icon": {
+    "present": true,
+    "phash": "ceb861c69331ccce",
+    "source": "res/mipmap-xxxhdpi/ic_launcher.png",
+    "saved_path": "dataset\\Hydra\\c4844236e849260e5bd9d1a1d548c11667bc9f7c8c645c0a36180287a4fd48a7\\icon.png"
+  },
+  "routing": {
+    "track": "track1_jadx",
+    "dex_files": [
+      "classes.dex"
+    ],
+    "dex_count": 1,
+    "native_libs": [],
+    "native_lib_count": 0,
+    "native_arches": [],
+    "framework_indicators": [
+      "flutter"
+    ],
+    "packing_signals": [],
+    "routing_decisions": [
+      {
+        "engine": "jadx",
+        "targets": [
+          "classes.dex"
+        ],
+        "reason": "Dalvik bytecode present; decompile smali to Java for static triage."
+      }
+    ]
+  }
+}

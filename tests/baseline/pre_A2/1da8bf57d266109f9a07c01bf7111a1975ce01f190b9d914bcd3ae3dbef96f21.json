@@ -1,0 +1,40 @@
+{
+  "sha256": "1da8bf57d266109f9a07c01bf7111a1975ce01f190b9d914bcd3ae3dbef96f21",
+  "source_apk": "testing_apps/vuln/uncrackable-level1.apk",
+  "engine": "jadx+yara",
+  "track": "track1_jadx",
+  "generated_at": "2026-08-07T05:09:37.410728+00:00",
+  "findings": [
+    {
+      "engine": "yara_source",
+      "category": "other",
+      "severity": "medium",
+      "evidence": "[Android_Secrets_Hardcoded] Potential hardcoded credential or secret \u2014 review for plaintext secrets -> .Secret",
+      "location": "sources/sg/vantagepoint/a/a.java:$pw2",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "detail": {
+        "yara_rule": "Android_Secrets_Hardcoded",
+        "source_file": "sources/sg/vantagepoint/a/a.java"
+      }
+    }
+  ],
+  "artifacts": {
+    "decompiled_src": "/home/nightwings/cybershield/CyberShield/L1/artifacts/1da8bf57d266109f9a07c01bf7111a1975ce01f190b9d914bcd3ae3dbef96f21/jadx_src"
+  },
+  "summary": {
+    "finding_count": 1,
+    "severity_counts": {
+      "info": 0,
+      "low": 0,
+      "medium": 1,
+      "high": 0,
+      "critical": 0
+    },
+    "categories": [
+      "other"
+    ],
+    "decompiled_files": 6,
+    "source_findings": 1
+  }
+}

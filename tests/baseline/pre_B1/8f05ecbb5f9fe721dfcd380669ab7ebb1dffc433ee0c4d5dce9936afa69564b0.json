@@ -1,0 +1,353 @@
+{
+  "analysis_gaps": [
+    "detonation_not_attempted"
+  ],
+  "counts": {
+    "by_category": {
+      "certificate_anomaly": 1,
+      "other": 2,
+      "phishing_impersonation": 1
+    },
+    "by_layer": {
+      "l0": 2,
+      "l1": 2
+    },
+    "by_severity": {
+      "critical": 1,
+      "high": 1,
+      "low": 1,
+      "medium": 1
+    },
+    "certificate_anomaly": 1,
+    "findings": 4,
+    "malware_category": 1
+  },
+  "created_at": "2026-08-08T17:13:43.398898+00:00",
+  "findings": [
+    {
+      "category": "phishing_impersonation",
+      "detail": {
+        "entity": "State Bank of India",
+        "l0_finding": {
+          "claims": [
+            {
+              "entity": "State Bank of India",
+              "entity_package": "com.sbi.lotusintouch",
+              "matched_phrases": [],
+              "matched_tokens": [
+                "sbi"
+              ],
+              "type": "label_brand_token"
+            },
+            {
+              "entity": "State Bank of India",
+              "official_package": "com.sbi.lotusintouch",
+              "type": "package_namespace_squat",
+              "vendor_prefix": "com.sbi"
+            },
+            {
+              "entity": "State Bank of India",
+              "matched_segments": [
+                "sbi"
+              ],
+              "official_package": "com.sbi.lotusintouch",
+              "type": "package_brand_segment"
+            }
+          ],
+          "detail": "App presents itself as State Bank of India (label_brand_token, package_namespace_squat, package_brand_segment) but is not an official State Bank of India package. Signer is anomalous.",
+          "entities": [
+            "State Bank of India"
+          ],
+          "entity": "State Bank of India",
+          "severity": "critical",
+          "type": "brand_impersonation"
+        },
+        "l0_finding_type": "brand_impersonation",
+        "spine_key": "brand_impersonation:State Bank of India"
+      },
+      "engine": "l0_impersonation",
+      "evidence": "[brand_impersonation] App presents itself as State Bank of India (label_brand_token, package_namespace_squat, package_brand_segment) but is not an official State Bank of India package. Signer is anomalous.",
+      "fingerprint": "6eaec0f372c7",
+      "id": "F001",
+      "layer": "l0",
+      "location": "AndroidManifest.xml",
+      "mitre_techniques": [
+        "T1655",
+        "T1660"
+      ],
+      "observation": "inferred",
+      "severity": "critical"
+    },
+    {
+      "category": "certificate_anomaly",
+      "detail": {
+        "l0_finding": {
+          "anomalies": [
+            "debug_keystore",
+            "vendor_claiming_dn"
+          ],
+          "detail": "APK signed with an Android debug keystore \u2014 never used for legitimate distribution. App claims to be State Bank of India.",
+          "severity": "high",
+          "subject": "Common Name: Android Debug, Organization: Android, Country: US",
+          "type": "cert_debug_keystore"
+        },
+        "l0_finding_type": "cert_debug_keystore",
+        "spine_key": "cert_debug_keystore"
+      },
+      "engine": "l0_impersonation",
+      "evidence": "[cert_debug_keystore] APK signed with an Android debug keystore \u2014 never used for legitimate distribution. App claims to be State Bank of India.",
+      "fingerprint": "824885a094cd",
+      "id": "F002",
+      "layer": "l0",
+      "location": "META-INF/ (signing block)",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "high"
+    },
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 3,
+        "locations": [
+          "sources/com/sbi/complaintregister/R.java",
+          "sources/com/google/android/material/R.java",
+          "sources/com/google/android/material/textfield/PasswordToggleEndIconDelegate.java"
+        ],
+        "match_count": 17,
+        "matched_string_ids": [
+          "$pw1"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$pw1",
+            "location": "sources/com/sbi/complaintregister/R.java",
+            "snippet": ".password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/com/sbi/complaintregister/R.java",
+            "snippet": ".password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/com/sbi/complaintregister/R.java",
+            "snippet": ".password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/com/sbi/complaintregister/R.java",
+            "snippet": ".password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/com/sbi/complaintregister/R.java",
+            "snippet": ".password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/com/google/android/material/R.java",
+            "snippet": ".password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/com/google/android/material/R.java",
+            "snippet": ".password"
+          },
+          {
+            "id": "$pw1",
+            "location": "sources/com/google/android/material/R.java",
+            "snippet": ".password"
+          }
+        ],
+        "scopes": [
+          "source"
+        ],
+        "yara_rule": "Android_Secrets_Hardcoded"
+      },
+      "engine": "yara",
+      "evidence": "[Android_Secrets_Hardcoded] Potential hardcoded credential or secret \u2014 review for plaintext secrets -> .password",
+      "fingerprint": "cc1927d9d7c8",
+      "id": "F003",
+      "layer": "l1",
+      "location": "sources/com/sbi/complaintregister/R.java",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "medium"
+    },
+    {
+      "category": "other",
+      "detail": {
+        "location_count": 1,
+        "locations": [
+          "sample.apk"
+        ],
+        "match_count": 781,
+        "matched_string_ids": [
+          "$cert1",
+          "$cert2",
+          "$cert4",
+          "$classes",
+          "$hex_cd",
+          "$hex_eocd",
+          "$hex_zip",
+          "$manifest",
+          "$resources"
+        ],
+        "rule_file": "",
+        "samples": [
+          {
+            "id": "$manifest",
+            "location": "sample.apk",
+            "snippet": "AndroidManifest.xml"
+          },
+          {
+            "id": "$manifest",
+            "location": "sample.apk",
+            "snippet": "AndroidManifest.xml"
+          },
+          {
+            "id": "$classes",
+            "location": "sample.apk",
+            "snippet": "classes.dex"
+          },
+          {
+            "id": "$classes",
+            "location": "sample.apk",
+            "snippet": "classes.dex"
+          },
+          {
+            "id": "$resources",
+            "location": "sample.apk",
+            "snippet": "resources.arsc"
+          },
+          {
+            "id": "$resources",
+            "location": "sample.apk",
+            "snippet": "resources.arsc"
+          },
+          {
+            "id": "$cert1",
+            "location": "sample.apk",
+            "snippet": "META-INF/"
+          },
+          {
+            "id": "$cert1",
+            "location": "sample.apk",
+            "snippet": "META-INF/"
+          }
+        ],
+        "scopes": [
+          "container"
+        ],
+        "yara_rule": "APK_Valid_Structure_Check"
+      },
+      "engine": "yara",
+      "evidence": "[APK_Valid_Structure_Check] Validates basic APK file structure integrity -> AndroidManifest.xml",
+      "fingerprint": "a983bb24584a",
+      "id": "F004",
+      "layer": "l1",
+      "location": "sample.apk",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "severity": "low"
+    }
+  ],
+  "identity": {
+    "app_label": "SBI Quick Support",
+    "impersonates": "State Bank of India",
+    "md5": "232d093de2029d293393613b2627b97b",
+    "package": "com.sbi.complaintregister",
+    "sha256": "8f05ecbb5f9fe721dfcd380669ab7ebb1dffc433ee0c4d5dce9936afa69564b0",
+    "source_apk": "/home/nightwings/cybershield/CyberShield/corpus/_work/s880218869015/sample.apk",
+    "version_name": "1.0"
+  },
+  "layers": {
+    "l0": {
+      "artifact": "L0/artifacts/8f05ecbb5f9fe721dfcd380669ab7ebb1dffc433ee0c4d5dce9936afa69564b0/evidence.json",
+      "coverage": {
+        "certificate_parsed": true,
+        "icon_extracted": true,
+        "manifest_parsed": true,
+        "permission_count": 9,
+        "reputation_checked": false
+      },
+      "gaps": [],
+      "status": "complete",
+      "summary": {
+        "cert_anomalies": [
+          "debug_keystore",
+          "vendor_claiming_dn"
+        ],
+        "cert_signal": {
+          "cert_detail": "Signer anomalies: debug_keystore, vendor_claiming_dn",
+          "cert_in_whitelist": false,
+          "cert_weight": -0.9
+        },
+        "claimed_entity": "State Bank of India",
+        "matched_bank": null,
+        "reputation_hit": false,
+        "smoking_gun_inputs": {
+          "brand_claim": true,
+          "cert_anomalies": [
+            "debug_keystore",
+            "vendor_claiming_dn"
+          ],
+          "claimed_entity": "State Bank of India",
+          "sms_trifecta": true
+        },
+        "track": "track1_jadx",
+        "verdict": "impersonation_likely"
+      },
+      "updated_at": "2026-08-08T18:39:47.417367+00:00"
+    },
+    "l1": {
+      "artifact": "L1/artifacts/8f05ecbb5f9fe721dfcd380669ab7ebb1dffc433ee0c4d5dce9936afa69564b0/analysis.json",
+      "coverage": {
+        "apk_yara_rules": 1,
+        "decompiled_files": 1156,
+        "ghidra_attempted": false,
+        "ghidra_available": false,
+        "ghidra_ok": false,
+        "source_findings": 1
+      },
+      "gaps": [],
+      "status": "complete",
+      "summary": {
+        "categories": [
+          "other"
+        ],
+        "engine": "jadx+yara",
+        "finding_count": 2,
+        "ruleset_version": "614d58d9a5b9",
+        "severity_counts": {
+          "critical": 0,
+          "high": 0,
+          "info": 0,
+          "low": 1,
+          "medium": 1
+        },
+        "track": "track1_jadx"
+      },
+      "updated_at": "2026-08-08T18:39:53.791291+00:00"
+    },
+    "l2": {
+      "status": "not_attempted"
+    },
+    "l3": {
+      "status": "not_attempted"
+    },
+    "l4": {
+      "status": "not_attempted"
+    },
+    "l5": {
+      "status": "not_attempted"
+    },
+    "l6": {
+      "status": "not_attempted"
+    }
+  },
+  "schema_version": "apk-sentinel-0.2",
+  "sha256": "8f05ecbb5f9fe721dfcd380669ab7ebb1dffc433ee0c4d5dce9936afa69564b0",
+  "updated_at": "2026-08-08T18:39:53.791530+00:00"
+}

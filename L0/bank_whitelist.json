@@ -1,0 +1,932 @@
+{
+  "description": "Trusted Indian bank/fintech/UPI app identities for L0 impersonation detection. cert_sha256 and icon_phash populated progressively via cert_registry.py and register_icon.py.",
+  "banks": [
+    {
+      "bank_name": "State Bank of India",
+      "package_name": "com.sbi.lotusintouch",
+      "app_label": "YONO SBI",
+      "alt_labels": [
+        "योनो SBI",
+        "YONO Lite SBI",
+        "SBI Anywhere",
+        "SBI YONO"
+      ],
+      "icon_phash": null,
+      "cert_sha256": null,
+      "brand_tokens": {
+        "strong": [
+          "sbi",
+          "yono"
+        ],
+        "phrase": [
+          "state bank of india"
+        ]
+      },
+      "package_verified": true,
+      "vendor_prefixes": [
+        "com.sbi"
+      ],
+      "known_packages": [
+        "com.sbi.lotusintouch"
+      ]
+    },
+    {
+      "bank_name": "Punjab National Bank",
+      "package_name": "com.fss.pnbpsp",
+      "app_label": "PNB ONE",
+      "alt_labels": [
+        "PNB Mobile Banking",
+        "पीएनबी वन"
+      ],
+      "icon_phash": null,
+      "cert_sha256": null,
+      "brand_tokens": {
+        "strong": [
+          "pnb"
+        ],
+        "phrase": [
+          "punjab national bank"
+        ]
+      },
+      "package_verified": false,
+      "vendor_prefixes": [],
+      "known_packages": [
+        "com.fss.pnbpsp"
+      ]
+    },
+    {
+      "bank_name": "Bank of Baroda",
+      "package_name": "com.bankofbaroda.mconnect",
+      "app_label": "bob World",
+      "alt_labels": [
+        "Bank of Baroda",
+        "बॉब वर्ल्ड"
+      ],
+      "icon_phash": null,
+      "cert_sha256": null,
+      "brand_tokens": {
+        "strong": [
+          "baroda"
+        ],
+        "phrase": [
+          "bank of baroda"
+        ]
+      },
+      "package_verified": false,
+      "vendor_prefixes": [],
+      "known_packages": [
+        "com.bankofbaroda.mconnect"
+      ]
+    },
+    {
+      "bank_name": "Canara Bank",
+      "package_name": "com.canarabank.mobility",
+      "app_label": "Canara ai1",
+      "alt_labels": [
+        "Canara Bank Mobile Banking",
+        "केनरा बैंक"
+      ],
+      "icon_phash": null,
+      "cert_sha256": null,
+      "brand_tokens": {
+        "strong": [
+          "canara"
+        ],
+        "phrase": []
+      },
+      "package_verified": false,
+      "vendor_prefixes": [],
+      "known_packages": [
+        "com.canarabank.mobility"
+      ]
+    },
+    {
+      "bank_name": "Union Bank of India",
+      "package_name": "com.infrasoft.uboi",
+      "app_label": "Union Bank Mobile Banking",
+      "alt_labels": [
+        "Union Bank",
+        "यूनियन बैंक"
+      ],
+      "icon_phash": null,
+      "cert_sha256": null,
+      "brand_tokens": {
+        "strong": [],
+        "phrase": [
+          "union bank of india"
+        ]
+      },
+      "package_verified": false,
+      "vendor_prefixes": [],
+      "known_packages": [
+        "com.infrasoft.uboi"
+      ]
+    },
+    {
+      "bank_name": "Bank of India",
+      "package_name": "com.boi.ua.android",
+      "app_label": "BOI Mobile",
+      "alt_labels": [
+        "BOI Omni Neo",
+        "बैंक ऑफ इंडिया",
+        "Bank of India Mobile"
+      ],
+      "icon_phash": null,
+      "cert_sha256": null,
+      "brand_tokens": {
+        "strong": [
+          "boi"
+        ],
+        "phrase": [
+          "bank of india"
+        ]
+      },
+      "package_verified": false,
+      "vendor_prefixes": [],
+      "known_packages": [
+        "com.boi.ua.android"
+      ]
+    },
+    {
+      "bank_name": "Indian Bank",
+      "package_name": "com.IndianBank.IndOASIS",
+      "app_label": "IndOASIS",
+      "alt_labels": [
+        "Indian Bank",
+        "इंडियन बैंक"
+      ],
+      "icon_phash": null,
+      "cert_sha256": null,
+      "brand_tokens": {
+        "strong": [
+          "indoasis"
+        ],
+        "phrase": [
+          "indian bank"
+        ]
+      },
+      "package_verified": false,
+      "vendor_prefixes": [],
+      "known_packages": [
+        "com.IndianBank.IndOASIS"
+      ]
+    },
+    {
+      "bank_name": "Central Bank of India",
+      "package_name": "com.infrasofttech.centraborod",
+      "app_label": "Cent Mobile",
+      "alt_labels": [
+        "Central Bank of India",
+        "सेंट्रल बैंक"
+      ],
+      "icon_phash": null,
+      "cert_sha256": null,
+      "brand_tokens": {
+        "strong": [],
+        "phrase": [
+          "central bank of india"
+        ]
+      },
+      "package_verified": false,
+      "vendor_prefixes": [],
+      "known_packages": [
+        "com.infrasofttech.centraborod"
+      ]
+    },
+    {
+      "bank_name": "Indian Overseas Bank",
+      "package_name": "com.iob.appathon",
+      "app_label": "IOB Appathon",
+      "alt_labels": [
+        "IOB Mobile Banking",
+        "इंडियन ओवरसीज बैंक"
+      ],
+      "icon_phash": null,
+      "cert_sha256": null,
+      "brand_tokens": {
+        "strong": [
+          "iob"
+        ],
+        "phrase": [
+          "indian overseas bank"
+        ]
+      },
+      "package_verified": false,
+      "vendor_prefixes": [],
+      "known_packages": [
+        "com.iob.appathon"
+      ]
+    },
+    {
+      "bank_name": "UCO Bank",
+      "package_name": "com.uco.ucomobile",
+      "app_label": "UCO mBanking",
+      "alt_labels": [
+        "UCO Bank",
+        "यूको बैंक"
+      ],
+      "icon_phash": null,
+      "cert_sha256": null,
+      "brand_tokens": {
+        "strong": [
+          "uco"
+        ],
+        "phrase": [
+          "uco bank"
+        ]
+      },
+      "package_verified": false,
+      "vendor_prefixes": [],
+      "known_packages": [
+        "com.uco.ucomobile"
+      ]
+    },
+    {
+      "bank_name": "Bank of Maharashtra",
+      "package_name": "com.mbanking",
+      "app_label": "Maha Mobile",
+      "alt_labels": [
+        "Bank of Maharashtra",
+        "बैंक ऑफ महाराष्ट्र"
+      ],
+      "icon_phash": null,
+      "cert_sha256": null,
+      "brand_tokens": {
+        "strong": [
+          "mahabank"
+        ],
+        "phrase": [
+          "bank of maharashtra"
+        ]
+      },
+      "package_verified": false,
+      "vendor_prefixes": [],
+      "known_packages": [
+        "com.mbanking"
+      ]
+    },
+    {
+      "bank_name": "Punjab & Sind Bank",
+      "package_name": "com.mgs.psbapp",
+      "app_label": "PSB UniC",
+      "alt_labels": [
+        "Punjab and Sind Bank",
+        "पंजाब एंड सिंध बैंक"
+      ],
+      "icon_phash": null,
+      "cert_sha256": null,
+      "brand_tokens": {
+        "strong": [
+          "psb"
+        ],
+        "phrase": [
+          "punjab and sind bank",
+          "punjab sind bank"
+        ]
+      },
+      "package_verified": false,
+      "vendor_prefixes": [],
+      "known_packages": [
+        "com.mgs.psbapp"
+      ]
+    },
+    {
+      "bank_name": "HDFC Bank",
+      "package_name": "com.snapwork.hdfc",
+      "app_label": "HDFC Bank MobileBanking",
+      "alt_labels": [
+        "HDFC Bank",
+        "एचडीएफसी बैंक"
+      ],
+      "icon_phash": null,
+      "cert_sha256": null,
+      "brand_tokens": {
+        "strong": [
+          "hdfc"
+        ],
+        "phrase": []
+      },
+      "package_verified": false,
+      "vendor_prefixes": [],
+      "known_packages": [
+        "com.snapwork.hdfc"
+      ]
+    },
+    {
+      "bank_name": "ICICI Bank",
+      "package_name": "com.csam.icici.bank.imobile",
+      "app_label": "iMobile Pay",
+      "alt_labels": [
+        "ICICI Bank",
+        "आईसीआईसीआई बैंक",
+        "iMobile"
+      ],
+      "icon_phash": null,
+      "cert_sha256": null,
+      "brand_tokens": {
+        "strong": [
+          "icici",
+          "imobile"
+        ],
+        "phrase": []
+      },
+      "package_verified": false,
+      "vendor_prefixes": [],
+      "known_packages": [
+        "com.csam.icici.bank.imobile"
+      ]
+    },
+    {
+      "bank_name": "Axis Bank",
+      "package_name": "com.upi.axispay",
+      "app_label": "Axis Mobile",
+      "alt_labels": [
+        "Axis Bank",
+        "एक्सिस बैंक"
+      ],
+      "icon_phash": null,
+      "cert_sha256": null,
+      "brand_tokens": {
+        "strong": [
+          "axis"
+        ],
+        "phrase": []
+      },
+      "package_verified": false,
+      "vendor_prefixes": [],
+      "known_packages": [
+        "com.upi.axispay"
+      ]
+    },
+    {
+      "bank_name": "Kotak Mahindra Bank",
+      "package_name": "com.msf.koenig",
+      "app_label": "Kotak Mobile Banking",
+      "alt_labels": [
+        "Kotak Bank",
+        "कोटक बैंक"
+      ],
+      "icon_phash": null,
+      "cert_sha256": null,
+      "brand_tokens": {
+        "strong": [
+          "kotak"
+        ],
+        "phrase": [
+          "kotak mahindra"
+        ]
+      },
+      "package_verified": false,
+      "vendor_prefixes": [],
+      "known_packages": [
+        "com.msf.koenig"
+      ]
+    },
+    {
+      "bank_name": "IndusInd Bank",
+      "package_name": "com.indusind.mobilebanking",
+      "app_label": "IndusMobile",
+      "alt_labels": [
+        "IndusInd Bank",
+        "इंडसइंड बैंक"
+      ],
+      "icon_phash": null,
+      "cert_sha256": null,
+      "brand_tokens": {
+        "strong": [
+          "indusind"
+        ],
+        "phrase": []
+      },
+      "package_verified": false,
+      "vendor_prefixes": [],
+      "known_packages": [
+        "com.indusind.mobilebanking"
+      ]
+    },
+    {
+      "bank_name": "Yes Bank",
+      "package_name": "com.yesbank",
+      "app_label": "YES MOBILE",
+      "alt_labels": [
+        "Yes Bank",
+        "यस बैंक"
+      ],
+      "icon_phash": null,
+      "cert_sha256": null,
+      "brand_tokens": {
+        "strong": [],
+        "phrase": [
+          "yes bank"
+        ]
+      },
+      "package_verified": false,
+      "vendor_prefixes": [],
+      "known_packages": [
+        "com.yesbank"
+      ]
+    },
+    {
+      "bank_name": "IDFC First Bank",
+      "package_name": "com.idfcfirstbank.optimus",
+      "app_label": "IDFC FIRST Bank",
+      "alt_labels": [
+        "IDFC First",
+        "आईडीएफसी फर्स्ट बैंक"
+      ],
+      "icon_phash": null,
+      "cert_sha256": null,
+      "brand_tokens": {
+        "strong": [
+          "idfc"
+        ],
+        "phrase": []
+      },
+      "package_verified": false,
+      "vendor_prefixes": [],
+      "known_packages": [
+        "com.idfcfirstbank.optimus"
+      ]
+    },
+    {
+      "bank_name": "Federal Bank",
+      "package_name": "com.fedmobile",
+      "app_label": "Fedmobile",
+      "alt_labels": [
+        "Federal Bank",
+        "फेडरल बैंक"
+      ],
+      "icon_phash": null,
+      "cert_sha256": null,
+      "brand_tokens": {
+        "strong": [
+          "fedmobile"
+        ],
+        "phrase": [
+          "federal bank"
+        ]
+      },
+      "package_verified": false,
+      "vendor_prefixes": [],
+      "known_packages": [
+        "com.fedmobile"
+      ]
+    },
+    {
+      "bank_name": "BHIM",
+      "package_name": "in.org.npci.upiapp",
+      "app_label": "BHIM",
+      "alt_labels": [
+        "BHIM UPI",
+        "भीम"
+      ],
+      "icon_phash": null,
+      "cert_sha256": null,
+      "brand_tokens": {
+        "strong": [
+          "bhim"
+        ],
+        "phrase": []
+      },
+      "package_verified": false,
+      "vendor_prefixes": [],
+      "known_packages": [
+        "in.org.npci.upiapp"
+      ]
+    },
+    {
+      "bank_name": "PhonePe",
+      "package_name": "com.phonepe.app",
+      "app_label": "PhonePe",
+      "alt_labels": [
+        "Phone Pe",
+        "फोनपे"
+      ],
+      "icon_phash": null,
+      "cert_sha256": null,
+      "brand_tokens": {
+        "strong": [
+          "phonepe"
+        ],
+        "phrase": [
+          "phone pe"
+        ]
+      },
+      "package_verified": false,
+      "vendor_prefixes": [],
+      "known_packages": [
+        "com.phonepe.app"
+      ]
+    },
+    {
+      "bank_name": "Google Pay India",
+      "package_name": "com.google.android.apps.nbu.paisa.user",
+      "app_label": "Google Pay",
+      "alt_labels": [
+        "GPay",
+        "गूगल पे"
+      ],
+      "icon_phash": null,
+      "cert_sha256": null,
+      "brand_tokens": {
+        "strong": [
+          "gpay"
+        ],
+        "phrase": [
+          "google pay"
+        ]
+      },
+      "package_verified": false,
+      "vendor_prefixes": [],
+      "known_packages": [
+        "com.google.android.apps.nbu.paisa.user"
+      ]
+    },
+    {
+      "bank_name": "Paytm",
+      "package_name": "net.one97.paytm",
+      "app_label": "Paytm",
+      "alt_labels": [
+        "Paytm UPI",
+        "पेटीएम"
+      ],
+      "icon_phash": null,
+      "cert_sha256": null,
+      "brand_tokens": {
+        "strong": [
+          "paytm"
+        ],
+        "phrase": []
+      },
+      "package_verified": false,
+      "vendor_prefixes": [],
+      "known_packages": [
+        "net.one97.paytm"
+      ]
+    },
+    {
+      "bank_name": "CRED",
+      "package_name": "com.dreamplug.androidapp",
+      "app_label": "CRED",
+      "alt_labels": [],
+      "icon_phash": null,
+      "cert_sha256": null,
+      "brand_tokens": {
+        "strong": [
+          "cred"
+        ],
+        "phrase": []
+      },
+      "package_verified": false,
+      "vendor_prefixes": [],
+      "known_packages": [
+        "com.dreamplug.androidapp"
+      ]
+    },
+    {
+      "bank_name": "Income Tax India",
+      "package_name": "tax.gov.in.incometax",
+      "app_label": "AIS for Taxpayer",
+      "alt_labels": [
+        "Income Tax",
+        "ITR",
+        "आयकर",
+        "iAssist"
+      ],
+      "icon_phash": null,
+      "cert_sha256": null,
+      "brand_tokens": {
+        "strong": [
+          "incometax",
+          "itr"
+        ],
+        "phrase": [
+          "income tax"
+        ]
+      },
+      "package_verified": false,
+      "vendor_prefixes": [],
+      "known_packages": [
+        "tax.gov.in.incometax"
+      ]
+    },
+    {
+      "bank_name": "DigiLocker",
+      "package_name": "com.digitallocker.gov",
+      "app_label": "DigiLocker",
+      "alt_labels": [
+        "डिजिलॉकर"
+      ],
+      "icon_phash": null,
+      "cert_sha256": null,
+      "brand_tokens": {
+        "strong": [
+          "digilocker"
+        ],
+        "phrase": [
+          "digi locker"
+        ]
+      },
+      "package_verified": false,
+      "vendor_prefixes": [],
+      "known_packages": [
+        "com.digitallocker.gov"
+      ]
+    },
+    {
+      "bank_name": "UMANG",
+      "package_name": "in.gov.umang.negd.g2c",
+      "app_label": "UMANG",
+      "alt_labels": [
+        "उमंग"
+      ],
+      "icon_phash": null,
+      "cert_sha256": null,
+      "brand_tokens": {
+        "strong": [
+          "umang"
+        ],
+        "phrase": []
+      },
+      "package_verified": false,
+      "vendor_prefixes": [],
+      "known_packages": [
+        "in.gov.umang.negd.g2c"
+      ]
+    },
+    {
+      "bank_name": "RBI Kehta Hai",
+      "package_name": "rbi.cims.android",
+      "app_label": "RBI Kehta Hai",
+      "alt_labels": [
+        "RBI",
+        "भारतीय रिजर्व बैंक"
+      ],
+      "icon_phash": null,
+      "cert_sha256": null,
+      "brand_tokens": {
+        "strong": [
+          "rbi"
+        ],
+        "phrase": [
+          "reserve bank of india"
+        ]
+      },
+      "package_verified": false,
+      "vendor_prefixes": [],
+      "known_packages": [
+        "rbi.cims.android"
+      ]
+    },
+    {
+      "bank_name": "South Indian Bank",
+      "package_name": "com.sib.ebanking",
+      "app_label": "SIB Mirror+",
+      "alt_labels": [
+        "South Indian Bank",
+        "साउथ इंडियन बैंक"
+      ],
+      "icon_phash": null,
+      "cert_sha256": null,
+      "brand_tokens": {
+        "strong": [
+          "sib"
+        ],
+        "phrase": [
+          "south indian bank"
+        ]
+      },
+      "package_verified": false,
+      "vendor_prefixes": [],
+      "known_packages": [
+        "com.sib.ebanking"
+      ]
+    },
+    {
+      "bank_name": "Karur Vysya Bank",
+      "package_name": "com.kvb.mobilebanking",
+      "app_label": "KVB DLite",
+      "alt_labels": [
+        "KVB",
+        "Karur Vysya"
+      ],
+      "icon_phash": null,
+      "cert_sha256": null,
+      "brand_tokens": {
+        "strong": [
+          "kvb"
+        ],
+        "phrase": [
+          "karur vysya"
+        ]
+      },
+      "package_verified": false,
+      "vendor_prefixes": [],
+      "known_packages": [
+        "com.kvb.mobilebanking"
+      ]
+    },
+    {
+      "bank_name": "RBL Bank",
+      "package_name": "com.rbl.mobilebanking",
+      "app_label": "RBL MoBank",
+      "alt_labels": [
+        "RBL Bank",
+        "Ratnakar Bank"
+      ],
+      "icon_phash": null,
+      "cert_sha256": null,
+      "brand_tokens": {
+        "strong": [
+          "rbl"
+        ],
+        "phrase": [
+          "ratnakar"
+        ]
+      },
+      "package_verified": false,
+      "vendor_prefixes": [],
+      "known_packages": [
+        "com.rbl.mobilebanking"
+      ]
+    },
+    {
+      "bank_name": "Bandhan Bank",
+      "package_name": "com.bandhan.mobilebanking",
+      "app_label": "Bandhan Bank",
+      "alt_labels": [
+        "बंधन बैंक"
+      ],
+      "icon_phash": null,
+      "cert_sha256": null,
+      "brand_tokens": {
+        "strong": [
+          "bandhan"
+        ],
+        "phrase": []
+      },
+      "package_verified": false,
+      "vendor_prefixes": [],
+      "known_packages": [
+        "com.bandhan.mobilebanking"
+      ]
+    },
+    {
+      "bank_name": "IDBI Bank",
+      "package_name": "com.idbi.mpassbook",
+      "app_label": "IDBI Bank GO Mobile+",
+      "alt_labels": [
+        "IDBI Bank",
+        "आईडीबीआई बैंक"
+      ],
+      "icon_phash": null,
+      "cert_sha256": null,
+      "brand_tokens": {
+        "strong": [
+          "idbi"
+        ],
+        "phrase": []
+      },
+      "package_verified": false,
+      "vendor_prefixes": [],
+      "known_packages": [
+        "com.idbi.mpassbook"
+      ]
+    },
+    {
+      "bank_name": "Fino Payments Bank",
+      "package_name": "com.finopaytech.bpayfino",
+      "app_label": "Fino BPay",
+      "alt_labels": [
+        "Fino Bank"
+      ],
+      "icon_phash": null,
+      "cert_sha256": null,
+      "brand_tokens": {
+        "strong": [
+          "fino"
+        ],
+        "phrase": []
+      },
+      "package_verified": false,
+      "vendor_prefixes": [],
+      "known_packages": [
+        "com.finopaytech.bpayfino"
+      ]
+    },
+    {
+      "bank_name": "Airtel Payments Bank",
+      "package_name": "com.myairtelapp",
+      "app_label": "Airtel Thanks",
+      "alt_labels": [
+        "Airtel Bank",
+        "एयरटेल बैंक"
+      ],
+      "icon_phash": null,
+      "cert_sha256": null,
+      "brand_tokens": {
+        "strong": [
+          "airtel"
+        ],
+        "phrase": []
+      },
+      "package_verified": false,
+      "vendor_prefixes": [],
+      "known_packages": [
+        "com.myairtelapp"
+      ]
+    },
+    {
+      "bank_name": "India Post Payments Bank",
+      "package_name": "com.ippb.mobilebanking",
+      "app_label": "IPPB Mobile Banking",
+      "alt_labels": [
+        "IPPB",
+        "India Post Bank"
+      ],
+      "icon_phash": null,
+      "cert_sha256": null,
+      "brand_tokens": {
+        "strong": [
+          "ippb"
+        ],
+        "phrase": [
+          "india post payments"
+        ]
+      },
+      "package_verified": false,
+      "vendor_prefixes": [],
+      "known_packages": [
+        "com.ippb.mobilebanking"
+      ]
+    },
+    {
+      "bank_name": "Paytm Payments Bank",
+      "package_name": "com.paytmbank",
+      "app_label": "Paytm Payments Bank",
+      "alt_labels": [],
+      "icon_phash": null,
+      "cert_sha256": null,
+      "brand_tokens": {
+        "strong": [
+          "paytm"
+        ],
+        "phrase": []
+      },
+      "package_verified": false,
+      "vendor_prefixes": [],
+      "known_packages": [
+        "com.paytmbank"
+      ]
+    },
+    {
+      "bank_name": "Jio Payments Bank",
+      "package_name": "com.jio.myjio",
+      "app_label": "MyJio",
+      "alt_labels": [
+        "Jio Bank",
+        "जियो बैंक"
+      ],
+      "icon_phash": null,
+      "cert_sha256": null,
+      "brand_tokens": {
+        "strong": [
+          "jio"
+        ],
+        "phrase": [
+          "jio payments bank"
+        ]
+      },
+      "package_verified": false,
+      "vendor_prefixes": [],
+      "known_packages": [
+        "com.jio.myjio"
+      ]
+    },
+    {
+      "bank_name": "Aarogya Setu",
+      "package_name": "nic.goi.aarogyasetu",
+      "app_label": "Aarogya Setu",
+      "alt_labels": [
+        "आरोग्य सेतु"
+      ],
+      "brand_tokens": {
+        "strong": [
+          "aarogya"
+        ],
+        "phrase": [
+          "aarogya setu"
+        ]
+      },
+      "package_verified": false,
+      "vendor_prefixes": [],
+      "known_packages": [
+        "nic.goi.aarogyasetu"
+      ],
+      "icon_phash": null,
+      "cert_sha256": null,
+      "note": "Indian government COVID app; heavily impersonated (corpus finding B9)."
+    }
+  ],
+  "schema_version": "bank-whitelist-2"
+}

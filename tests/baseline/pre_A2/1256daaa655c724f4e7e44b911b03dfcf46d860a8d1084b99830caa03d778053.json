@@ -1,0 +1,172 @@
+{
+  "sha256": "1256daaa655c724f4e7e44b911b03dfcf46d860a8d1084b99830caa03d778053",
+  "source_apk": "testing_apps/good_apps/com.pennywiseai.tracker_99.apk",
+  "engine": "jadx+ghidra",
+  "track": "track1_jadx_then_track2_ghidra",
+  "generated_at": "2026-08-07T05:12:51.737862+00:00",
+  "findings": [
+    {
+      "engine": "yara_source",
+      "category": "evasion",
+      "severity": "medium",
+      "evidence": "[Android_Evasion_String_Obfuscation_Encryption] Detects string obfuscation and encryption techniques -> Base64.encode",
+      "location": "sources/defpackage/yw1.java:$b64_2",
+      "mitre_techniques": [
+        "T1418",
+        "T1523"
+      ],
+      "observation": "inferred",
+      "detail": {
+        "yara_rule": "Android_Evasion_String_Obfuscation_Encryption",
+        "source_file": "sources/defpackage/yw1.java"
+      }
+    },
+    {
+      "engine": "yara_source",
+      "category": "other",
+      "severity": "high",
+      "evidence": "[Android_Crypto_WeakAlgorithm] Weak or deprecated cryptographic algorithm in use -> \"DES\"",
+      "location": "sources/defpackage/b20.java:$w1",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "detail": {
+        "yara_rule": "Android_Crypto_WeakAlgorithm",
+        "source_file": "sources/defpackage/b20.java"
+      }
+    },
+    {
+      "engine": "yara_source",
+      "category": "c2_communication",
+      "severity": "medium",
+      "evidence": "[Android_Suspicious_Network_Communication] Detects suspicious network communication patterns in Android apps -> OkHttpClient",
+      "location": "sources/defpackage/f44.java:$http1",
+      "mitre_techniques": [
+        "T1437"
+      ],
+      "observation": "inferred",
+      "detail": {
+        "yara_rule": "Android_Suspicious_Network_Communication",
+        "source_file": "sources/defpackage/f44.java"
+      }
+    },
+    {
+      "engine": "yara_source",
+      "category": "other",
+      "severity": "medium",
+      "evidence": "[Android_Secrets_Hardcoded] Potential hardcoded credential or secret \u2014 review for plaintext secrets -> .Password",
+      "location": "sources/defpackage/sl.java:$pw1",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "detail": {
+        "yara_rule": "Android_Secrets_Hardcoded",
+        "source_file": "sources/defpackage/sl.java"
+      }
+    },
+    {
+      "engine": "yara_source",
+      "category": "other",
+      "severity": "medium",
+      "evidence": "[Android_Clipboard_Hijacker] Detects clipboard monitoring and content replacement (clipper malware) -> ClipboardManager",
+      "location": "sources/defpackage/qk.java:$clip1",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "detail": {
+        "yara_rule": "Android_Clipboard_Hijacker",
+        "source_file": "sources/defpackage/qk.java"
+      }
+    },
+    {
+      "engine": "yara_source",
+      "category": "overlay_attack",
+      "severity": "medium",
+      "evidence": "[Android_Banking_Generic_OverlayEngine] Detects generic banking overlay engines using window injection -> WindowManager",
+      "location": "sources/defpackage/ln4.java:$wm1",
+      "mitre_techniques": [
+        "T1417.002"
+      ],
+      "observation": "inferred",
+      "detail": {
+        "yara_rule": "Android_Banking_Generic_OverlayEngine",
+        "source_file": "sources/defpackage/ln4.java"
+      }
+    },
+    {
+      "engine": "yara_source",
+      "category": "ransomware",
+      "severity": "medium",
+      "evidence": "[Android_Ransomware_Generic_File_Encryption] Detects generic Android ransomware with file encryption capabilities -> javax.crypto.Cipher",
+      "location": "sources/defpackage/rl1.java:$enc1",
+      "mitre_techniques": [
+        "T1471"
+      ],
+      "observation": "inferred",
+      "detail": {
+        "yara_rule": "Android_Ransomware_Generic_File_Encryption",
+        "source_file": "sources/defpackage/rl1.java"
+      }
+    },
+    {
+      "engine": "yara_source",
+      "category": "native_payload",
+      "severity": "medium",
+      "evidence": "[Android_Dropper_Encrypted_Payload_Stage1] Detects stage-1 droppers with encrypted payload in assets or resources -> .dat",
+      "location": "sources/defpackage/yi.java:$asset2",
+      "mitre_techniques": [
+        "T1407"
+      ],
+      "observation": "inferred",
+      "detail": {
+        "yara_rule": "Android_Dropper_Encrypted_Payload_Stage1",
+        "source_file": "sources/defpackage/yi.java"
+      }
+    },
+    {
+      "engine": "yara_source",
+      "category": "other",
+      "severity": "critical",
+      "evidence": "[Android_SSL_TrustAll] Custom X509TrustManager detected \u2014 may bypass SSL validation (MITM risk) -> X509TrustManager",
+      "location": "sources/defpackage/nv3.java:$tm1",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "detail": {
+        "yara_rule": "Android_SSL_TrustAll",
+        "source_file": "sources/defpackage/nv3.java"
+      }
+    },
+    {
+      "engine": "yara_source",
+      "category": "other",
+      "severity": "medium",
+      "evidence": "[Android_Crypto_StaticIV] IvParameterSpec usage \u2014 verify IV is not hardcoded or static -> IvParameterSpec(",
+      "location": "sources/defpackage/gm.java:$iv",
+      "mitre_techniques": [],
+      "observation": "inferred",
+      "detail": {
+        "yara_rule": "Android_Crypto_StaticIV",
+        "source_file": "sources/defpackage/gm.java"
+      }
+    }
+  ],
+  "artifacts": {
+    "decompiled_src": "/home/nightwings/cybershield/CyberShield/L1/artifacts/1256daaa655c724f4e7e44b911b03dfcf46d860a8d1084b99830caa03d778053/jadx_src"
+  },
+  "summary": {
+    "finding_count": 10,
+    "severity_counts": {
+      "info": 0,
+      "low": 0,
+      "medium": 8,
+      "high": 1,
+      "critical": 1
+    },
+    "categories": [
+      "c2_communication",
+      "evasion",
+      "native_payload",
+      "other",
+      "overlay_attack",
+      "ransomware"
+    ],
+    "ghidra_run": false
+  }
+}
