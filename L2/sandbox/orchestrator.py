@@ -28,6 +28,7 @@ import shutil
 import signal
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 from dataclasses import dataclass, field
@@ -72,6 +73,20 @@ OTP_INJECTION_SCHEDULE = [(10, "sbi"), (20, "hdfc"), (30, "icici")]
 
 _LAUNCH_EMULATOR_SH = _REPO_ROOT / "tools" / "launch_emulator.sh"
 _EMULATOR_BOOT_TIMEOUT_S = 180
+
+
+class DetonationStopped(Exception):
+    """Raised from the SIGTERM handler installed in ``main()`` so an analyst
+    stopping a run mid-detonation (the web control panel's Stop button)
+    unwinds through ``run()``'s normal ``try/except/finally`` — the same path
+    every other failure takes. This matters because mitmproxy and DroidBot are
+    launched as their own process groups (``preexec_fn=os.setsid``) precisely
+    so ``cleanup()``/``run()``'s ``finally`` can ``killpg`` them and restore
+    the emulator's network isolation; a bare, unhandled SIGTERM would kill
+    only this top-level process and skip all of that, leaving iptables DROP
+    rules applied inside the guest and orphaned mitmdump/droidbot processes
+    running indefinitely.
+    """
 
 
 @dataclass
@@ -460,12 +475,53 @@ class L2Orchestrator:
     # Environment prep
     # ------------------------------------------------------------------
 
+    def _install_apk(self) -> None:
+        """adb install, tolerating extensionless corpus filenames -- FATAL on failure.
+
+        `adb install` refuses any path that does not literally end in
+        ``.apk``/``.apex`` (CLAUDE.md §4: 45% of ``malware_raw`` members are
+        extensionless) -- the file never even reaches the device, and the
+        error lands on **stderr**, which the previous version discarded
+        (only ``res.stdout`` was read), so a rejected install and a
+        successful one were indistinguishable in the log: both produced
+        "install may have failed: Performing Streamed Install" — the literal
+        stdout banner every `adb install` prints before it even knows the
+        outcome. Measured on the Mazar BOT sample: the run proceeded through
+        the full ~2-minute DroidBot/Frida window against an app that was
+        never on the device, producing an empty result with no visible cause.
+
+        Fixed two ways: (1) the source is copied to a ``.apk``-suffixed temp
+        path when its own name isn't one, cleaned up in ``finally`` — one
+        file, one copy, deleted immediately, matching the corpus-safety
+        discipline elsewhere in this project; (2) a failed install now
+        raises, which `run()`'s existing try/except/finally already turns
+        into a clean, logged abort with full cleanup (isolation restore, mitm
+        teardown, dynamic.json) instead of silently wasting the detonation
+        window.
+        """
+        src = self.apk_path
+        install_path = src
+        tmp_path: Path | None = None
+        if src.suffix.lower() not in (".apk", ".apex"):
+            tmp_path = Path(tempfile.mktemp(suffix=".apk"))
+            shutil.copyfile(src, tmp_path)
+            install_path = tmp_path
+            log.info("source filename has no .apk suffix -- installing via temp copy %s",
+                     tmp_path.name)
+        try:
+            res = self._adb("install", "-t", "-r", str(install_path))
+            if "Success" not in res.stdout:
+                reason = (res.stderr or "").strip() or res.stdout.strip() or "unknown reason"
+                raise RuntimeError(f"adb install failed for {src.name}: {reason}")
+        finally:
+            if tmp_path is not None:
+                tmp_path.unlink(missing_ok=True)
+
     def prepare_environment(self) -> None:
         """Install, grant permissions/accessibility, and seed honeypot data."""
         log.info("installing %s", self.apk_path.name)
-        res = self._adb("install", "-t", "-r", str(self.apk_path))
-        if "Success" not in res.stdout:
-            log.warning("install may have failed: %s", res.stdout.strip())
+        self._install_apk()
+        log.info("install succeeded")
 
         self.grant_permissions()
         self.enable_accessibility_service()
@@ -959,6 +1015,8 @@ class L2Orchestrator:
             elapsed_s = time.monotonic() - start
         except EmulatorUnavailableError:
             raise
+        except DetonationStopped:
+            log.warning("detonation stopped by request -- cleaning up")
         except Exception as exc:
             log.error("sandbox error: %s", exc, exc_info=True)
         finally:
@@ -1106,6 +1164,26 @@ def main() -> int:
         level=logging.INFO,
         format="%(levelname)s %(name)s: %(message)s",
     )
+    # androguard (used for manifest parsing here and dex extraction elsewhere)
+    # logs through loguru, not stdlib logging, so `basicConfig` above never
+    # touches it -- its default sink prints every DEBUG/TRACE line to stderr
+    # and drowns the orchestrator's own INFO-level stage markers, which is
+    # exactly what made a live progress feed unreadable. Best-effort: absent
+    # loguru (or a version without `.remove()`) just leaves the default sink.
+    try:
+        from loguru import logger as _loguru_logger
+        _loguru_logger.remove()
+    except Exception:  # noqa: BLE001
+        pass
+
+    # A controller (the web control panel's Stop button) requests a clean
+    # abort by sending SIGTERM to this process. Converting it into a raised
+    # exception is what lets run()'s existing try/except/finally clean up
+    # mitmproxy/DroidBot/isolation instead of the process just dying — see
+    # DetonationStopped's docstring.
+    def _on_sigterm(signum, frame):  # noqa: ANN001, ARG001
+        raise DetonationStopped("SIGTERM received")
+    signal.signal(signal.SIGTERM, _on_sigterm)
 
     parser = argparse.ArgumentParser(description="L2 Sandbox Orchestrator")
     parser.add_argument("apk", help="Path to APK")

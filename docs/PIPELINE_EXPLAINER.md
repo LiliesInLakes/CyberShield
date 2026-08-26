@@ -398,6 +398,16 @@ detonated sample from reaching the real internet if it doesn't go through
 the configured proxy. `CLAUDE.md`'s own status table still marks "network
 isolation not enforced yet."
 
+> **🔄 Correction (2026-08-24 / 2026-08-26):** the above is stale. Isolation
+> **is** now wired and fail-closed-verified — `orchestrator.run()` calls
+> `enforce_isolation()` (line 873) then `verify_isolation()` (line 877, which
+> requires `ping 8.8.8.8` to FAIL and the proxy to be reachable before it
+> proceeds). And as of 2026-08-26 `mitm_addon.py` no longer merely observes:
+> every non-honeypot host is **blocked** (answered locally `200 {}`, tagged
+> `blocked: true`, never forwarded), so the proxy-bypass gap this paragraph
+> worried about is closed at the HTTP layer too (override
+> `SENTINEL_MITM_BLOCK_UNKNOWN=0`). See `CLAUDE.md` §10.
+
 HTTPS interception works despite `/system` being read-only on the current
 AVD build (which blocks installing mitmproxy's CA into the system trust
 store) via Frida's `ssl_unpin.js`, which bypasses certificate pinning at the
@@ -464,6 +474,17 @@ This is a distinct, narrower problem than "can the sandbox reach the app" —
 it needs sample-specific reverse engineering of what the SUBMIT handler
 actually expects, not a general automation fix.
 
+> **🔄 Update (2026-08-26):** the SBI-specific gap above still stands, but the
+> broader claim "no malicious behaviour has ever been observed in a live L2
+> run" no longer holds. Detonating the **XBot** trojan (`org.merry.core`) —
+> which beacons from a `BOOT_COMPLETED` receiver, so no UI interaction is
+> needed — produced the first non-zero behavioural capture: a C2 POST to
+> `http://192.227.137.154/request.php` whose `data=<base64>` body decodes to
+> `{"name":"bootScriptNet","action":"get_script"}`, recorded in
+> `L2/sandbox/artifacts/org.merry.core/network_evidence.json`. Remaining L2
+> gaps (incoming-SMS hook, containment-vs-observation, the two code bugs) are
+> listed in `CLAUDE.md` §10 and the 2026-08-26 reliability-log entry.
+
 ### Why it's built this way
 
 DroidBot was chosen over alternatives after dedicated research
@@ -493,12 +514,18 @@ because they are the version that demonstrably works, verified live.
 
 ### Current limitations / MVP-only
 
-- **Network isolation is designed but not enforced** — `enforce_isolation()`
-  exists, has a wiring bug, and is called from nowhere.
-- **No live detonation of any India-targeted malware sample has produced a
-  confirmed malicious-behaviour finding yet** — hook *capture* is verified
-  reliable; hook *triggering* on this specific sample's actual payload is
-  not.
+> **🔄 The first two bullets are superseded (2026-08-24 / 2026-08-26):**
+> isolation is now enforced+verified and mitm blocks unknown egress; and a
+> live XBot detonation has produced a real C2-beacon finding. See the two
+> correction blocks above and `CLAUDE.md` §10.
+
+- ~~**Network isolation is designed but not enforced**~~ — now wired
+  (`enforce_isolation()` at `orchestrator.py:873`, `verify_isolation()` fail-closed
+  at 877) and `mitm_addon.py` blocks non-honeypot egress by default (2026-08-26).
+- ~~**No live detonation … has produced a confirmed malicious-behaviour
+  finding**~~ — XBot's C2 beacon was captured on 2026-08-26 (first non-zero
+  behavioural capture). Note the residual: *India-targeted* SBI-style samples
+  still gate their payload behind a form submit that automation hasn't driven.
 - Detonation of any sample is user-approved per `CLAUDE.md`; the go/no-go
   checkpoint for the India-12 demo set has not been given.
 - `dynamic.json` generation, PCAP pull integration, and the L2 spine

@@ -78,6 +78,20 @@ DEFAULT_FALLBACKS = (
     "google/gemma-4-31b-it:free",
 )
 
+# aicredits.in: a second, PAID, OpenAI-compatible proxy (2026-08-26) — added
+# specifically because OpenRouter's free tier is a hard 50-requests/day/model
+# cap account-wide, which L4 hits mid-corpus on any day with more than a
+# handful of runs (measured: 3 of 8 classes on one sample before every free
+# model returned 429). Confirmed by direct request: its model catalog mirrors
+# OpenRouter's `provider/model` naming (GET /v1/models), and `openai/gpt-4o-mini`
+# and `nvidia/nemotron-3-ultra-550b-a55b` (non-`:free` — this proxy has no
+# free-tier suffix convention) both return HTTP 200 in the same response shape
+# `_post_with_retries` already parses. Paid credits are finite (₹50 at setup),
+# so this is opt-in (``get_provider("aicredits")``), never the default.
+AICREDITS_URL = "https://aicredits.in/v1/chat/completions"
+AICREDITS_DEFAULT_MODEL = "openai/gpt-4o-mini"
+AICREDITS_DEFAULT_FALLBACKS = ("nvidia/nemotron-3-ultra-550b-a55b",)
+
 # Attribution headers OpenRouter uses for its dashboard. Harmless, and it makes
 # this project's traffic identifiable if the key is ever audited.
 _ATTRIBUTION = {"X-Title": "APK Sentinel", "HTTP-Referer": "https://github.com/cybershield"}
@@ -177,9 +191,12 @@ class Provider(Protocol):
 
 @dataclass
 class OpenRouterProvider:
-    """OpenAI-compatible chat completions via OpenRouter."""
+    """OpenAI-compatible chat completions — OpenRouter by default, but the
+    same class serves any endpoint with the same request/response shape
+    (``base_url``), e.g. the aicredits.in proxy — see ``get_provider``."""
 
     api_key: str
+    base_url: str = OPENROUTER_URL
     model: str = DEFAULT_MODEL
     fallbacks: tuple[str, ...] = DEFAULT_FALLBACKS
     ledger: CostLedger = field(default_factory=CostLedger)
@@ -189,21 +206,30 @@ class OpenRouterProvider:
     last_model_used: str = ""
 
     @classmethod
-    def from_env(cls, **kwargs: Any) -> OpenRouterProvider:
+    def from_env(cls, *, key_env: str = "OPENROUTER_API_KEY",
+                model_env: str = "OPENROUTER_MODEL",
+                fallbacks_env: str = "OPENROUTER_FALLBACKS",
+                base_url: str = OPENROUTER_URL,
+                default_model: str = DEFAULT_MODEL,
+                default_fallbacks: tuple[str, ...] = DEFAULT_FALLBACKS,
+                provider_name: str = "openrouter",
+                **kwargs: Any) -> OpenRouterProvider:
         env = {**load_env(), **os.environ}
-        key = env.get("OPENROUTER_API_KEY")
+        key = env.get(key_env)
         if not key:
             raise ProviderError(
-                "OPENROUTER_API_KEY not found. Put it in .env.local (mode 600, "
+                f"{key_env} not found. Put it in .env.local (mode 600, "
                 "gitignored) or export it."
             )
-        kwargs.setdefault("model", env.get("OPENROUTER_MODEL", DEFAULT_MODEL))
+        kwargs.setdefault("model", env.get(model_env, default_model))
         if "fallbacks" not in kwargs:
-            raw = env.get("OPENROUTER_FALLBACKS", "")
+            raw = env.get(fallbacks_env, "")
             kwargs["fallbacks"] = (
                 tuple(m.strip() for m in raw.split(",") if m.strip())
-                if raw else DEFAULT_FALLBACKS
+                if raw else default_fallbacks
             )
+        kwargs.setdefault("base_url", base_url)
+        kwargs.setdefault("name", provider_name)
         return cls(api_key=key, **kwargs)
 
     def complete(
@@ -292,7 +318,7 @@ class OpenRouterProvider:
         for attempt in range(self.max_retries):
             try:
                 resp = requests.post(
-                    OPENROUTER_URL, json=payload, headers=headers, timeout=self.timeout_s
+                    self.base_url, json=payload, headers=headers, timeout=self.timeout_s
                 )
             except requests.RequestException as exc:
                 last = exc
@@ -347,9 +373,17 @@ class LocalProvider:
 def get_provider(name: str = "openrouter", **kwargs: Any) -> Provider:
     if name == "openrouter":
         return OpenRouterProvider.from_env(**kwargs)
+    if name == "aicredits":
+        return OpenRouterProvider.from_env(
+            key_env="AICREDITS_API_KEY", model_env="AICREDITS_MODEL",
+            fallbacks_env="AICREDITS_FALLBACKS", base_url=AICREDITS_URL,
+            default_model=AICREDITS_DEFAULT_MODEL,
+            default_fallbacks=AICREDITS_DEFAULT_FALLBACKS,
+            provider_name="aicredits", **kwargs,
+        )
     if name == "local":
         return LocalProvider(**kwargs)
-    raise ProviderError(f"unknown provider {name!r}; expected 'openrouter' or 'local'")
+    raise ProviderError(f"unknown provider {name!r}; expected 'openrouter', 'aicredits' or 'local'")
 
 
 def _smoke() -> int:

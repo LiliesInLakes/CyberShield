@@ -567,7 +567,7 @@ APK ──► L0 triage ──► L1 static ──► L2 dynamic ─┐
 | L0 | Hashing, manifest, cert, icon pHash, bank-impersonation check | ✅ works |
 | L1 | jadx decompile + YARA (source/dex/APK scopes) + IOC extraction | ⚠️ 37% malware-category detection, 18 dead rules |
 | Spine | Merged `artifacts/<sha256>/evidence.json` | ✅ works |
-| L2 | Emulator detonation, Frida, mitmproxy, DroidBot/GenAI navigator | ✅ MVP-ready; payload-triggering open gap |
+| L2 | Emulator detonation, Frida, mitmproxy, DroidBot/GenAI navigator | ✅ **demonstrated 2026-08-26** (XBot C2 beacon captured on launch; mitm now contains unknown egress); SBI-style payload-triggering + incoming-SMS hook still open |
 | L3 | ML maliciousness prior, bounded ±10 | ⚠️ unified model trained, confound-bounded |
 | L4 | GenAI verified deobfuscation + reasoning | ✅ works, 0 score points |
 | L5 | Additive log-odds scoring + gates | ⚠️ scores stamped `unsupported` |

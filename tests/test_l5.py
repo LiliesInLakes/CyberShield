@@ -23,7 +23,8 @@ import spine  # noqa: E402
 from L5 import gates as gates_mod  # noqa: E402
 from L5 import promote  # noqa: E402
 from L5.score import (  # noqa: E402
-    Policy, accumulate, apply_banking_ml, apply_gates, apply_ml, score_spine, to_score,
+    Policy, accumulate, apply_banking_ml, apply_gates, apply_l4, apply_ml, score_spine,
+    to_score,
 )
 from L5.validate_policy import validate  # noqa: E402
 
@@ -211,6 +212,84 @@ def test_absent_l3_contributes_nothing():
     policy = make_policy(ml={"enabled": True, "max_delta": 10})
     score, delta, reason = apply_ml(50, make_doc(), policy)
     assert (score, delta, reason) == (50, 0, "")
+
+
+# --------------------------------------------------------------------------
+# L4 (AI/LLM reasoning) — gated, bounded, positive-only (2026-08-26 policy)
+# --------------------------------------------------------------------------
+
+def _doc_with_l4(max_score: float, bands: dict[str, int] | None = None):
+    doc = make_doc()
+    doc["layers"]["l4"] = {
+        "status": "complete",
+        "summary": {"max_score": max_score, "score_bands": bands or {}},
+    }
+    return doc
+
+
+def test_ai_contributes_nothing_below_the_score_floor():
+    """A weak, ungrounded reading (score < min_score) must not move the score."""
+    policy = make_policy(ai={"enabled": True, "max_delta": 10, "min_score": 5})
+    doc = _doc_with_l4(4, {"plausible": 1})
+    score, delta, reason = apply_l4(50, doc, policy, include_ai=True)
+    assert (score, delta, reason) == (50, 0, "ai_below_threshold")
+
+
+def test_ai_contributes_when_score_meets_the_floor():
+    policy = make_policy(ai={"enabled": True, "max_delta": 10, "min_score": 5})
+    doc = _doc_with_l4(5, {"plausible": 1})
+    score, delta, reason = apply_l4(50, doc, policy, include_ai=True)
+    assert delta > 0
+    assert score == 50 + delta
+    assert reason == "ai_scored"
+
+
+def test_ai_contributes_when_rag_grounded_even_below_the_score_floor():
+    """A grounded reading qualifies regardless of the raw class score."""
+    policy = make_policy(ai={"enabled": True, "max_delta": 10, "min_score": 5})
+    doc = _doc_with_l4(2, {"grounded": 1})
+    score, delta, reason = apply_l4(50, doc, policy, include_ai=True)
+    assert delta > 0
+    assert reason == "ai_grounded"
+
+
+def test_ai_is_bounded_to_max_delta():
+    policy = make_policy(ai={"enabled": True, "max_delta": 10, "min_score": 5})
+    doc = _doc_with_l4(10, {"grounded": 1})
+    _score, delta, _reason = apply_l4(50, doc, policy, include_ai=True)
+    assert 0 <= delta <= 10
+
+
+def test_ai_alone_cannot_reach_critical():
+    policy = make_policy(ai={"enabled": True, "max_delta": 10, "min_score": 5,
+                             "may_reach_critical": False})
+    doc = _doc_with_l4(10, {"grounded": 1})
+    score, _delta, reason = apply_l4(80, doc, policy, include_ai=True)
+    assert score == 84
+    assert reason == "ai_clamp"
+
+
+def test_ai_is_never_applied_when_include_ai_is_false():
+    """The comparison view (/api/score?ai=0) must reproduce the AI-free score."""
+    policy = make_policy(ai={"enabled": True, "max_delta": 10, "min_score": 5})
+    doc = _doc_with_l4(10, {"grounded": 1})
+    score, delta, reason = apply_l4(50, doc, policy, include_ai=False)
+    assert (score, delta, reason) == (50, 0, "")
+
+
+def test_absent_l4_contributes_nothing():
+    policy = make_policy(ai={"enabled": True, "max_delta": 10, "min_score": 5})
+    score, delta, reason = apply_l4(50, make_doc(), policy, include_ai=True)
+    assert (score, delta, reason) == (50, 0, "")
+
+
+def test_ai_defaults_on_in_score_spine_when_it_qualifies():
+    """score_spine's default (include_ai unset) must apply a qualifying L4
+    reading — this is the persisted-verdict behaviour, not just the toggle."""
+    policy = make_policy(ai={"enabled": True, "max_delta": 10, "min_score": 5})
+    doc = _doc_with_l4(5, {"plausible": 1})
+    result = score_spine(doc, policy)
+    assert result.ai_delta > 0
 
 
 # --------------------------------------------------------------------------

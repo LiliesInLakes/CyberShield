@@ -102,6 +102,7 @@ class ScoreResult:
     unsupported: bool
     ml_delta: int = 0
     banking_ml_delta: int = 0
+    ai_delta: int = 0
 
 
 # ---------------------------------------------------------------------------
@@ -342,6 +343,50 @@ def apply_banking_ml(score: int, doc: dict[str, Any],
 
 
 # ---------------------------------------------------------------------------
+# Stage 3c — L4 (AI) contribution — OFF by default, analyst-toggleable
+# ---------------------------------------------------------------------------
+
+def apply_l4(score: int, doc: dict[str, Any], policy: Policy,
+             include_ai: bool = True) -> tuple[int, int, str]:
+    """Bounded L4 (AI) contribution to the score, gated on evidence quality.
+
+    This overrides the earlier "LLM contributes zero points" default at the
+    user's explicit instruction (2026-08-26): the AI reasoning contributes **only
+    when its evidence is strong enough** — either a class was *RAG-grounded*
+    (a knowledge-base match survived the adversarial verifier) **or** L4's best
+    class score is ``>= min_score`` (default 5). A weak, ungrounded reading still
+    contributes nothing. The contribution is bounded, **positive-only** (AI
+    reasoning only raises suspicion, never discounts), and — exactly like L3 —
+    cannot push a sample to Critical on its own.
+
+    ``include_ai=False`` forces it off (the ``/api/score?ai=0`` comparison view);
+    the persisted score uses the default, so a qualifying L4 *is* reflected in
+    the stored verdict and the report says so.
+    """
+    if not include_ai:
+        return score, 0, ""
+    cfg = policy.raw.get("ai") or {}
+    if not cfg.get("enabled"):
+        return score, 0, ""
+    summary = (doc.get("layers", {}).get("l4") or {}).get("summary") or {}
+    max_score = summary.get("max_score")
+    if max_score is None:
+        return score, 0, ""
+    bands = summary.get("score_bands") or {}
+    grounded = int(bands.get("grounded", 0)) > 0
+    min_score = int(cfg.get("min_score", 5))
+    # The gate: RAG-grounded, or a best class score at/above the floor.
+    if not (grounded or float(max_score) >= min_score):
+        return score, 0, "ai_below_threshold"
+    cap = int(cfg.get("max_delta", 10))
+    delta = int(max(0, min(cap, round((float(max_score) / 10.0) * cap))))
+    new = max(0, min(100, score + delta))
+    if score < 85 <= new and not cfg.get("may_reach_critical", False):
+        return 84, delta, "ai_clamp"
+    return new, delta, "ai_grounded" if grounded else "ai_scored"
+
+
+# ---------------------------------------------------------------------------
 # Stage 4 — gates as floors
 # ---------------------------------------------------------------------------
 
@@ -360,7 +405,8 @@ def apply_gates(score: int, gates: list[GateResult]) -> tuple[int, str]:
 # Entry point
 # ---------------------------------------------------------------------------
 
-def score_spine(doc: dict[str, Any], policy: Policy) -> ScoreResult:
+def score_spine(doc: dict[str, Any], policy: Policy,
+                include_ai: bool = True) -> ScoreResult:
     from L5 import confidence as conf_mod
     from L5 import gates as gates_mod
 
@@ -370,10 +416,13 @@ def score_spine(doc: dict[str, Any], policy: Policy) -> ScoreResult:
 
     scored, ml_delta, ml_reason = apply_ml(base, doc, policy)
     scored, banking_ml_delta, banking_ml_reason = apply_banking_ml(scored, doc, policy)
+    # L4 (AI) contribution — no-op unless the caller explicitly opts in; the
+    # persisted score always passes include_ai=False (see apply_l4).
+    scored, ai_delta, ai_reason = apply_l4(scored, doc, policy, include_ai)
     gate_results = gates_mod.evaluate_all(doc, policy)
     final, binding = apply_gates(scored, gate_results)
     if binding == "additive":
-        binding = banking_ml_reason or ml_reason or binding
+        binding = banking_ml_reason or ml_reason or ai_reason or binding
 
     unsupported = policy.unsupported
     c, c_band = conf_mod.confidence(doc, policy, gate_results, unsupported)
@@ -394,4 +443,5 @@ def score_spine(doc: dict[str, Any], policy: Policy) -> ScoreResult:
         unsupported=unsupported,
         ml_delta=ml_delta,
         banking_ml_delta=banking_ml_delta,
+        ai_delta=ai_delta,
     )

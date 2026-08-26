@@ -117,6 +117,17 @@ banking_ml:
   may_reach_critical: false
   require_family_disjoint: true
 
+# L4 (AI/LLM) contribution — OFF for every persisted score by design: the
+# standing rule (§7, decision-0004) is that the LLM contributes zero points, and
+# `score_spine` only applies this when a caller passes include_ai=True (the
+# `/api/score/{sha}?ai=1` toggle). `enabled` here is the policy ceiling that must
+# also be true for the toggle to have any effect; it maps L4's max class score
+# (0-10) to a bounded, positive-only delta that cannot reach Critical alone.
+ai:
+  enabled: true
+  max_delta: 10
+  may_reach_critical: false
+
 # Named rule groups the gates reference. A rule may only appear here if
 # validate_policy.py can show, from the weights file, that its benign-rate 95%
 # upper bound is under gate_constraints.max_benign_rate_upper_ci.

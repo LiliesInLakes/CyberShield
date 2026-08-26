@@ -339,11 +339,28 @@ def process(sha256: str,
     sha_dir = ARTIFACTS / sha256
     candidates.append(sha_dir)
 
-    # Also try any package-keyed dirs under sandbox/artifacts
+    # Also try any package-keyed dirs under sandbox/artifacts — but ONLY the
+    # one(s) whose dynamic.json records *this* sha256. The sandbox keys its dirs
+    # by package name, so the sha is only recoverable from the dir's own
+    # dynamic.json; globbing every dir unconditionally aggregated one sample's
+    # report from another sample's leftover artifacts (the documented
+    # cross-contamination bug — e.g. a later detonation's network_evidence.json
+    # leaking into an unrelated sha's findings). A dir with no dynamic.json or a
+    # mismatched sha is skipped; the explicit ``sandbox_dir`` above is always
+    # honoured regardless, so a caller passing one by hand is unaffected.
     if SANDBOX_ARTIFACTS.exists():
         try:
             for d in sorted(SANDBOX_ARTIFACTS.iterdir()):
-                if d.is_dir() and (d / "frida_hooks.jsonl").exists():
+                if not (d.is_dir() and (d / "frida_hooks.jsonl").exists()):
+                    continue
+                dj = d / "dynamic.json"
+                dir_sha = ""
+                if dj.exists():
+                    try:
+                        dir_sha = str(json.loads(dj.read_text()).get("sha256", ""))
+                    except (json.JSONDecodeError, OSError):
+                        dir_sha = ""
+                if dir_sha == sha256:
                     candidates.append(d)
         except OSError as exc:
             log.warning("failed to scan %s: %s", SANDBOX_ARTIFACTS, exc)

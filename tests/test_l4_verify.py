@@ -165,11 +165,20 @@ def test_decoder_returns_nothing_for_plain_text():
     assert _try_decode("hello world this is not encoded") == set()
 
 
-def test_l4_contributes_no_points():
-    """Standing architectural decision: the LLM generates evidence and
-    explanation, never a number."""
+def test_l4_mints_no_findings_and_defers_its_score_gate_to_l5():
+    """L4 never asserts a fact with an evidence id — its narrative is not
+    evidence. Whether a class reading moves the L5 score IS now a real policy
+    (2026-08-26: gated on RAG-grounded or class score >= threshold, see
+    ``L5/score.py::apply_l4``), so L4's own summary reports that as unknown
+    (``None``) rather than a hardcoded 0 — the gate lives in L5's policy, not
+    here, and duplicating the threshold check in both places would let them
+    drift (T15). See ``tests/test_l5.py``'s ``test_ai_*`` cases for the gate
+    itself.
+    """
     from L4 import deobfuscate as deob
     src = (REPO_ROOT / "L4" / "deobfuscate.py").read_text()
     assert "contributes_points" in src
     summary = deob.promote(deob.DeobfuscationResult(sha256="x" * 64))
-    assert summary["contributes_points"] == 0
+    assert summary["contributes_points"] is None
+    # L4 never mints a finding — write_layer always passes findings=[].
+    assert "findings=[]" in src

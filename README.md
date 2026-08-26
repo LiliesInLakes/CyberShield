@@ -66,7 +66,7 @@ is discarded outright.
 | **L0** triage, certificate, **bank impersonation** | ✅ 12/12 India-targeted samples flagged with a named entity |
 | **L1** jadx + YARA + IOC extraction | ✅ 51 rules, per-class dex scanning, blockable indicators |
 | **Spine** merged evidence record | ✅ single atomic writer, stable fingerprints, 28 tests |
-| **L2** dynamic analysis | ⚠️ wired to the spine; **detonation has never run** (AVD boot defect) |
+| **L2** dynamic analysis | ⚠️ wired to the spine; **detonation demonstrated** (2026-08-26) — XBot's C2 beacon captured on launch, and unknown egress is now contained; SBI-style payloads still need per-sample RE to fire |
 | **L3** ML prior | ✅ LightGBM on LAMDA, bounded ±10, never a verdict |
 | **L4** GenAI | ✅ verified deobfuscation with an execution verifier |
 | **L5** hybrid scoring | ✅ computed weights, fitted calibration, 4 gates |
@@ -109,8 +109,12 @@ These are measured, not hypothetical, and they are in the report output as well 
   not broken — the corpus lacks their vocabulary co-located in one class.
 - **The benign corpus contains zero commercial banking apps.** F-Droid has none, so the app
   class most likely to produce a false positive here is unmeasured.
-- **L2 has never detonated a sample.** The layer is connected and its findings would be marked
-  `observed` rather than `inferred`, but the AVD core-dumps on boot.
+- **L2's capture is demonstrated on one sample, not yet a routine.** A 2026-08-26 detonation
+  of the XBot trojan caught a real C2 beacon on launch (its payload fires from a
+  `BOOT_COMPLETED` receiver, no UI needed). But samples like SBI Quick Support gate their
+  payload behind a form submit that automated navigation has not driven, and the Frida pack
+  still lacks an incoming-SMS hook — so most malware would produce a clean attach with no
+  behavioural findings.
 - **Malware is 2020–2022, benign is 2024–2026.** Part of every weight measures era, not malice.
 
 ---

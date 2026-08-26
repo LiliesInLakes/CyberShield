@@ -1,194 +1,817 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>APK Sentinel</title>
 <style>
-:root{
-  --bg:#f6f7f9; --panel:#fff; --line:#dfe3e8; --ink:#17212b; --dim:#5b6b7c;
-  --crit:#b3261e; --high:#c25a00; --med:#8a6d00; --low:#2c6e49; --info:#40566b;
-}
-@media (prefers-color-scheme:dark){:root{
-  --bg:#12171d; --panel:#1a2029; --line:#2c3642; --ink:#e6edf3; --dim:#93a1b0;
-  --crit:#f2645a; --high:#e08c3e; --med:#d4b036; --low:#5fbf87; --info:#8fa5bb;}}
-*{box-sizing:border-box}
-body{margin:0;font:14px/1.55 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
-     background:var(--bg);color:var(--ink)}
-header{padding:1.25rem 1.5rem;border-bottom:1px solid var(--line);background:var(--panel);
-       display:flex;align-items:baseline;gap:1rem;flex-wrap:wrap}
-h1{font-size:1.15rem;margin:0;letter-spacing:-.01em}
-.tag{font-size:.75rem;color:var(--dim)}
-main{max-width:1180px;margin:0 auto;padding:1.5rem}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;
-       padding:1.1rem 1.25rem;margin-bottom:1.25rem}
-h2{font-size:.95rem;margin:0 0 .8rem;color:var(--dim);text-transform:uppercase;
-   letter-spacing:.06em}
-#drop{border:2px dashed var(--line);border-radius:10px;padding:2rem;text-align:center;
-      color:var(--dim);cursor:pointer;transition:border-color .15s,background .15s}
-#drop.over{border-color:var(--info);background:color-mix(in srgb,var(--info) 8%,transparent)}
-#drop strong{color:var(--ink)}
-.steps{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:1rem}
-.step{flex:1;min-width:150px;border:1px solid var(--line);border-radius:8px;padding:.6rem .75rem}
-.step .n{font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;color:var(--dim)}
-.step .d{font-size:.85rem;margin-top:.2rem}
-.step[data-state=running]{border-color:var(--info)}
-.step[data-state=done]{border-color:var(--low)}
-.step[data-state=failed]{border-color:var(--crit)}
-.banner{background:color-mix(in srgb,var(--high) 12%,transparent);
-        border:1px solid var(--high);border-left-width:4px;border-radius:8px;
-        padding:.7rem .9rem;margin-bottom:1rem;font-size:.88rem}
-table{border-collapse:collapse;width:100%;font-size:.86rem}
-th,td{text-align:left;padding:.45rem .55rem;border-bottom:1px solid var(--line)}
-th{font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--dim)}
-td.num{text-align:right;font-variant-numeric:tabular-nums}
-tbody tr{cursor:pointer}
-tbody tr:hover{background:color-mix(in srgb,var(--info) 8%,transparent)}
-.band{font-size:.68rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
-      color:#fff;padding:.15rem .45rem;border-radius:999px}
-.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.82em}
-.dim{color:var(--dim)}
-a.btn{display:inline-block;border:1px solid var(--line);border-radius:7px;
-      padding:.35rem .7rem;margin:.2rem .3rem .2rem 0;text-decoration:none;
-      color:var(--ink);font-size:.82rem}
-a.btn:hover{border-color:var(--info)}
-input[type=file]{display:none}
+  :root{
+    /* forensic phosphor console palette */
+    --bg:#05070d; --bg2:#080b13;
+    --panel:#0c111b; --panel2:#0a0e17; --panelhi:#101725;
+    --line:#1a2536; --line2:#243349;
+    --ink:#e8eff6; --dim:#8695a8; --faint:#54627a;
+    --cyan:#2ff3d6; --cyan-d:#0fbfa8;
+    --violet:#8b7bff; --mag:#ff3d81;
+    --crit:#ff4d5e; --high:#ff9f43; --med:#ffd34e; --low:#37e0a0; --info:#8695a8;
+    --mono:ui-monospace,'SF Mono',SFMono-Regular,'Cascadia Code','JetBrains Mono',Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    --glow-cyan:0 0 0 1px rgba(47,243,214,.35),0 0 24px -4px rgba(47,243,214,.45);
+  }
+  *{box-sizing:border-box}
+  ::selection{background:rgba(47,243,214,.28);color:#fff}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+    font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;
+    background-image:
+      radial-gradient(1100px 620px at 88% -8%,rgba(47,243,214,.07),transparent 60%),
+      radial-gradient(900px 620px at -6% 108%,rgba(139,123,255,.07),transparent 60%),
+      radial-gradient(700px 500px at 50% 120%,rgba(255,61,129,.04),transparent 60%);
+    background-attachment:fixed;}
+  a{color:var(--cyan);text-decoration:none}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:var(--line2);border-radius:20px;border:2px solid var(--bg)}
+  ::-webkit-scrollbar-track{background:transparent}
+
+  /* ---------- header ---------- */
+  header{display:flex;align-items:center;gap:18px;padding:15px 26px;
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,rgba(10,14,23,.92),rgba(8,11,19,.72));
+    backdrop-filter:blur(10px);position:sticky;top:0;z-index:20}
+  .brand{display:flex;align-items:center;gap:13px}
+  .mark{width:34px;height:34px;flex:none;position:relative;display:grid;place-items:center}
+  .mark svg{width:34px;height:34px;display:block;filter:drop-shadow(0 0 6px rgba(47,243,214,.55))}
+  .mark::after{content:"";position:absolute;width:7px;height:7px;border-radius:50%;
+    background:var(--cyan);box-shadow:0 0 12px 2px var(--cyan);
+    top:2px;right:2px;animation:beat 2.4s ease-in-out infinite}
+  @keyframes beat{0%,100%{opacity:.35;transform:scale(.85)}50%{opacity:1;transform:scale(1)}}
+  .brand .name{font-weight:800;font-size:17px;letter-spacing:.02em;line-height:1}
+  .brand .name em{font-style:normal;color:var(--cyan)}
+  .brand .sub{font-family:var(--mono);font-size:10.5px;color:var(--faint);
+    letter-spacing:.18em;text-transform:uppercase;margin-top:4px}
+  .chips{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap;justify-content:flex-end}
+  .chip{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.02em;
+    border:1px solid var(--line);border-radius:8px;padding:5px 10px;background:var(--panel2);
+    display:flex;align-items:center;gap:7px;transition:.15s}
+  .chip::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--faint);flex:none}
+  .chip b{color:var(--ink);font-weight:600}
+  .chip.ok{border-color:rgba(47,243,214,.28)}
+  .chip.ok::before{background:var(--cyan);box-shadow:0 0 8px var(--cyan)}
+  .chip.ok b{color:var(--cyan)}
+  .chip.off{opacity:.72}.chip.off b{color:var(--faint)}
+
+  /* ---------- layout ---------- */
+  main{display:grid;grid-template-columns:352px minmax(0,1fr);gap:20px;
+    max-width:1480px;margin:0 auto;padding:22px 26px 60px}
+  @media(max-width:1040px){main{grid-template-columns:1fr}}
+  .right{display:flex;flex-direction:column;gap:20px;min-width:0}
+  .full{grid-column:1/-1}
+
+  .card{background:linear-gradient(180deg,var(--panel),var(--panel2));
+    border:1px solid var(--line);border-radius:16px;padding:18px;position:relative}
+  .card::before{content:"";position:absolute;inset:0;border-radius:16px;pointer-events:none;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.03)}
+  .eyebrow{display:flex;align-items:center;gap:9px;margin:0 0 14px}
+  .eyebrow .idx{font-family:var(--mono);font-size:11px;color:var(--bg);font-weight:700;
+    background:var(--cyan);border-radius:6px;padding:2px 6px;line-height:1.2;
+    box-shadow:0 0 14px -2px rgba(47,243,214,.7)}
+  .eyebrow h2{margin:0;font-size:11.5px;text-transform:uppercase;letter-spacing:.16em;
+    color:var(--dim);font-weight:700}
+  .eyebrow .tail{margin-left:auto;font-family:var(--mono);font-size:10.5px;color:var(--faint);
+    letter-spacing:.06em}
+  .rail-sec{margin-top:24px}
+  .rail-sec:first-child{margin-top:0}
+  label.fld{display:block;font-size:11.5px;color:var(--dim);margin:0 0 7px;letter-spacing:.01em}
+  select,button,input{font-family:inherit}
+  select{width:100%;background:var(--panel2);color:var(--ink);border:1px solid var(--line);
+    border-radius:10px;padding:11px 12px;font-size:13px;transition:.15s;cursor:pointer;
+    background-image:linear-gradient(45deg,transparent 50%,var(--dim) 50%),
+      linear-gradient(135deg,var(--dim) 50%,transparent 50%);
+    background-position:calc(100% - 18px) 50%,calc(100% - 13px) 50%;
+    background-size:5px 5px,5px 5px;background-repeat:no-repeat;
+    -webkit-appearance:none;appearance:none;padding-right:34px}
+  select:focus{outline:none;border-color:var(--cyan-d);box-shadow:0 0 0 3px rgba(47,243,214,.12)}
+  optgroup{color:var(--cyan);font-family:var(--mono);font-size:11px}
+  option{color:var(--ink);background:var(--panel)}
+  .drop{margin-top:11px;padding:11px 12px;border:1px dashed var(--line2);border-radius:10px;
+    background:var(--panel2);display:flex;align-items:center;gap:9px;font-size:11.5px;color:var(--dim)}
+  .drop svg{flex:none;color:var(--faint)}
+  .drop input[type=file]{font-size:11px;color:var(--dim);min-width:0;flex:1}
+  .drop input[type=file]::file-selector-button{font-family:inherit;background:var(--panelhi);
+    color:var(--ink);border:1px solid var(--line2);border-radius:7px;padding:4px 10px;
+    margin-right:9px;cursor:pointer;font-size:11px}
+  .drop input[type=file]::file-selector-button:hover{border-color:var(--cyan-d)}
+
+  /* presets + layers */
+  .presets{display:flex;gap:6px;margin:0 0 11px;flex-wrap:wrap}
+  .presets button{background:var(--panel2);border:1px solid var(--line);color:var(--dim);
+    border-radius:8px;padding:6px 11px;font-size:11px;cursor:pointer;transition:.15s;
+    font-family:var(--mono);letter-spacing:.02em}
+  .presets button:hover{color:var(--ink);border-color:var(--line2);background:var(--panelhi)}
+  .presets button.active{color:var(--cyan);border-color:rgba(47,243,214,.4);
+    background:rgba(47,243,214,.07)}
+  .layers{display:flex;flex-direction:column;gap:8px}
+  .layer{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line);
+    border-radius:11px;cursor:pointer;background:var(--panel2);transition:.15s;position:relative;
+    overflow:hidden}
+  .layer::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
+    background:var(--cyan);opacity:0;transition:.15s}
+  .layer:hover{border-color:var(--line2);background:var(--panelhi)}
+  .layer.on{border-color:rgba(47,243,214,.32);background:rgba(47,243,214,.05)}
+  .layer.on::before{opacity:1}
+  .layer .id{font-family:var(--mono);font-weight:700;font-size:12px;color:var(--faint);
+    min-width:24px;transition:.15s}
+  .layer.on .id{color:var(--cyan)}
+  .layer .txt{min-width:0}
+  .layer .nm{font-size:12.5px;font-weight:600;letter-spacing:.01em}
+  .layer .ds{font-size:10.5px;color:var(--faint);font-family:var(--mono);margin-top:1px}
+  .layer .box{margin-left:auto;width:18px;height:18px;border-radius:6px;border:1.5px solid var(--line2);
+    display:grid;place-items:center;font-size:11px;color:var(--bg);flex:none;transition:.15s}
+  .layer.on .box{background:var(--cyan);border-color:var(--cyan);box-shadow:0 0 12px -2px var(--cyan)}
+
+  /* navigator segmented */
+  .nav-choice{display:flex;gap:8px}
+  .nav-choice .opt{flex:1;padding:11px 8px;border:1px solid var(--line);border-radius:10px;
+    cursor:pointer;font-size:12.5px;font-weight:600;color:var(--dim);background:var(--panel2);
+    transition:.15s;text-align:left}
+  .nav-choice .opt .sub{font-size:10px;color:var(--faint);font-family:var(--mono);
+    font-weight:400;margin-top:2px}
+  .nav-choice .opt:hover{border-color:var(--line2);background:var(--panelhi)}
+  .nav-choice .opt.on{border-color:rgba(139,123,255,.5);color:var(--ink);
+    background:rgba(139,123,255,.09)}
+  .nav-choice .opt.on .sub{color:var(--violet)}
+
+  .run{margin-top:20px;width:100%;padding:14px;border:0;border-radius:11px;cursor:pointer;
+    background:linear-gradient(100deg,var(--cyan),#25c7e0 55%,var(--violet));
+    color:#03110e;font-weight:800;font-size:14px;letter-spacing:.03em;position:relative;
+    transition:.18s;box-shadow:0 10px 30px -10px rgba(47,243,214,.6)}
+  .run:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 14px 34px -10px rgba(47,243,214,.75)}
+  .run:disabled{opacity:.55;cursor:not-allowed;box-shadow:none}
+  .hint{font-size:11px;color:var(--faint);margin-top:11px;line-height:1.5;font-family:var(--mono)}
+
+  /* ---------- pipeline ---------- */
+  .steps{display:flex;flex-direction:column;gap:8px}
+  .step{display:flex;align-items:center;gap:13px;padding:12px 14px;border:1px solid var(--line);
+    border-radius:11px;background:var(--panel2);transition:.2s;position:relative;overflow:hidden}
+  .step .st{width:10px;height:10px;border-radius:50%;background:var(--faint);flex:none;position:relative}
+  .step.running{border-color:rgba(255,159,67,.3)}
+  .step.running .st{background:var(--high);box-shadow:0 0 10px var(--high)}
+  .step.running .st::after{content:"";position:absolute;inset:-5px;border-radius:50%;
+    border:1.5px solid var(--high);animation:ripple 1.1s ease-out infinite}
+  @keyframes ripple{0%{transform:scale(.6);opacity:.8}100%{transform:scale(1.6);opacity:0}}
+  .step.running::after{content:"";position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(90deg,transparent,rgba(255,159,67,.09),transparent);
+    background-size:200% 100%;animation:sweep 1.6s linear infinite}
+  @keyframes sweep{0%{background-position:200% 0}100%{background-position:-200% 0}}
+  .step.done .st{background:var(--cyan);box-shadow:0 0 8px -1px var(--cyan)}
+  .step.failed{border-color:rgba(255,77,94,.35)}
+  .step.failed .st{background:var(--crit);box-shadow:0 0 8px var(--crit)}
+  .step.skipped{opacity:.5}.step.skipped .st{background:var(--faint)}
+  .step.stopped{border-color:rgba(255,159,67,.35)}
+  .step.stopped .st{background:var(--high);box-shadow:0 0 8px var(--high)}
+  .step.stopped .det{color:var(--high)}
+  .step .lid{font-family:var(--mono);font-weight:700;color:var(--dim);min-width:28px;font-size:12px}
+  .step .lnm{font-weight:600;font-size:13px}
+  .step .det{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--dim);
+    text-align:right;max-width:52%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .step.failed .det{color:var(--crit)}
+  .step.done .det{color:var(--low)}
+
+  /* ---------- stage grid ---------- */
+  .stage-grid{display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start}
+  @media(max-width:1240px){.stage-grid{grid-template-columns:1fr}}
+
+  /* ---------- verdict ---------- */
+  .verdict-card{min-height:0}
+  .verdict{display:none;gap:20px;align-items:center;flex-wrap:wrap}
+  .verdict.show{display:flex}
+  .ring-wrap{position:relative;flex:none}
+  .score-ring{width:104px;height:104px;border-radius:50%;display:grid;place-items:center;
+    background:conic-gradient(var(--rc) calc(var(--p)*1%),var(--line) 0);
+    transition:--p .6s ease;filter:drop-shadow(0 0 14px rgba(47,243,214,.15))}
+  .score-ring .inner{width:84px;height:84px;border-radius:50%;
+    background:radial-gradient(circle at 50% 35%,var(--panelhi),var(--panel2));
+    display:grid;place-items:center;text-align:center;border:1px solid var(--line)}
+  .score-ring .num{font-family:var(--mono);font-weight:800;font-size:30px;line-height:1;
+    color:var(--ink)}
+  .score-ring .of{font-family:var(--mono);font-size:9.5px;color:var(--faint);
+    letter-spacing:.14em;margin-top:3px}
+  .verdict .vbody{min-width:0;flex:1}
+  .verdict .band{font-size:23px;font-weight:800;letter-spacing:.01em;display:flex;
+    align-items:center;gap:10px}
+  .ai-badge{display:none;font-family:var(--mono);font-size:10.5px;font-weight:700;
+    color:var(--violet);border:1px solid rgba(139,123,255,.4);background:rgba(139,123,255,.1);
+    border-radius:20px;padding:2px 9px;letter-spacing:.02em;vertical-align:middle}
+  .verdict .meta{font-size:12px;color:var(--dim);font-family:var(--mono);margin-top:6px;
+    word-break:break-all}
+  .actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+  .actions a{font-size:11.5px;padding:8px 13px;border-radius:9px;
+    border:1px solid var(--line);background:var(--panel2);color:var(--ink);cursor:pointer;
+    transition:.15s;font-family:var(--mono);letter-spacing:.01em}
+  .actions a:hover{border-color:var(--cyan-d);color:var(--cyan);background:var(--panelhi)}
+  .actions a.primary{border-color:rgba(47,243,214,.4);color:var(--cyan);
+    background:rgba(47,243,214,.06)}
+
+  /* AI toggle */
+  .ai-row{margin-top:18px;padding-top:16px;border-top:1px solid var(--line);
+    display:flex;align-items:flex-start;gap:12px}
+  .ai-row .lbl{min-width:0;flex:1}
+  .ai-row .lbl .t{font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:7px}
+  .ai-row .lbl .t .tag{font-family:var(--mono);font-size:9.5px;color:var(--violet);
+    border:1px solid rgba(139,123,255,.35);border-radius:5px;padding:1px 5px;letter-spacing:.06em}
+  .ai-row .lbl .d{font-size:11px;color:var(--faint);margin-top:4px;line-height:1.5}
+  .ai-row .note{font-size:10.5px;color:var(--high);font-family:var(--mono);margin-top:5px;display:none}
+  .switch{--h:22px;position:relative;width:40px;height:22px;flex:none;margin-top:2px;cursor:pointer}
+  .switch input{opacity:0;width:0;height:0;position:absolute}
+  .switch .track{position:absolute;inset:0;background:var(--panelhi);border:1px solid var(--line2);
+    border-radius:20px;transition:.2s}
+  .switch .knob{position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;
+    background:var(--dim);transition:.2s}
+  .switch input:checked + .track{background:rgba(139,123,255,.22);border-color:var(--violet)}
+  .switch input:checked + .track + .knob,.switch input:checked ~ .knob{transform:translateX(18px);
+    background:var(--violet);box-shadow:0 0 10px -1px var(--violet)}
+  .switch input:disabled ~ .track{opacity:.4}
+  .switch input:disabled{cursor:not-allowed}
+
+  /* ---------- live sandbox (HERO) ---------- */
+  .emu{display:flex;flex-direction:column;align-items:center;background:
+    linear-gradient(180deg,var(--panelhi),var(--panel2));border-color:var(--line2)}
+  .emu .eyebrow{align-self:stretch}
+  .emu .eyebrow .idx{background:var(--mag);color:#fff;box-shadow:0 0 14px -2px rgba(255,61,129,.7)}
+  .phone{width:236px;aspect-ratio:9/19.2;border-radius:26px;
+    border:2px solid var(--line2);background:#000;overflow:hidden;position:relative;
+    box-shadow:0 18px 50px -12px rgba(0,0,0,.7),inset 0 0 0 4px #05070d;margin-top:4px}
+  .phone::before{content:"";position:absolute;top:9px;left:50%;transform:translateX(-50%);
+    width:52px;height:5px;border-radius:20px;background:#141a24;z-index:3}
+  .phone img{width:100%;height:100%;object-fit:contain;display:block}
+  .phone .off{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;
+    gap:12px;color:var(--faint);font-size:11px;text-align:center;padding:24px;
+    font-family:var(--mono);line-height:1.7;letter-spacing:.03em}
+  .phone .off .radar{width:52px;height:52px;border-radius:50%;border:1px solid var(--line2);
+    position:relative}
+  .phone .off .radar::after{content:"";position:absolute;inset:-1px;border-radius:50%;
+    border-top:2px solid var(--faint);animation:spin 3s linear infinite;opacity:.5}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  /* detonation scanline while live */
+  .phone.live::after{content:"";position:absolute;left:0;right:0;height:34%;top:-34%;z-index:2;
+    background:linear-gradient(180deg,transparent,rgba(255,61,129,.16),rgba(47,243,214,.22));
+    box-shadow:0 0 18px 2px rgba(47,243,214,.3);animation:scan 2.6s linear infinite;pointer-events:none}
+  @keyframes scan{0%{top:-34%}100%{top:100%}}
+
+  .live-lbl{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;
+    color:var(--faint);margin-top:14px;letter-spacing:.04em;text-transform:uppercase}
+  .live-lbl .rec{width:8px;height:8px;border-radius:50%;background:var(--faint)}
+  .live-lbl.on{color:var(--mag)}
+  .live-lbl.on .rec{background:var(--mag);box-shadow:0 0 10px var(--mag);animation:beat 1s infinite}
+
+  /* nav feed */
+  .feed{margin-top:14px;width:100%;max-height:230px;overflow:auto;display:flex;
+    flex-direction:column;gap:6px}
+  .feed:empty::after{content:"navigation feed idle";color:var(--faint);font-family:var(--mono);
+    font-size:10.5px;text-align:center;padding:14px 0;letter-spacing:.04em}
+  .nav{font-family:var(--mono);font-size:11px;padding:7px 10px;border-left:2px solid var(--line2);
+    background:var(--panel2);border-radius:0 7px 7px 0;color:var(--dim);line-height:1.5}
+  .nav .a{color:var(--violet);font-weight:700;text-transform:uppercase;font-size:10px;
+    letter-spacing:.05em}
+  .nav.type{border-left-color:var(--high)}.nav.type .a{color:var(--high)}
+  .nav.done{border-left-color:var(--cyan)}.nav.done .a{color:var(--cyan)}
+  .nav.back .a,.nav.swipe .a{color:var(--dim)}
+  .nav .r{color:var(--faint)}
+
+  /* ---------- live feed (raw pipeline stdout, separate section) ---------- */
+  .feed-toolbar{display:flex;align-items:center;gap:10px}
+  .feed-toolbar .live-lbl{margin-top:0}
+  .stop-btn{margin-left:auto;display:flex;align-items:center;gap:7px;
+    background:rgba(255,61,110,.1);border:1px solid rgba(255,61,110,.4);color:var(--crit);
+    border-radius:9px;padding:7px 14px;font-size:12px;font-weight:700;letter-spacing:.03em;
+    cursor:pointer;transition:.15s;font-family:var(--sans)}
+  .stop-btn:hover:not(:disabled){background:rgba(255,61,110,.18);border-color:var(--crit)}
+  .stop-btn:disabled{opacity:.4;cursor:not-allowed}
+  .stop-btn .sq{width:9px;height:9px;background:var(--crit);border-radius:2px;flex:none}
+  .log-pane{margin-top:12px;height:260px;overflow-y:auto;background:var(--bg2);
+    border:1px solid var(--line);border-radius:10px;padding:10px 12px;
+    font-family:var(--mono);font-size:11.5px;line-height:1.65}
+  .log-pane:empty::after{content:"no run active — the live feed streams every stage of L2/L4 as it happens, not just a summary at the end";
+    color:var(--faint);display:block;padding:30px 10px;text-align:center;letter-spacing:.02em}
+  .log-line{white-space:pre-wrap;word-break:break-word;color:var(--dim);padding:1px 0}
+  .log-line.lvl-warning{color:var(--high)}
+  .log-line.lvl-error{color:var(--crit)}
+  .log-line.lvl-info{color:var(--dim)}
+  .log-line .tag{color:var(--faint)}
+  .log-line.l4prog{color:var(--violet)}
+
+  /* ---------- samples table ---------- */
+  .samples-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .samples-wrap{overflow-x:auto;margin:2px -2px -2px;border-radius:12px}
+  table.samples{width:100%;border-collapse:separate;border-spacing:0;font-size:12.5px;
+    min-width:760px}
+  table.samples thead th{position:sticky;top:0;text-align:left;font-family:var(--mono);
+    font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--faint);
+    font-weight:600;padding:0 12px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+  table.samples thead th.num{text-align:right}
+  table.samples tbody tr{cursor:pointer;transition:.12s}
+  table.samples tbody td{padding:11px 12px;border-bottom:1px solid var(--line);
+    vertical-align:middle}
+  table.samples tbody tr:hover td{background:var(--panelhi)}
+  table.samples tbody tr:last-child td{border-bottom:0}
+  td.score{font-family:var(--mono);font-weight:800;font-size:15px;text-align:right;width:60px}
+  .band-chip{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);
+    font-size:10.5px;font-weight:700;letter-spacing:.04em;padding:3px 9px;border-radius:20px;
+    text-transform:uppercase;white-space:nowrap}
+  .band-chip::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+  td.app .primary{font-weight:600;color:var(--ink)}
+  td.app .imp{font-size:10.5px;color:var(--mag);font-family:var(--mono);margin-top:2px}
+  td.pkg{font-family:var(--mono);font-size:11px;color:var(--dim);max-width:220px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  td.find{font-family:var(--mono);font-size:11px;color:var(--dim)}
+  td.find .cat{color:var(--high)}
+  td.go{text-align:right;width:40px;color:var(--faint);font-size:14px}
+  table.samples tbody tr:hover td.go{color:var(--cyan)}
+  .unsup{display:inline-block;font-family:var(--mono);font-size:9px;color:var(--high);
+    border:1px solid rgba(255,159,67,.35);border-radius:4px;padding:0 4px;margin-left:6px;
+    letter-spacing:.04em;vertical-align:middle}
+
+  /* band colours (text) */
+  .band-Critical{color:var(--crit)}.band-High{color:var(--high)}
+  .band-Medium{color:var(--med)}.band-Low{color:var(--low)}.band-Info{color:var(--info)}
+
+  .empty{color:var(--faint);font-size:12.5px;text-align:center;padding:30px 0;
+    font-family:var(--mono);letter-spacing:.03em}
+  .empty .big{display:block;font-size:26px;margin-bottom:10px;opacity:.5}
+
+  @media (prefers-reduced-motion:reduce){
+    *{animation-duration:.001ms!important;animation-iteration-count:1!important}
+    html{scroll-behavior:auto}
+  }
+  :focus-visible{outline:2px solid var(--cyan);outline-offset:2px;border-radius:6px}
 </style>
 </head>
 <body>
 <header>
-  <h1>APK Sentinel</h1>
-  <span class="tag" id="health">…</span>
-</header>
-<main>
-  <div class="panel">
-    <h2>Analyse an APK</h2>
-    <label id="drop" for="f">
-      <strong>Drop an APK here</strong> or click to choose.<br>
-      <span class="tag">Static analysis only — nothing is executed.</span>
-    </label>
-    <input type="file" id="f" accept=".apk,application/vnd.android.package-archive">
-    <div class="steps" id="steps" hidden></div>
-    <div id="verdict"></div>
+  <div class="brand">
+    <span class="mark" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M12 2 4 5v6c0 5 3.4 8.4 8 11 4.6-2.6 8-6 8-11V5l-8-3Z"
+          stroke="var(--cyan)" stroke-width="1.4" stroke-linejoin="round"/>
+        <path d="M8.4 12.2h2l1.2-3 1.6 5 1.2-2h1.4" stroke="var(--cyan)" stroke-width="1.4"
+          stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </span>
+    <div>
+      <div class="name">APK&nbsp;<em>Sentinel</em></div>
+      <div class="sub">Banking-malware detonation console</div>
+    </div>
   </div>
+  <div class="chips" id="chips"></div>
+</header>
 
-  <div class="panel">
-    <h2>Scored samples</h2>
-    <div id="unsupported"></div>
-    <table>
-      <thead><tr><th>Score</th><th>Band</th><th>Application</th><th>Package</th>
-        <th>Impersonates</th><th class="num">Findings</th></tr></thead>
-      <tbody id="rows"><tr><td colspan="6" class="dim">loading…</td></tr></tbody>
-    </table>
+<main>
+  <!-- CONFIG RAIL -->
+  <section class="card" aria-label="Analysis configuration">
+    <div class="rail-sec">
+      <div class="eyebrow"><span class="idx">01</span><h2>Target app</h2></div>
+      <label class="fld" for="apkSelect">Select a sample on disk</label>
+      <select id="apkSelect" aria-label="Target app"></select>
+      <div class="drop">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 15V4m0 0 4 4m-4-4-4 4M5 17v2a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Or upload a custom APK</span>
+        <input type="file" id="upload" accept=".apk" aria-label="Upload custom APK">
+      </div>
+    </div>
+
+    <div class="rail-sec">
+      <div class="eyebrow"><span class="idx">02</span><h2>Layers to run</h2></div>
+      <div class="presets" id="presets">
+        <button data-preset="full">Full pipeline</button>
+        <button data-preset="static">Static only</button>
+        <button data-preset="detonate">Static + emulator</button>
+      </div>
+      <div class="layers" id="layers"></div>
+    </div>
+
+    <div class="rail-sec">
+      <div class="eyebrow"><span class="idx">03</span><h2>Emulator navigator</h2></div>
+      <div class="nav-choice" id="navChoice">
+        <div class="opt on" data-nav="genai" role="button" tabindex="0">GenAI script
+          <div class="sub">LLM drives forms</div></div>
+        <div class="opt" data-nav="droidbot" role="button" tabindex="0">DroidBot
+          <div class="sub">blind DFS</div></div>
+      </div>
+    </div>
+
+    <button class="run" id="runBtn">▶&nbsp; Run analysis</button>
+    <div class="hint" id="runHint">L2 boots the emulator and executes the app live (~2&nbsp;min).
+      Static layers never run it.</div>
+  </section>
+
+  <!-- STAGE -->
+  <div class="right">
+    <section class="card" aria-label="Pipeline">
+      <div class="eyebrow"><span class="idx">▸</span><h2>Pipeline</h2>
+        <span class="tail" id="pipeTail"></span></div>
+      <div class="steps" id="steps">
+        <div class="empty"><span class="big">◇</span>Pick a target and press Run to begin.</div>
+      </div>
+    </section>
+
+    <section class="card" aria-label="Live feed">
+      <div class="eyebrow"><span class="idx">≡</span><h2>Live feed</h2>
+        <span class="tail" id="feedTail">raw stage-by-stage output — L2 and L4 both stream here as they run</span></div>
+      <div class="feed-toolbar">
+        <div class="live-lbl" id="feedLiveLbl"><span class="rec"></span><span id="feedLiveTxt">idle</span></div>
+        <button class="stop-btn" id="stopBtn" disabled title="Stop the running job — L2 cleans up (isolation, mitmproxy, DroidBot) before exiting; L4 stops between classes.">
+          <span class="sq"></span>Stop
+        </button>
+      </div>
+      <div class="log-pane" id="logPane"></div>
+    </section>
+
+    <div class="stage-grid">
+      <section class="card verdict-card" aria-label="Verdict">
+        <div class="eyebrow"><span class="idx">◈</span><h2>Verdict</h2></div>
+        <div class="verdict" id="verdict">
+          <div class="ring-wrap">
+            <div class="score-ring" id="ring">
+              <div class="inner"><span class="num" id="scoreNum">–</span>
+                <span class="of">/ 100</span></div>
+            </div>
+          </div>
+          <div class="vbody">
+            <div class="band" id="bandTxt">–<span class="ai-badge" id="aiBadge"></span></div>
+            <div class="meta" id="verMeta"></div>
+            <div class="actions" id="verActions"></div>
+          </div>
+          <div class="ai-row" style="width:100%">
+            <div class="lbl">
+              <div class="t">Exclude AI (L4) contribution <span class="tag">L4</span></div>
+              <div class="d">AI contributes to the score by default when a class reading is
+                RAG-grounded or scores &ge;5/10 — capped, positive-only, never reaches
+                Critical alone. Toggle to compare the score without it.</div>
+              <div class="note" id="aiNote"></div>
+            </div>
+            <label class="switch" title="AI contributes to the score by default when qualifying. Toggle to see the score without its contribution.">
+              <input type="checkbox" id="aiToggle">
+              <span class="track"></span><span class="knob"></span>
+            </label>
+          </div>
+        </div>
+        <div class="empty" id="verdictEmpty"><span class="big">◈</span>No verdict yet.</div>
+      </section>
+
+      <section class="card emu" aria-label="Live sandbox">
+        <div class="eyebrow"><span class="idx">◉</span><h2>Live sandbox</h2></div>
+        <div class="phone" id="phone">
+          <img id="screen" alt="Live emulator screen" style="display:none">
+          <div class="off" id="screenOff">
+            <span class="radar"></span>
+            emulator idle<br>— starts with L2 —
+          </div>
+        </div>
+        <div class="live-lbl" id="liveLbl"><span class="rec"></span><span id="liveTxt">offline</span></div>
+        <div class="feed" id="feed"></div>
+      </section>
+    </div>
+
+    <!-- SCORED SAMPLES -->
+    <section class="card" aria-label="Scored samples">
+      <div class="eyebrow samples-head">
+        <span style="display:flex;align-items:center;gap:9px">
+          <span class="idx">▤</span><h2>Scored samples</h2></span>
+        <span class="tail" id="samplesTail"></span>
+      </div>
+      <div class="samples-wrap">
+        <table class="samples">
+          <thead><tr>
+            <th class="num">Score</th><th>Band</th><th>Application</th>
+            <th>Package</th><th>Impersonates</th><th>Findings</th><th></th>
+          </tr></thead>
+          <tbody id="samplesBody"></tbody>
+        </table>
+      </div>
+    </section>
   </div>
 </main>
 
 <script>
-const BAND = {Critical:'--crit',High:'--high',Medium:'--med',Low:'--low',Informational:'--info'};
-const el = id => document.getElementById(id);
-const esc = s => String(s ?? '').replace(/[&<>"]/g, c =>
-  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const $ = s => document.querySelector(s);
+const LAYERS = [
+  ["l0","Triage","hash · manifest · impersonation",false],
+  ["l1","Static","jadx + YARA rules",false],
+  ["l2","Emulator","detonate + live navigation",true],
+  ["l3","ML prior","LightGBM maliciousness (±10)",true],
+  ["l4","GenAI","verified deobfuscation + reasoning",true],
+  ["l5","Scoring","auditable hybrid score + gates",false],
+];
+const LNAMES = Object.fromEntries(LAYERS.map(l=>[l[0],l[1]]));
+const PRESETS = {full:["l0","l1","l2","l3","l4","l5"],static:["l0","l1","l3","l4","l5"],
+  detonate:["l0","l1","l2","l5"]};
+const BAND_COL = {Critical:"var(--crit)",High:"var(--high)",Medium:"var(--med)",
+  Low:"var(--low)",Info:"var(--info)"};
 
-function bandPill(band){
-  if(!band) return '<span class="dim">—</span>';
-  const v = `var(${BAND[band] || '--info'})`;
-  return `<span class="band" style="background:${v}">${esc(band)}</span>`;
-}
+let selected = new Set(PRESETS.full);
+let navMode = "genai";
+let poll=null, shot=null, curJob=null, curSha=null;
+let baseScore=0, baseBand="Info", baseAiDelta=0;
+let logCursor=0;
 
+// ---------- health chips ----------
 async function health(){
   try{
-    const h = await (await fetch('/api/health')).json();
-    const w = h.weights || {};
-    el('health').textContent =
-      `${h.spines} evidence records · weights ${w.version || '—'}` +
-      (w.supported === false ? ' · UNSUPPORTED' : '');
-    if(w.supported === false){
-      el('unsupported').innerHTML = '<div class="banner"><strong>Scores are not '
-        + 'usable as evidence.</strong> The scoring weights were computed against a '
-        + 'benign corpus too small to support them. Findings are real; the numbers '
-        + 'are provisional.</div>';
-    }
-  }catch(e){ el('health').textContent = 'offline'; }
+    const h = await (await fetch("/api/health")).json();
+    const w = h.weights||{};
+    $("#chips").innerHTML = [
+      `<span class="chip"><span>spines</span> <b>${h.spines}</b></span>`,
+      `<span class="chip ${w.supported?'ok':'off'}"><span>weights</span> <b>${w.supported?'supported':'unsupported'}</b></span>`,
+      `<span class="chip ${h.jadx?'ok':'off'}"><span>jadx</span> <b>${h.jadx?'ready':'—'}</b></span>`,
+      `<span class="chip ${h.emulator_up?'ok':'off'}"><span>emulator</span> <b>${h.emulator_up?'up':'down'}</b></span>`,
+    ].join("");
+  }catch(e){}
 }
 
-async function loadSamples(){
+// ---------- catalogue ----------
+async function loadApks(){
   try{
-    const rows = await (await fetch('/api/samples?limit=200')).json();
-    el('rows').innerHTML = rows.length ? rows.map(r => `
-      <tr onclick="window.open('/api/report/${r.sha256}','_blank')">
-        <td class="num">${r.score ?? '<span class="dim">—</span>'}</td>
-        <td>${bandPill(r.band)}</td>
-        <td>${esc(r.app_label || '—')}</td>
-        <td class="mono dim">${esc(r.package || '—')}</td>
-        <td>${esc(r.impersonates || '')}</td>
-        <td class="num">${r.findings}</td>
-      </tr>`).join('') : '<tr><td colspan="6" class="dim">none yet</td></tr>';
-  }catch(e){
-    el('rows').innerHTML = '<tr><td colspan="6" class="dim">failed to load</td></tr>';
-  }
+    const apks = await (await fetch("/api/apks")).json();
+    const sel = $("#apkSelect"); sel.innerHTML="";
+    const groups={};
+    apks.forEach(a=>{(groups[a.kind]=groups[a.kind]||[]).push(a)});
+    ["malware","vulnerable","benign"].forEach(k=>{
+      if(!groups[k])return;
+      const og=document.createElement("optgroup"); og.label=k.toUpperCase();
+      groups[k].forEach(a=>{
+        const o=document.createElement("option"); o.value=a.path;
+        o.textContent=`${a.name}  —  ${a.note} (${a.size_kb}KB)`;
+        og.appendChild(o);
+      });
+      sel.appendChild(og);
+    });
+  }catch(e){}
 }
 
-function renderSteps(job){
-  const known = ['triage','static','ml','scoring'];
-  const byName = Object.fromEntries((job.steps||[]).map(s=>[s.name,s]));
-  el('steps').hidden = false;
-  el('steps').innerHTML = known.map(n=>{
-    const s = byName[n] || {state:'pending',detail:''};
-    const label = {triage:'L0 triage',static:'L1 static',ml:'L3 prior',scoring:'L5 scoring'}[n];
-    return `<div class="step" data-state="${s.state}">
-      <div class="n">${label}</div>
-      <div class="d">${esc(s.detail || s.state)}</div></div>`;
-  }).join('');
+// ---------- layer toggles ----------
+function renderLayers(){
+  $("#layers").innerHTML = LAYERS.map(([id,nm,ds])=>`
+    <div class="layer ${selected.has(id)?'on':''}" data-l="${id}" role="checkbox"
+         tabindex="0" aria-checked="${selected.has(id)}">
+      <span class="id">${id.toUpperCase()}</span>
+      <div class="txt"><div class="nm">${nm}</div><div class="ds">${ds}</div></div>
+      <span class="box">${selected.has(id)?'✓':''}</span>
+    </div>`).join("");
+  document.querySelectorAll(".layer").forEach(el=>{
+    const toggle=()=>{const id=el.dataset.l;
+      selected.has(id)?selected.delete(id):selected.add(id);renderLayers();syncPresets();};
+    el.onclick=toggle;
+    el.onkeydown=e=>{if(e.key===" "||e.key==="Enter"){e.preventDefault();toggle();}};
+  });
 }
+function syncPresets(){
+  const cur=[...selected].sort().join(",");
+  document.querySelectorAll("#presets button").forEach(b=>{
+    b.classList.toggle("active",PRESETS[b.dataset.preset].slice().sort().join(",")===cur);
+  });
+}
+document.querySelectorAll("#presets button").forEach(b=>{
+  b.onclick=()=>{selected=new Set(PRESETS[b.dataset.preset]);renderLayers();syncPresets();};});
+document.querySelectorAll("#navChoice .opt").forEach(o=>{
+  const pick=()=>{navMode=o.dataset.nav;
+    document.querySelectorAll("#navChoice .opt").forEach(x=>x.classList.toggle("on",x===o));};
+  o.onclick=pick;
+  o.onkeydown=e=>{if(e.key===" "||e.key==="Enter"){e.preventDefault();pick();}};});
 
-async function poll(jobId){
-  for(;;){
-    const job = await (await fetch('/api/job/'+jobId)).json();
-    renderSteps(job);
-    if(job.done){
-      if(job.error){
-        el('verdict').innerHTML = `<div class="banner">Analysis failed: ${esc(job.error)}</div>`;
-      }else{
-        el('verdict').innerHTML = `
-          <div style="margin-top:1rem">
-            <a class="btn" href="/api/report/${job.sha256}" target="_blank">Full report</a>
-            <a class="btn" href="/api/export/${job.sha256}/stix">STIX 2.1</a>
-            <a class="btn" href="/api/export/${job.sha256}/csv">CSV</a>
-            <a class="btn" href="/api/export/${job.sha256}/yara">YARA</a>
-            <a class="btn" href="/api/export/${job.sha256}/sigma">Sigma</a>
-          </div>`;
-        loadSamples();
-      }
-      return;
+// ---------- run ----------
+$("#runBtn").onclick=async()=>{
+  const layers=[...selected]; if(!layers.length){alert("Select at least one layer.");return;}
+  $("#runBtn").disabled=true; $("#runBtn").textContent="Running…";
+  resetStage();
+  let job;
+  const file=$("#upload").files[0];
+  try{
+    if(file){
+      const fd=new FormData(); fd.append("file",file);
+      job=await (await fetch(`/api/analyze?layers=${layers.join(",")}&navigator=${navMode}`,
+        {method:"POST",body:fd})).json();
+    }else{
+      job=await (await fetch("/api/run",{method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({apk_path:$("#apkSelect").value,layers,navigator:navMode})})).json();
     }
-    await new Promise(r=>setTimeout(r,700));
-  }
+  }catch(e){alert("Failed to start: "+e);unlock();return;}
+  if(job.detail){alert(job.detail);unlock();return;}
+  curJob=job.job_id; curSha=null; logCursor=0;
+  if(layers.includes("l2")) startShots();
+  $("#stopBtn").disabled=false; $("#stopBtn").innerHTML='<span class="sq"></span>Stop';
+  setFeedLive(true,"streaming");
+  poll=setInterval(tick,1000); tick();
+};
+function unlock(){$("#runBtn").disabled=false;$("#runBtn").innerHTML="▶&nbsp; Run analysis";}
+function resetStage(){
+  $("#steps").innerHTML='<div class="empty"><span class="big">◇</span>queued…</div>';
+  $("#verdict").classList.remove("show");
+  $("#verdictEmpty").style.display="block"; $("#verdictEmpty").innerHTML='<span class="big">◈</span>No verdict yet.';
+  $("#feed").innerHTML=""; $("#pipeTail").textContent="";
+  $("#logPane").innerHTML=""; logCursor=0;
 }
 
-async function upload(file){
-  el('verdict').innerHTML = '';
-  const fd = new FormData();
-  fd.append('file', file);
-  const res = await fetch('/api/analyze', {method:'POST', body:fd});
-  if(!res.ok){
-    el('verdict').innerHTML =
-      `<div class="banner">${esc((await res.json()).detail || res.statusText)}</div>`;
+// ---------- live feed + stop ----------
+function setFeedLive(on,txt){
+  $("#feedLiveLbl").classList.toggle("on",on); $("#feedLiveTxt").textContent=txt;
+}
+function classifyLine(line){
+  if(/^ERROR\b/.test(line) || /\bTraceback\b/.test(line)) return "lvl-error";
+  if(/^WARNING\b/.test(line)) return "lvl-warning";
+  return "lvl-info";
+}
+async function pollLog(){
+  if(!curJob) return;
+  let d; try{ d=await (await fetch(`/api/job/${curJob}/log?since=${logCursor}`)).json(); }
+  catch(e){ return; }
+  if(!d.lines || !d.lines.length){ logCursor=d.next??logCursor; return; }
+  const pane=$("#logPane");
+  const nearBottom = pane.scrollHeight - pane.scrollTop - pane.clientHeight < 40;
+  for(const line of d.lines){
+    const div=document.createElement("div");
+    const l4prog = /L4\.deobfuscate:\s*\[\d+\/\d+\]/.test(line);
+    div.className = "log-line " + classifyLine(line) + (l4prog ? " l4prog" : "");
+    div.textContent = line;
+    pane.appendChild(div);
+  }
+  logCursor = d.next;
+  if(nearBottom) pane.scrollTop = pane.scrollHeight;
+}
+$("#stopBtn").onclick=async()=>{
+  if(!curJob) return;
+  $("#stopBtn").disabled=true; $("#stopBtn").innerHTML='<span class="sq"></span>Stopping…';
+  try{ await fetch(`/api/job/${curJob}/stop`,{method:"POST"}); }catch(e){}
+  setFeedLive(true,"stopping…");
+};
+
+// ---------- pipeline poll ----------
+async function tick(){
+  if(!curJob)return;
+  let j; try{ j=await (await fetch(`/api/job/${curJob}`)).json(); }catch(e){return;}
+  curSha=j.sha256||curSha;
+  const steps=(j.steps||[]);
+  $("#steps").innerHTML = steps.map(s=>`
+    <div class="step ${s.state}">
+      <span class="st"></span><span class="lid">${s.name.toUpperCase()}</span>
+      <span class="lnm">${LNAMES[s.name]||s.name}</span>
+      <span class="det">${s.state==='running'?'…':(s.detail||s.state)}</span>
+    </div>`).join("") || '<div class="empty"><span class="big">◇</span>queued…</div>';
+  const dn=steps.filter(s=>s.state==='done').length;
+  $("#pipeTail").textContent = steps.length ? `${dn}/${steps.length} layers`+(j.l2_active?' · L2 live':'') : "";
+  if(j.l2_active){ pollNav(); setLive(true,"live · navigating"); }
+  await pollLog();
+  if(j.done){
+    clearInterval(poll); poll=null; stopShots(); unlock();
+    setLive(false,"offline");
+    $("#stopBtn").disabled=true;
+    setFeedLive(false, j.stopped ? "stopped" : "idle");
+    if(j.stopped && !j.score) $("#pipeTail").textContent += " · stopped by request";
+    if(j.score!=null) showVerdict(j);
+    else if(j.error){ $("#verdictEmpty").innerHTML='<span class="big">⚠</span>Error: '+j.error; }
+    if(curSha) pollNav();
+    loadSamples();
+  }
+}
+async function pollNav(){
+  if(!curJob)return;
+  try{
+    const n=await (await fetch(`/api/job/${curJob}/nav`)).json();
+    const steps=(n.steps||[]).filter(s=>"action" in s);
+    $("#feed").innerHTML=steps.map(s=>{
+      const cls=["type","done","back","swipe"].includes(s.action)?s.action:"";
+      return `<div class="nav ${cls}"><span class="a">${s.action}</span>${s.value_kind?` <span>${s.value_kind}</span>`:""} <span class="r">— ${(s.reason||"").slice(0,64)}</span></div>`;
+    }).join("");
+    const f=$("#feed"); f.scrollTop=f.scrollHeight;
+  }catch(e){}
+}
+
+// ---------- live emulator frames ----------
+function startShots(){
+  $("#screenOff").innerHTML='<span class="radar"></span>waiting for emulator…';
+  shot=setInterval(()=>{
+    const img=$("#screen");
+    const probe=new Image();
+    probe.onload=()=>{img.src=probe.src;img.style.display="block";$("#screenOff").style.display="none";};
+    probe.onerror=()=>{img.style.display="none";$("#screenOff").style.display="grid";};
+    probe.src=`/api/emulator/screenshot?t=${Date.now()}`;
+  },1200);
+}
+function stopShots(){ if(shot){clearInterval(shot);shot=null;}
+  setTimeout(()=>{$("#screen").style.display="none";$("#screenOff").style.display="grid";
+    $("#screenOff").innerHTML='<span class="radar"></span>emulator idle<br>— starts with L2 —';},1500);}
+function setLive(on,txt){
+  $("#liveLbl").classList.toggle("on",on);
+  $("#phone").classList.toggle("live",on);
+  $("#liveTxt").textContent=txt;
+}
+
+// ---------- verdict ----------
+function bandColor(b){return BAND_COL[b]||"var(--info)";}
+function renderRing(score,band){
+  const ring=$("#ring");
+  ring.style.setProperty("--p",score); ring.style.setProperty("--rc",bandColor(band));
+  $("#scoreNum").textContent=score;
+  const bt=$("#bandTxt");
+  bt.innerHTML=`${band}<span class="ai-badge" id="aiBadge"></span>`;
+  bt.className="band band-"+band;
+}
+function showVerdict(j){
+  curSha=j.sha256||curSha;
+  baseScore=j.score??0; baseBand=j.band||"Info"; baseAiDelta=j.ai_delta||0;
+  $("#verdictEmpty").style.display="none";
+  $("#verdict").classList.add("show");
+  renderRing(baseScore,baseBand);
+  $("#verMeta").innerHTML=`${j.package||""}${j.unsupported?' <span class="unsup">weights unsupported</span>':''}`;
+  $("#verActions").innerHTML = curSha ? `
+    <a class="primary" href="/api/report/${curSha}" target="_blank" rel="noopener">Open report ↗</a>
+    <a href="/api/export/${curSha}/stix" target="_blank" rel="noopener">STIX</a>
+    <a href="/api/export/${curSha}/csv" target="_blank" rel="noopener">CSV</a>
+    <a href="/api/export/${curSha}/yara" target="_blank" rel="noopener">YARA</a>
+    <a href="/api/export/${curSha}/sigma" target="_blank" rel="noopener">Sigma</a>` : "";
+  // reset AI toggle for this sample — unchecked = default (AI included when it
+  // qualifies, matching the persisted score); checked = "exclude AI" comparison.
+  const t=$("#aiToggle"); t.checked=false; t.disabled=false;
+  $("#aiNote").style.display="none"; $("#aiNote").textContent="";
+  if(baseAiDelta) showAiBadge(baseAiDelta); else hideAiBadge();
+}
+function hideAiBadge(){const b=$("#aiBadge"); if(b){b.style.display="none";b.textContent="";}}
+function showAiBadge(delta){const b=$("#aiBadge"); if(b){b.textContent=`+${delta} from AI`;b.style.display="inline-block";}}
+
+$("#aiToggle").onchange=async function(){
+  if(!curSha){this.checked=false;return;}
+  const excluding=this.checked;
+  const note=$("#aiNote");
+  if(!excluding){
+    // back to the default (AI included when it qualifies) — no fetch needed.
+    note.style.display="none"; note.textContent="";
+    renderRing(baseScore,baseBand);
+    if(baseAiDelta) showAiBadge(baseAiDelta); else hideAiBadge();
     return;
   }
-  poll((await res.json()).job_id);
+  try{
+    const r=await fetch(`/api/score/${curSha}?ai=0`);
+    if(r.status===404){ note.textContent="AI scoring unavailable"; note.style.display="block";
+      this.checked=false; renderRing(baseScore,baseBand); return; }
+    const d=await r.json();
+    if(d.ai_available===false){
+      this.checked=false; this.disabled=true;
+      note.textContent="no L4 layer for this sample"; note.style.display="block";
+      renderRing(baseScore,baseBand); return;
+    }
+    note.textContent="AI contribution excluded (comparison view)"; note.style.display="block";
+    renderRing(d.score,d.band);
+    hideAiBadge();
+  }catch(e){
+    note.textContent="AI scoring unavailable"; note.style.display="block";
+    this.checked=false; renderRing(baseScore,baseBand);
+  }
+};
+
+// ---------- scored samples ----------
+async function loadSamples(){
+  try{
+    const rows=await (await fetch("/api/samples?limit=200")).json();
+    $("#samplesTail").textContent=`${rows.length} scored · worst first`;
+    if(!rows.length){ $("#samplesBody").innerHTML=
+      '<tr><td colspan="7"><div class="empty">No scored samples yet.</div></td></tr>'; return; }
+    $("#samplesBody").innerHTML=rows.map(r=>{
+      const band=r.band||"Info", score=r.score??0;
+      const findN=Array.isArray(r.findings)?r.findings.length:(r.findings??0);
+      const cat=r.malware_category?`<span class="cat"> · ${r.malware_category}</span>`:"";
+      const label=r.app_label||r.package||"—";
+      return `<tr data-sha="${r.sha256}" data-score="${score}" data-band="${band}"
+        data-pkg="${enc(r.package||'')}" data-unsup="${r.unsupported?1:0}"
+        data-aidelta="${r.ai_delta||0}">
+        <td class="score band-${band}">${score}</td>
+        <td><span class="band-chip band-${band}">${band}</span></td>
+        <td class="app"><div class="primary">${enc(label)}</div>${r.impersonates?`<div class="imp">↳ ${enc(r.impersonates)}</div>`:""}</td>
+        <td class="pkg" title="${enc(r.package||'')}">${enc(r.package||'—')}</td>
+        <td class="pkg">${enc(r.impersonates||'—')}</td>
+        <td class="find">${findN} finding${findN===1?'':'s'}${cat}${r.unsupported?'<span class="unsup">unsup</span>':''}</td>
+        <td class="go">↗</td>
+      </tr>`;
+    }).join("");
+    document.querySelectorAll("#samplesBody tr[data-sha]").forEach(tr=>{
+      tr.onclick=(e)=>{
+        const sha=tr.dataset.sha;
+        if(e.target.classList.contains("go")){ window.open(`/api/report/${sha}`,"_blank","noopener"); return; }
+        curSha=sha;
+        showVerdict({sha256:sha,score:+tr.dataset.score,band:tr.dataset.band,
+          package:dec(tr.dataset.pkg),unsupported:tr.dataset.unsup==="1",
+          ai_delta:+tr.dataset.aidelta||0});
+        $("#verdict").scrollIntoView({behavior:"smooth",block:"center"});
+      };
+    });
+  }catch(e){
+    $("#samplesBody").innerHTML='<tr><td colspan="7"><div class="empty">Could not load samples.</div></td></tr>';
+  }
 }
+function enc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function dec(s){const t=document.createElement("textarea");t.innerHTML=s;return t.value;}
 
-el('f').addEventListener('change', e => e.target.files[0] && upload(e.target.files[0]));
-const drop = el('drop');
-['dragenter','dragover'].forEach(t => drop.addEventListener(t, e => {
-  e.preventDefault(); drop.classList.add('over');
-}));
-['dragleave','drop'].forEach(t => drop.addEventListener(t, e => {
-  e.preventDefault(); drop.classList.remove('over');
-}));
-drop.addEventListener('drop', e => e.dataTransfer.files[0] && upload(e.dataTransfer.files[0]));
-
-health(); loadSamples();
+// ---------- boot ----------
+health(); loadApks(); renderLayers(); syncPresets(); loadSamples();
+setInterval(health,15000);
 </script>
 </body>
 </html>

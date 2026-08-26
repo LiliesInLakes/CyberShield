@@ -97,10 +97,20 @@ def _is_private_ip(ip: str) -> bool:
     return False
 
 
+# `onion` (Tor hidden service — never resolvable via normal DNS, so its
+# presence alone is a stronger malice signal than a clearnet TLD) was missing
+# here until 2026-08-27: `L4/verify.py`'s `_INDICATOR_RE` (a *different*,
+# independently-maintained TLD list used only to judge whether an LLM-decoded
+# string looks indicator-shaped) already included it, so L4 correctly flagged
+# `http://pc35hiptpcwqezgs.onion` in the Mazar BOT sample as a claimed IOC —
+# and this list then dropped it as "not extracted by a deterministic layer"
+# (the standing rule that the model may never introduce an indicator on its
+# own). Two lists encoding the same fact drift; this is that drift, caught by
+# a real sample rather than found in review.
 _PLAUSIBLE_TLD = frozenset("""
 com net org io co in app dev me info biz xyz online site club top live shop store
 ru cn br uk de fr it es nl pl tr ua jp kr vn th id ph my sg pk bd lk np
-cc tk ml ga cf gq pw su icu vip work fun link click space website host press
+cc tk ml ga cf gq pw su icu vip work fun link click space website host press onion
 """.split())
 
 # A *bare* hostname (one not preceded by a scheme) needs a much more
@@ -110,9 +120,13 @@ cc tk ml ga cf gq pw su icu vip work fun link click space website host press
 # `measurement.store` (Firebase Analytics field names). A host seen inside an
 # `https://…` is proven to be an endpoint by its scheme; a bare one is only a
 # string that looks like a domain, so it has to earn it.
+# onion included even bare (unlike the code-identifier-prone .click/.id
+# TLDs this list is otherwise conservative about): a 16- or 56-char base32
+# Tor address has no resemblance to a Java identifier or resource name, so it
+# does not carry the same false-positive risk documented above.
 _BARE_HOST_TLD = frozenset("""
 com net org io in co info biz ru cn br uk de fr it es nl pl tr ua jp kr vn th
-id ph my sg pk bd lk np xyz top online site me app dev cc tk pw su icu
+id ph my sg pk bd lk np xyz top online site me app dev cc tk pw su icu onion
 """.split())
 
 # Class/method-name noise that looks like a hostname (e.g. "android.util.Log").
@@ -274,10 +288,21 @@ def extract_from_apk(apk_path: str | Path, max_member_bytes: int = 64 << 20
                 if info.is_dir() or info.file_size > max_member_bytes:
                     continue
                 name = info.filename
+                # resources.arsc (2026-08-27): a Tor C2 address is not always a
+                # dex string constant. Measured on the Mazar BOT sample: its
+                # `res/values/strings.xml` has `<string name="server_url">
+                # http://pc35hiptpcwqezgs.onion</string>`, compiled into this
+                # binary resource table and referenced from code by resource
+                # ID — invisible to a dex-only scan. It is not XML/JSON/plain
+                # text, but it is a flat, mostly-uncompressed string pool, so
+                # the same raw byte-regex pass that works on dex class buffers
+                # recovers plain-ASCII strings from it directly (verified: the
+                # scheme+host URL_RE match survives untouched).
                 interesting = (
                     name.startswith("classes") and name.endswith(".dex")
-                ) or name.endswith((".xml", ".json", ".properties", ".txt", ".js",
-                                    ".html", ".cfg", ".ini"))
+                ) or name in ("resources.arsc",) or name.endswith(
+                    (".xml", ".json", ".properties", ".txt", ".js",
+                     ".html", ".cfg", ".ini"))
                 if not interesting:
                     continue
                 try:

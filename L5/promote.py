@@ -78,6 +78,7 @@ def l5_summary(result: Any) -> dict[str, Any]:
         "log_odds": round(result.log_odds, 4),
         "binding_reason": result.binding_reason,
         "ml_delta": result.ml_delta,
+        "ai_delta": result.ai_delta,
         "unsupported": result.unsupported,
         "gates": {g.gate_id: g.state for g in result.gates},
         "policy_version": result.policy_version,
@@ -120,6 +121,7 @@ def score_artifact(result: Any) -> dict[str, Any]:
         "weights_version": result.weights_version,
         "ruleset_version": result.ruleset_version,
         "ml_delta": result.ml_delta,
+        "ai_delta": result.ai_delta,
         "contributions": [
             {
                 "source": c.source,

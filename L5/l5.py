@@ -43,7 +43,8 @@ def render_explain(doc: dict, result: ScoreResult, policy) -> str:
     if result.unsupported:
         a("  🔴 UNSUPPORTED — the weights' benign denominator cannot carry them")
 
-    a(f"\n  ADDITIVE  S = {result.log_odds:+.3f}  ->  {result.score - result.ml_delta}")
+    a(f"\n  ADDITIVE  S = {result.log_odds:+.3f}  ->  "
+      f"{result.score - result.ml_delta - result.ai_delta}")
     by_family: dict[str, list] = {}
     for c in result.contributions:
         by_family.setdefault(c.family or "(ungrouped)", []).append(c)
@@ -59,6 +60,9 @@ def render_explain(doc: dict, result: ScoreResult, policy) -> str:
 
     if result.ml_delta:
         a(f"\n  ML        {result.ml_delta:+d}  (l3 prior, bounded ±10)")
+    if result.ai_delta:
+        a(f"\n  AI        {result.ai_delta:+d}  (l4 reasoning, gated on RAG-grounded "
+          f"or class score >= threshold, bounded, cannot reach Critical alone)")
 
     a("\n  GATES")
     for g in result.gates:

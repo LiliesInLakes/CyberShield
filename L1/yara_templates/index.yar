@@ -27,6 +27,9 @@ include "apk_suspicious_behaviors.yar"
 // Droppers, Loaders & Staging
 include "apk_droppers_loaders.yar"
 
+// Dropper + screen-locker primitives (2026-08-26, measured on XBot)
+include "apk_dropper_locker_2026.yar"
+
 // File Format Validation
 include "apk_file_format.yar"
 
