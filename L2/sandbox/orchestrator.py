@@ -100,6 +100,28 @@ class L2Orchestrator:
     sha256: str = ""
     auto_launch_emulator: bool = True
     navigator: str = "droidbot"
+    # Which L4.provider backend the GenAI navigator's LLM calls use --
+    # "openrouter" (free tier, default) or "aicredits" (paid fallback, see
+    # L4/provider.py). Overridable via SENTINEL_GENAI_PROVIDER so a run
+    # through the web dashboard (which launches this as a subprocess and
+    # inherits its env) can switch providers with no code change, exactly
+    # like SENTINEL_MITM_BLOCK_UNKNOWN. Was previously hardcoded to
+    # "openrouter" with no override -- when OpenRouter's free daily cap was
+    # exhausted, every navigator reasoning call failed silently and the
+    # loop just repeated "wait" forever with no way to route around it.
+    navigator_provider: str = field(
+        default_factory=lambda: os.environ.get("SENTINEL_GENAI_PROVIDER", "openrouter"))
+    # Model override for the navigator specifically -- separate from L4's own
+    # default so upgrading navigation reasoning doesn't silently change L4's
+    # cost profile too. Empty means "use the provider's own default" (e.g.
+    # gpt-4o-mini for aicredits). claude-haiku-4.5 is recommended when running
+    # via aicredits: measured live to correctly follow the navigator's strict
+    # "never confirm a destructive dialog" framing better than gpt-4o-mini did
+    # (see genai_navigator.py's destructive-screen guard, which is the hard
+    # backstop regardless of model choice -- this is defense in depth, not a
+    # replacement for it).
+    navigator_model: str = field(
+        default_factory=lambda: os.environ.get("SENTINEL_GENAI_MODEL", ""))
     device_serial: str = field(default="", init=False)
     artifacts_dir: Path = field(default=Path(), init=False)
     frida_log_path: Path = field(default=Path(), init=False)
@@ -631,9 +653,10 @@ class L2Orchestrator:
             return None
 
         try:
-            provider = get_provider("openrouter")
+            provider = get_provider(self.navigator_provider)
         except ProviderError as exc:
-            log.warning("genai navigator: provider unavailable (%s) -- falling back to droidbot", exc)
+            log.warning("genai navigator: provider %r unavailable (%s) -- falling back to droidbot",
+                       self.navigator_provider, exc)
             return None
 
         activity = self._find_launcher_activity()

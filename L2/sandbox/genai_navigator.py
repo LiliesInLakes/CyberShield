@@ -42,6 +42,44 @@ ANDROID_NS = "http://schemas.android.com/apk/res/android"
 # malformed response (see _parse_action_json).
 _VALID_ACTIONS = frozenset({"tap", "type", "swipe", "back", "wait", "done"})
 
+# Screens whose text signals a destructive system action -- confirming one of
+# these would uninstall the app or wipe its data, ending the detonation with
+# nothing observed. Measured failure that justifies this being a hard,
+# model-independent gate rather than a prompt instruction: on the Mazar BOT
+# sample, the navigator correctly tried to tap "Cancel" on an uninstall
+# dialog, the tap didn't register (the screen hash was unchanged next step),
+# and rather than retrying it reasoned "the only available action" was to
+# confirm the uninstall instead -- destroying the very sample it was
+# supposed to be detonating. A stronger model makes this specific
+# rationalization less likely, but "less likely" is not good enough for an
+# action this destructive; it is blocked in code regardless of what any
+# model decides.
+_DESTRUCTIVE_SCREEN_RE = re.compile(
+    r"uninstall|remove\s+(this\s+)?app|delete\s+this\s+app|"
+    r"clear\s+(app\s+)?(data|storage)|factory\s+(data\s+)?reset|"
+    r"erase\s+all\s+data|wipe\s+(device|data)",
+    re.IGNORECASE,
+)
+# A tap target whose own label is one of these is a safe way to leave a
+# destructive screen (dismissing it, not confirming it) -- these are never
+# blocked, only a tap on anything else while such a screen is showing is.
+_SAFE_DISMISS_RE = re.compile(
+    r"^(cancel|no|not\s+now|keep|deny|dismiss)$", re.IGNORECASE,
+)
+
+
+def _screen_text(elements: list["UiElement"]) -> str:
+    return " ".join(f"{e.text} {e.content_desc}" for e in elements)
+
+
+def _is_destructive_screen(elements: list["UiElement"]) -> bool:
+    return bool(_DESTRUCTIVE_SCREEN_RE.search(_screen_text(elements)))
+
+
+def _is_safe_dismiss(element: "UiElement") -> bool:
+    label = (element.text or element.content_desc or "").strip()
+    return bool(_SAFE_DISMISS_RE.match(label))
+
 # Android keyevent code for BACK, used by the "back" action.
 _KEYEVENT_BACK = "4"
 
@@ -642,18 +680,27 @@ class GenAINavigator:
                 stop_reason = "cycle_detected_empty"
                 break
 
+            failure_reason: str | None = None
             try:
                 action = self._reason(elements)
+                if action is None:
+                    failure_reason = "unparsable LLM response (not valid JSON / wrong shape)"
             except Exception as exc:  # noqa: BLE001
                 # Any provider failure mid-run (rate limit, timeout,
                 # malformed body) degrades this one step to a no-op
-                # rather than aborting the whole navigation session.
+                # rather than aborting the whole navigation session. The
+                # exact exception is kept (not collapsed to one generic
+                # string) -- a rate-limited provider and a genuinely
+                # confusing screen look identical in the log otherwise,
+                # which is exactly what made a stuck run undiagnosable
+                # from the live feed alone.
                 log.warning("genai_nav: reasoning call failed: %s", exc)
                 action = None
+                failure_reason = f"LLM call failed: {type(exc).__name__}: {exc}"[:200]
 
             if action is None:
                 action = NavAction(action="wait", target_i=None, value=None,
-                                    reason="unparsable or failed LLM response")
+                                    reason=failure_reason or "unparsable or failed LLM response")
 
             if cycling and action.action in ("tap", "type") and action.target_i is not None:
                 # Loop-avoidance: on a screen we keep re-hashing to the
@@ -661,6 +708,20 @@ class GenAINavigator:
                 # over repeating what evidently isn't progressing things.
                 action = NavAction(action="swipe", target_i=None, value=None,
                                     reason="cycle detected, trying to reveal new elements")
+
+            if (action.action in ("tap", "type") and _is_destructive_screen(elements)
+                    and not (action.target_i is not None and 0 <= action.target_i < len(elements)
+                             and _is_safe_dismiss(elements[action.target_i]))):
+                # Hard, model-independent safety gate: this screen is asking
+                # to uninstall/wipe, and the chosen target is not a
+                # recognised dismiss button. Never execute this -- press
+                # BACK instead, which dismisses almost every Android dialog
+                # without confirming it. See _DESTRUCTIVE_SCREEN_RE's
+                # docstring for the measured failure this guards against.
+                action = NavAction(action="back", target_i=None, value=None,
+                                    reason="blocked: destructive-looking screen "
+                                            "(uninstall/wipe) -- pressing BACK instead "
+                                            "of the model's chosen action")
 
             self._log_step({
                 "step": steps_taken,
