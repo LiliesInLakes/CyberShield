@@ -617,10 +617,11 @@ model's decision" — see the **Model Explainability** section below.
 - **Measured, not claimed, numbers throughout**: 37% detection rate (up from
   an honestly-reported 8% baseline), a 3,664-sample scored corpus, weights
   computed (not asserted) from 3,090 malware vs. 604 benign samples.
-- **Graceful degradation everywhere**: if Ghidra (native-code analysis) is
-  absent, or an LLM provider's free quota is exhausted, or the emulator isn't
-  available, the pipeline reports an honest **"skipped: reason"** rather than
-  crashing or silently reporting a clean result.
+- **Graceful degradation everywhere**: Ghidra (native-code analysis) is now
+  installed and running, but if it, or an LLM provider's free quota, or the
+  emulator isn't available on a given deployment, the pipeline reports an
+  honest **"skipped: reason"** rather than crashing or silently reporting a
+  clean result.
 
 ### Model Explainability — 20
 

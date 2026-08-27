@@ -439,6 +439,121 @@ def test_navigator_cycle_detection_switches_to_swipe(monkeypatch):
     assert "swipe" in executed_actions
 
 
+UNINSTALL_XML = """<?xml version="1.0"?>
+<hierarchy>
+  <node text="" resource-id="" class="android.widget.FrameLayout" clickable="false"
+        bounds="[0,0][1080,1920]">
+    <node text="Do you want to uninstall this app?" resource-id=""
+          class="android.widget.TextView" clickable="false"
+          content-desc="" bounds="[100,300][980,400]" />
+    <node text="OK" resource-id="android:id/button1"
+          class="android.widget.Button" clickable="true"
+          content-desc="" bounds="[100,900][500,1000]" />
+    <node text="Cancel" resource-id="android:id/button2"
+          class="android.widget.Button" clickable="true"
+          content-desc="" bounds="[600,900][980,1000]" />
+  </node>
+</hierarchy>
+"""
+
+
+def test_navigator_guardrail_blocks_tap_on_destructive_dialog(monkeypatch):
+    # The model chooses to tap "OK" (target_i 1) on an uninstall confirmation
+    # -- the mechanical guardrail must override this to "back" regardless of
+    # what the model decided (this is the exact failure T-notes document: a
+    # model that rationalized confirming an uninstall dialog).
+    provider = FakeProvider(responses=[
+        '{"action": "tap", "target_i": 0, "value": null, "reason": "confirm"}',
+    ])
+    nav = _bare_navigator(provider, max_steps=1, budget_s=30)
+    monkeypatch.setattr(nav, "_dump_ui", lambda: UNINSTALL_XML)
+
+    executed_actions = []
+    monkeypatch.setattr(nav, "_adb", lambda *a: subprocess.CompletedProcess(a, 0, "", ""))
+    monkeypatch.setattr("L2.sandbox.genai_navigator.time.sleep", lambda s: None)
+
+    orig_execute = nav._execute
+
+    def spy_execute(action, elements):
+        executed_actions.append(action.action)
+        orig_execute(action, elements)
+
+    monkeypatch.setattr(nav, "_execute", spy_execute)
+
+    nav.run()
+    assert executed_actions == ["back"]
+
+
+def test_navigator_guardrail_allows_safe_dismiss_on_destructive_dialog(monkeypatch):
+    # Tapping the actual "Cancel" button on the same dialog is a safe
+    # dismiss, not a confirmation -- the guardrail must not override it.
+    provider = FakeProvider(responses=[
+        '{"action": "tap", "target_i": 1, "value": null, "reason": "cancel it"}',
+        '{"action": "done", "target_i": null, "value": null, "reason": "done"}',
+    ])
+    nav = _bare_navigator(provider, max_steps=2, budget_s=30)
+    monkeypatch.setattr(nav, "_dump_ui", lambda: UNINSTALL_XML)
+
+    executed_actions = []
+    monkeypatch.setattr(nav, "_adb", lambda *a: subprocess.CompletedProcess(a, 0, "", ""))
+    monkeypatch.setattr("L2.sandbox.genai_navigator.time.sleep", lambda s: None)
+
+    orig_execute = nav._execute
+
+    def spy_execute(action, elements):
+        executed_actions.append(action.action)
+        orig_execute(action, elements)
+
+    monkeypatch.setattr(nav, "_execute", spy_execute)
+
+    nav.run()
+    assert executed_actions == ["tap"]
+
+
+def test_navigator_guardrail_limit_stops_run_when_screen_wont_dismiss(monkeypatch):
+    # The destructive dialog reappears every single step (e.g. a locker that
+    # ignores BACK) and the model keeps trying to tap "OK" -- without a
+    # limit, the guardrail would force "back" every step until max_steps/
+    # budget_s, indistinguishable from the run just being slow. It must
+    # instead give up after destructive_guardrail_limit consecutive hits.
+    provider = FakeProvider(responses=[
+        '{"action": "tap", "target_i": 0, "value": null, "reason": "confirm"}',
+    ] * 20)
+    # cycle_repeat_threshold set high so the pre-existing same-screen cycle
+    # detection (which would otherwise convert the repeated tap to a safe
+    # "swipe" after a few repeats) doesn't mask what this test is isolating.
+    nav = _bare_navigator(provider, max_steps=100, budget_s=9999,
+                          destructive_guardrail_limit=3, cycle_repeat_threshold=999)
+    monkeypatch.setattr(nav, "_dump_ui", lambda: UNINSTALL_XML)
+    monkeypatch.setattr(nav, "_adb", lambda *a: subprocess.CompletedProcess(a, 0, "", ""))
+    monkeypatch.setattr("L2.sandbox.genai_navigator.time.sleep", lambda s: None)
+
+    summary = nav.run()
+    assert summary["stop_reason"] == "destructive_guardrail_limit"
+    # Stops shortly after the limit is exceeded, nowhere near max_steps=100.
+    assert summary["steps_taken"] <= 5
+
+
+def test_navigator_guardrail_hit_counter_resets_on_non_destructive_screen(monkeypatch):
+    # A destructive screen that appears, gets dismissed, and doesn't
+    # reappear should not count toward the consecutive-hit limit -- only a
+    # genuinely stuck run (consecutive, unbroken hits) should trip it.
+    provider = FakeProvider(responses=[
+        '{"action": "tap", "target_i": 0, "value": null, "reason": "confirm"}',
+        '{"action": "wait", "target_i": null, "value": null, "reason": "loading"}',
+        '{"action": "done", "target_i": null, "value": null, "reason": "done"}',
+    ])
+    screens = iter([UNINSTALL_XML, SAMPLE_XML, SAMPLE_XML])
+    nav = _bare_navigator(provider, max_steps=10, budget_s=30,
+                          destructive_guardrail_limit=1)
+    monkeypatch.setattr(nav, "_dump_ui", lambda: next(screens))
+    monkeypatch.setattr(nav, "_adb", lambda *a: subprocess.CompletedProcess(a, 0, "", ""))
+    monkeypatch.setattr("L2.sandbox.genai_navigator.time.sleep", lambda s: None)
+
+    summary = nav.run()
+    assert summary["stop_reason"] == "done"
+
+
 def test_navigator_logs_each_step_to_jsonl(tmp_path, monkeypatch):
     provider = FakeProvider(responses=[
         '{"action": "done", "target_i": null, "value": null, "reason": "done"}',

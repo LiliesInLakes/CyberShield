@@ -439,6 +439,7 @@ def explain_class(provider: Provider, location: str, source: str,
                   manifest_context: str = "", resource_strings: Iterable[str] = (),
                   network_evidence: dict[str, Any] | None = None,
                   dex_haystack: Iterable[str] = (),
+                  verifier_provider: Provider | None = None,
                   ) -> tuple[ClassExplanation, list[Completion]]:
     """Run the three-agent chain for one class: analyst -> mechanical verify
     -> reasoning-trail -> adversarial verifier -> deterministic score.
@@ -447,6 +448,14 @@ def explain_class(provider: Provider, location: str, source: str,
     package-level context + retrieval; the reasoning-trail agent sees only
     what survived mechanical verification, never raw source; the verifier
     sees source + the trail + what it cited, nothing else.
+
+    ``verifier_provider`` (default: same as ``provider``) lets the adversarial
+    verifier run on a stronger model than the analyst/trail-builder steps —
+    the two-tier strategy is: a cheap model for the generation-only steps
+    (extracting claims from source, structuring an already-verified trail),
+    a stronger one reserved for the one step that has to catch a subtle
+    logical gap under adversarial pressure and runs once per class, not once
+    per retry.
     """
     completions: list[Completion] = []
     literals = extract_string_literals(source)
@@ -491,7 +500,7 @@ def explain_class(provider: Provider, location: str, source: str,
     try:
         trail = build_trail(v.kept, kb_matches, provider)
         kb_index = {m.kb_id: m for m in kb_matches}
-        verifier_result = verify_trail(trail, source, kb_index, provider)
+        verifier_result = verify_trail(trail, source, kb_index, verifier_provider or provider)
     except Exception:  # noqa: BLE001
         # A failed second/third call degrades to "no score signal", not a
         # crash — the analyst's mechanically-verified claims still stand.
@@ -515,6 +524,7 @@ def explain_class(provider: Provider, location: str, source: str,
 
 def deobfuscate(doc: dict[str, Any], src_root: Path, *,
                 provider: Provider | None = None,
+                verifier_provider: Provider | None = None,
                 extracted_iocs: Iterable[str] = (),
                 limit: int = MAX_CLASSES,
                 progress: Any = None) -> DeobfuscationResult:
@@ -527,11 +537,16 @@ def deobfuscate(doc: dict[str, Any], src_root: Path, *,
     control panel's live feed, which streams the CLI's stdout) uses to
     surface that; it is a no-op when omitted, so nothing about scoring or
     the returned result depends on it.
+
+    ``verifier_provider`` (default: same as ``provider``) runs the per-class
+    adversarial verifier on a stronger model — see ``explain_class``'s
+    docstring for the two-tier rationale. Callers that don't care (tests,
+    ad-hoc scripts) get single-provider behaviour unchanged.
     """
     def _emit(msg: str) -> None:
         if progress is not None:
             progress(msg)
-    provider = provider or get_provider("openrouter")
+    provider = provider or get_provider("aicredits")
     result = DeobfuscationResult(sha256=doc.get("sha256", ""))
 
     l0_context = package_l0_context(doc)
@@ -570,6 +585,7 @@ def deobfuscate(doc: dict[str, Any], src_root: Path, *,
                 l0_context=l0_context, l2_context=l2_context,
                 manifest_context=manifest_context, resource_strings=resource_strings,
                 network_evidence=network_evidence, dex_haystack=dex_haystack,
+                verifier_provider=verifier_provider,
             )
         except Exception as exc:  # noqa: BLE001
             result.errors.append(f"{location}: {type(exc).__name__}: {exc}")
@@ -665,9 +681,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--src", required=True, help="jadx_src directory for this sample")
     ap.add_argument("--limit", type=int, default=MAX_CLASSES)
     ap.add_argument("--budget", type=float, default=1.0, help="USD cap for this run")
-    ap.add_argument("--provider", default="openrouter",
-                    help="'openrouter' (free tier, default) or 'aicredits' (paid, "
-                         "for when OpenRouter's free daily cap is exhausted)")
+    ap.add_argument("--provider", default="aicredits",
+                    help="'aicredits' (paid, default -- avoids OpenRouter's free "
+                         "daily cap, which caused the navigator's WAIT-loop bug) "
+                         "or 'openrouter' (free tier)")
     ap.add_argument("--explain", action="store_true")
     ap.add_argument("--no-write", action="store_true")
     args = ap.parse_args(argv)
@@ -685,8 +702,19 @@ def main(argv: list[str] | None = None) -> int:
         # a caller streaming both processes' stdout can parse them uniformly.
         print(f"INFO L4.deobfuscate: {msg}", flush=True)
 
-    provider = get_provider(args.provider, ledger=CostLedger(cap_usd=args.budget))
+    ledger = CostLedger(cap_usd=args.budget)
+    provider = get_provider(args.provider, ledger=ledger)
+    # Two-tier models (aicredits only -- see L4/provider.py's
+    # AICREDITS_REASONING_MODEL comment): share one ledger so the budget cap
+    # applies to the run's total spend, not per-tier.
+    if args.provider == "aicredits":
+        from L4.provider import AICREDITS_REASONING_MODEL
+        verifier_provider = get_provider(args.provider, model=AICREDITS_REASONING_MODEL,
+                                         ledger=ledger)
+    else:
+        verifier_provider = provider
     result = deobfuscate(doc, Path(args.src), provider=provider,
+                         verifier_provider=verifier_provider,
                          extracted_iocs=iocs, limit=args.limit, progress=_progress)
 
     if not args.no_write and result.explanations:

@@ -263,8 +263,13 @@ def _parse_network_evidence(path: Path) -> list[L1Finding]:
         return []
     findings: list[L1Finding] = []
     for entry in data:
-        # Only promote entries flagged by the addon
-        if "alert" not in entry and "hijacked" not in entry:
+        # Only promote entries flagged by the addon. "blocked" is the
+        # containment path (SENTINEL_MITM_BLOCK_UNKNOWN, default-on): an
+        # unknown host's request was answered locally instead of forwarded.
+        # It was missing here, so a real captured C2 beacon to an unknown
+        # host (e.g. XBot's POST to its C2 IP) produced zero findings even
+        # though the request was correctly captured and contained.
+        if "alert" not in entry and "hijacked" not in entry and "blocked" not in entry:
             continue
         if entry.get("alert") == "CREDENTIAL_EXFILTRATION":
             findings.append(L1Finding(
@@ -287,6 +292,19 @@ def _parse_network_evidence(path: Path) -> list[L1Finding]:
                 mitre_techniques=CATEGORY_MITRE_MAP[Category.C2_COMMS],
                 observation=ObservationSource.OBSERVED,
                 detail={"url": entry.get("url"), "hijack_type": entry["hijacked"]},
+            ))
+        elif entry.get("blocked"):
+            findings.append(L1Finding(
+                engine="mitmproxy",
+                category=Category.C2_COMMS,
+                severity=Severity.HIGH,
+                evidence=f"C2 beacon to unknown host blocked (contained): "
+                         f"{entry.get('method', '')} {entry.get('url', '')}",
+                location="runtime/network",
+                mitre_techniques=CATEGORY_MITRE_MAP[Category.C2_COMMS],
+                observation=ObservationSource.OBSERVED,
+                detail={"url": entry.get("url"), "host": entry.get("host"),
+                        "method": entry.get("method")},
             ))
     return findings
 

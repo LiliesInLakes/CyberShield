@@ -1643,6 +1643,51 @@
       "families": []
     },
     {
+      "id": "yara:Android_Dropper_Asset_Hidden_Dex",
+      "source": "yara_rule",
+      "title": "Android Dropper Asset Hidden Dex",
+      "description": "A secondary DEX hidden under assets/ with a non-standard name \u2014 a dropper staging its next stage where the standard multidex check (classes2.dex) cannot see it. Measured on 'Bank Of India(1)' (assets/raw/ddb0e2.dex) and 'Bank Of India' (assets/ScKit_shield_v1.dex).",
+      "code_indicators": [],
+      "severity": "high",
+      "mitre_techniques": [
+        "T1407"
+      ],
+      "families": []
+    },
+    {
+      "id": "yara:Android_Commercial_Packer_Protector",
+      "source": "yara_rule",
+      "title": "Android Commercial Packer Protector",
+      "description": "Commercial Android packer/protector artifacts (ScKit/SecShell, np_protect, Jiagu, DexHelper, mobisec, Bangcle) \u2014 a legitimate bank ships an unpacked app; a packer wrapping an app that impersonates a bank is a strong repackaging/evasion signal. Measured on 'Bank Of India' (ScKit_shield_v1 + libnp_protect_res).",
+      "code_indicators": [
+        "ScKit_shield",
+        "libScKitShieldV1",
+        "np_protect",
+        "libjiagu",
+        "libDexHelper",
+        "libmobisec",
+        "libsecexe",
+        "libSecShell"
+      ],
+      "severity": "high",
+      "mitre_techniques": [
+        "T1406"
+      ],
+      "families": []
+    },
+    {
+      "id": "yara:Android_Dropper_Bulk_Encrypted_Assets",
+      "source": "yara_rule",
+      "title": "Android Dropper Bulk Encrypted Assets",
+      "description": "Many random-named opaque asset blobs (.dat/.bin/.cfg) \u2014 the encrypted-payload staging pattern of an assets-based dropper, where the real second stage is split across dozens of generated-name files. Measured on 'Bank of india' (com.apkshield.installer, 40 blobs) and 'Bank Of India(1)' (30 blobs).",
+      "code_indicators": [],
+      "severity": "high",
+      "mitre_techniques": [
+        "T1407"
+      ],
+      "families": []
+    },
+    {
       "id": "yara:Android_BFSI_SMS_Intercept_And_Forward",
       "source": "yara_rule",
       "title": "Android BFSI SMS Intercept And Forward",
@@ -1898,6 +1943,39 @@
       "severity": "high",
       "mitre_techniques": [
         "T1437.001"
+      ],
+      "families": []
+    },
+    {
+      "id": "yara:Android_BFSI_XBot_Dropper_Service",
+      "source": "yara_rule",
+      "title": "Android BFSI XBot Dropper Service",
+      "description": "Background service class co-locating device-admin control, a remote script fetch, and an HTTP C2 endpoint \u2014 the XBot-family banking dropper/locker service",
+      "code_indicators": [
+        "DevicePolicyManager",
+        "bootScript",
+        "get_script",
+        "request.php",
+        "locker.php"
+      ],
+      "severity": "critical",
+      "mitre_techniques": [
+        "T1407"
+      ],
+      "families": []
+    },
+    {
+      "id": "yara:Android_BFSI_XBot_Locker_Endpoint",
+      "source": "yara_rule",
+      "title": "Android BFSI XBot Locker Endpoint",
+      "description": "Class builds an HTTP request to a `locker.php` C2 endpoint \u2014 the XBot-family remote screen-locker (ransom-lock) control channel",
+      "code_indicators": [
+        "locker.php",
+        "http://"
+      ],
+      "severity": "high",
+      "mitre_techniques": [
+        "T1471"
       ],
       "families": []
     },
@@ -2491,10 +2569,10 @@
         "YOUR FILES HAVE BEEN ENCRYPTED",
         "files have been encrypted",
         "decrypt your files",
-        "BITCOIN",
+        "bitcoin address",
         "ransom",
         "unlock your device",
-        "all your data",
+        "all your files",
         ".jpg",
         ".mp4",
         ".pdf",
@@ -3419,6 +3497,104 @@
       ]
     },
     {
+      "id": "india:asset_hidden_secondary_dex",
+      "source": "curated_india",
+      "title": "Second-stage DEX hidden under assets/",
+      "description": "A dropper stages its real payload as a DEX file buried under assets/ with a random or packer-branded name (e.g. assets/raw/ddb0e2.dex, assets/ScKit_shield_v1.dex) rather than a standard root-level classes2.dex, then loads it at runtime with DexClassLoader. Placing it in assets evades the standard multidex check and keeps the malicious code out of the class that ships in classes.dex. Observed on multiple Bank-of-India-impersonating APKs; the visible classes.dex is a thin launcher, the banking-trojan behaviour is in the hidden stage.",
+      "code_indicators": [
+        "assets/",
+        ".dex",
+        "DexClassLoader",
+        "loadClass",
+        "getCacheDir",
+        "dalvik.system.DexClassLoader"
+      ],
+      "severity": "high",
+      "mitre_techniques": [
+        "T1407",
+        "T1406"
+      ],
+      "families": [
+        "generic-dropper",
+        "apkshield"
+      ]
+    },
+    {
+      "id": "india:bulk_encrypted_asset_payload",
+      "source": "curated_india",
+      "title": "Encrypted payload split across bulk random-named assets",
+      "description": "The real second stage is encrypted and split across dozens of generated-name opaque asset blobs (assets/xv0j5bvm.dat, s1qz.dat, w5rkcb6x.cfg, ...), reassembled and decrypted at runtime (Cipher / SecretKeySpec / IvParameterSpec) before being written to the app's private storage and loaded. Observed on the com.apkshield.installer dropper impersonating Bank of India (~40 such blobs). The opaque, high-entropy, human-meaningless filenames are the tell \u2014 a legitimate app's assets are named for what they are.",
+      "code_indicators": [
+        "assets/",
+        ".dat",
+        ".bin",
+        ".cfg",
+        "Cipher",
+        "SecretKeySpec",
+        "IvParameterSpec",
+        "getFilesDir",
+        "FileOutputStream"
+      ],
+      "severity": "high",
+      "mitre_techniques": [
+        "T1406",
+        "T1407"
+      ],
+      "families": [
+        "apkshield",
+        "generic-dropper"
+      ]
+    },
+    {
+      "id": "india:commercial_packer_on_bank_impersonator",
+      "source": "curated_india",
+      "title": "Commercial packer/protector wrapping a bank impersonator",
+      "description": "The app is wrapped by a commercial Android packer/protector \u2014 ScKit/SecShell (libScKitShieldV1, ScKit_shield_v1.dex), np_protect (libnp_protect_res), Qihoo Jiagu (libjiagu), 360 DexHelper (libDexHelper), Bangcle (libsecexe/libSecShell), mobisec \u2014 so its real bytecode is decrypted only in memory at runtime and static analysis sees a stub. A genuine bank ships an unpacked app; a packer on an app that *impersonates* a specific bank is a strong repackaging/evasion signal, especially combined with a self-signed or AOSP-test-key certificate.",
+      "code_indicators": [
+        "ScKit_shield",
+        "libScKitShieldV1",
+        "np_protect",
+        "libjiagu",
+        "libDexHelper",
+        "libsecexe",
+        "libSecShell",
+        "libmobisec"
+      ],
+      "severity": "high",
+      "mitre_techniques": [
+        "T1406",
+        "T1027"
+      ],
+      "families": [
+        "ScKit",
+        "SecShell",
+        "Jiagu",
+        "generic-packer"
+      ]
+    },
+    {
+      "id": "india:impersonation_cert_and_typosquat_signals",
+      "source": "curated_india",
+      "title": "Fake-developer cert + label typosquat on a bank impersonator",
+      "description": "Bank-impersonating APKs are signed with tell-tale certificates: fabricated 'Pvt Ltd' developer identities (e.g. 'Vikram TechLabs Pvt Ltd/Priya Apps', 'Sanjay Solutions Pvt Ltd/Suresh App'), the AOSP debug/test key (CN=Android, O=Google, android@android.com \u2014 meaning the app was repackaged and re-signed, never a genuine release), China-origin certs (Country: CN) on an Indian-bank app, or placeholder DNs (np/np/np). The visible app label is often a homoglyph typosquat \u2014 'Bank Of lndia' with a lowercase L for the I \u2014 which can defeat exact brand-token matching while still deceiving a human. None of these alone proves malice, but on an app claiming a specific bank they corroborate impersonation strongly.",
+      "code_indicators": [
+        "Pvt Ltd",
+        "CN=Android",
+        "android@android.com",
+        "REQUEST_INSTALL_PACKAGES",
+        "Bank Of lndia",
+        "Country: CN"
+      ],
+      "severity": "high",
+      "mitre_techniques": [
+        "T1655",
+        "T1660"
+      ],
+      "families": [
+        "generic-bank-impersonator"
+      ]
+    },
+    {
       "id": "emerging:ats_on_device_fraud",
       "source": "emerging_2026",
       "title": "ATS \u2014 Automated Transfer System / On-Device Fraud",
@@ -3626,8 +3802,8 @@
   ],
   "source_counts": {
     "mitre_attack": 122,
-    "yara_rule": 59,
-    "curated_india": 27,
+    "yara_rule": 64,
+    "curated_india": 31,
     "emerging_2026": 8
   }
 }

@@ -70,7 +70,7 @@ ALLOWED_APK_ROOTS = [
     UPLOAD_DIR.resolve(),
 ]
 
-ALL_LAYERS = ["l0", "l1", "l2", "l3", "l4", "l5"]
+ALL_LAYERS = ["l0", "l1", "l2", "l3", "l4", "l5", "l6"]
 
 app = FastAPI(title="APK Sentinel", version="0.3")
 
@@ -181,9 +181,24 @@ def _sha256_of(path: Path) -> str:
 
 
 def _package_of(apk_path: Path) -> str | None:
+    """Package name for an APK, used when L2 is run without L0 in the same job.
+
+    Falls back to L0's aapt-based recovery (same as harvest_manifest) when
+    androguard can't read a deliberately-sabotaged manifest -- otherwise an
+    anti-analysis sample run L2-only would skip detonation for lack of a
+    package name, the exact gap the L0 fallback closes.
+    """
     try:
         from androguard.core.apk import APK
-        return APK(str(apk_path)).get_package()
+        pkg = APK(str(apk_path)).get_package()
+        if pkg:
+            return pkg
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        from L0.ingest import _aapt_badging
+        recovered = _aapt_badging(Path(apk_path))
+        return recovered.get("package_name") if recovered else None
     except Exception:  # noqa: BLE001
         return None
 
@@ -277,6 +292,30 @@ def _run_job(job_id: str, apk_path: Path, layers: list[str], navigator: str) -> 
                       + (" (unsupported)" if result.unsupported else ""))
             _job_update(job_id, score=result.score, band=result.band,
                         unsupported=result.unsupported, ai_delta=result.ai_delta)
+
+        # ---- L6 recommend (post-verdict "what should the analyst do
+        # next") — opt-in like L2/L4, not auto-run: it makes an LLM call
+        # and needs L5's score already computed. -------------------------
+        if "l6" in enabled and not _stopped(job_id):
+            from L4.provider import CostLedger, get_provider
+            from L5.score import load_policy, score_spine
+            from L6.recommend import recommend, write_layer as write_recommend_layer
+            _job_step(job_id, "l6", "running", "generating next-step recommendation")
+            try:
+                doc = spine.load_spine(sha)
+                policy = load_policy()
+                score = score_spine(doc, policy, include_ai=True)
+                ledger = CostLedger(cap_usd=0.25)
+                provider = get_provider("aicredits", ledger=ledger)
+                rec = recommend(doc, score, provider)
+                write_recommend_layer(rec)
+                _job_step(job_id, "l6", "done",
+                          f"{rec.priority_tier} · {len(rec.actions)} action(s), "
+                          f"{len(rec.dropped)} dropped · ${rec.cost_usd:.4f}")
+            except Exception as exc:  # noqa: BLE001
+                # Advisory-only step -- a failure here must not take down a
+                # run that already has a valid L0-L5 verdict.
+                _job_step(job_id, "l6", "failed", f"{type(exc).__name__}: {exc}")
 
         _job_update(job_id, done=True, stopped=_stopped(job_id))
     except Exception as exc:  # noqa: BLE001
@@ -650,6 +689,51 @@ def report(sha256: str) -> str:
         raise HTTPException(404, "no evidence record for that hash")
     doc = spine.load_spine(sha256)
     return report_mod.render(doc)
+
+
+@app.get("/api/recommend/{sha256}")
+def get_recommendation(sha256: str) -> dict[str, Any]:
+    """Read a precomputed recommendation.json artifact -- does not run
+    L6/recommend.py itself. Same read-a-precomputed-artifact shape as
+    /api/export. Use POST /api/recommend/{sha256}/run to actually generate
+    one (button-triggered from the UI, or via 'l6' in a pipeline run's
+    layers)."""
+    path = REPO_ROOT / "L6" / "artifacts" / sha256 / "recommendation.json"
+    if not path.is_file():
+        raise HTTPException(404, "no recommendation for that hash yet -- "
+                                  "POST /api/recommend/{sha256}/run to generate one")
+    return json.loads(path.read_text())
+
+
+@app.post("/api/recommend/{sha256}/run")
+def run_recommendation(sha256: str) -> dict[str, Any]:
+    """Generate a recommendation for an already-scored sample, on demand.
+
+    Synchronous, not a queued job: this is one small-context LLM call
+    (~$0.04 measured, see docs/L6_RECOMMEND_EXPLAINER.md), the same
+    "cheap enough to compute inline" shape as /api/score's view-time
+    recompute -- no need for the job-polling machinery L2/L4 use for
+    multi-minute work. Lets a sample scored *before* this feature existed
+    (or one where "l6" wasn't ticked in the original run) get a
+    recommendation later, without re-running L0-L5.
+    """
+    if not spine_exists(sha256):
+        raise HTTPException(404, "no evidence record for that hash")
+    from L4.provider import CostLedger, ProviderError, get_provider
+    from L5.score import load_policy, score_spine
+    from L6.recommend import recommend, write_layer as write_recommend_layer
+
+    doc = spine.load_spine(sha256)
+    policy = load_policy()
+    score = score_spine(doc, policy, include_ai=True)
+    ledger = CostLedger(cap_usd=0.25)
+    try:
+        provider = get_provider("aicredits", ledger=ledger)
+        rec = recommend(doc, score, provider)
+    except ProviderError as exc:
+        raise HTTPException(502, f"recommendation provider unavailable: {exc}")
+    write_recommend_layer(rec)
+    return rec.to_dict()
 
 
 @app.get("/api/export/{sha256}/{fmt}")

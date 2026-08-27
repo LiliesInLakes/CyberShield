@@ -6,7 +6,9 @@
 
 The proposal's third design commitment is *operationalizable output*: "blockable
 IOCs, auto-generated YARA/Sigma detection rules, STIX export, and
-customer-advisory recommendations — not just a verdict". This is that layer.
+customer-advisory recommendations — not just a verdict". This is that layer
+for the first three; "customer-advisory recommendations" is now implemented
+too, but deliberately **not here** — see ``L6/recommend.py``.
 
 **Everything here is derived, never invented.** Indicators come from
 ``L1/engines/ioc_extract.py``, which reads the sample's own bytes; the verdict
@@ -14,6 +16,17 @@ comes from L5; the technique mapping comes from the findings' own
 ``mitre_techniques``. Nothing an LLM produced can enter an export — that is the
 standing rule, and it matters most precisely here, where the output is meant to
 be loaded into a blocklist.
+
+**This is why the next-step recommendation lives in ``L6/recommend.py``,
+never in this file.** That module's output is LLM-proposed prose (even
+though every action it contains is mechanically checked against real
+findings/IOCs/KB entries before being kept — see
+``L6/recommend_verify.py``) and is deliberately excluded from every export
+format below. It surfaces only in the HTML report (``L6/report.py``) and the
+live web UI, both human-read surfaces where "AI-generated advisory — verify
+before acting" can be labelled inline. A STIX/CSV/YARA/Sigma feed is
+machine-consumed and has no place to put that caveat, so nothing from it
+enters here — a deliberate exclusion, not an oversight.
 
 **An export can be empty, and says so.** A sample with no extracted indicators
 produces a STIX bundle containing the malware object and no indicators, rather

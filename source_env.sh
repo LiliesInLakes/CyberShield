@@ -86,7 +86,18 @@ export PATH="$ANDROID_SDK_ROOT/platform-tools:$ANDROID_SDK_ROOT/emulator:$PATH"
 for _g in "$SENTINEL_ROOT"/tools/ghidra/ghidra_*_PUBLIC; do
     [ -d "$_g" ] && export GHIDRA_HOME="$_g"
 done
-export JDK21_HOME="${JDK21_HOME:-/usr/lib/jvm/java-21-openjdk}"
+# Ghidra 12.x declares application.java.min=21 and its own launcher rejects
+# both an older bundled JDK (17, used for jadx) and a newer system one (25
+# was tried and rejected too) -- it wants a JDK actually built for the 21
+# line, not merely >=21. Bundled here rather than relying on a system
+# java-21-openjdk package for the same reason the Python interpreter is
+# bundled (see above): a system package a future OS upgrade can silently
+# remove is not a dependency this project controls.
+if [ -x "$SENTINEL_ROOT/tools/jdk21/bin/java" ]; then
+    export JDK21_HOME="$SENTINEL_ROOT/tools/jdk21"
+else
+    export JDK21_HOME="${JDK21_HOME:-/usr/lib/jvm/java-21-openjdk}"
+fi
 
 echo "APK Sentinel environment ready"
 echo "  root      : $SENTINEL_ROOT"

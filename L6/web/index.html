@@ -473,6 +473,16 @@
         <div class="empty" id="verdictEmpty"><span class="big">◈</span>No verdict yet.</div>
       </section>
 
+      <section class="card" aria-label="Recommended next steps" id="recCard" style="display:none">
+        <div class="eyebrow"><span class="idx">➜</span><h2>Recommended next steps</h2></div>
+        <div id="recBody" style="font-size:.9rem;line-height:1.5">
+          <p style="opacity:.75;margin:0 0 10px">Not generated yet for this sample —
+            makes one small LLM call (~$0.04 measured, capped at $0.25) grounded in a
+            real SOP knowledge base, mechanically verified before anything is shown.</p>
+          <button id="recRunBtn" style="border:none;border-radius:8px;padding:8px 16px;font-weight:700;font-size:.85em;color:#fff;background:var(--ink);cursor:pointer" type="button">Generate recommendation</button>
+        </div>
+      </section>
+
       <section class="card emu" aria-label="Live sandbox">
         <div class="eyebrow"><span class="idx">◉</span><h2>Live sandbox</h2></div>
         <div class="phone" id="phone">
@@ -755,7 +765,73 @@ function showVerdict(j){
   const t=$("#aiToggle"); t.checked=false; t.disabled=false;
   $("#aiNote").style.display="none"; $("#aiNote").textContent="";
   if(baseAiDelta) showAiBadge(baseAiDelta); else hideAiBadge();
+  loadRecommendation(curSha);
 }
+
+const TIER_COLOR={IMMEDIATE:"#c0392b",URGENT_24H:"#d68910",STANDARD:"#2471a3",MONITOR:"#5b6b7c"};
+function _renderRecEmpty(msgHtml){
+  $("#recBody").innerHTML = `
+    <p style="opacity:.75;margin:0 0 10px">${msgHtml}</p>
+    <button id="recRunBtn" style="border:none;border-radius:8px;padding:8px 16px;font-weight:700;font-size:.85em;color:#fff;background:var(--ink);cursor:pointer" type="button">Generate recommendation</button>`;
+}
+function _renderRec(rec){
+  const color=TIER_COLOR[rec.priority_tier]||"#5b6b7c";
+  const actions=(rec.actions||[]).map(a=>{
+    const cites=(a.citations||[]).map(c=>`${c.kind}:${c.id}`).join(", ");
+    const ioc=a.ioc_value?` <code>${a.ioc_value}</code>`:"";
+    return `<li style="margin-bottom:8px"><strong>${a.action}</strong>${ioc}<br>
+      <span style="opacity:.75">${a.rationale}</span><br>
+      <span style="opacity:.6;font-size:.8em">citations: ${cites||"(none)"}</span></li>`;
+  }).join("");
+  const dropped=(rec.dropped||[]).length
+    ? `<details style="margin-top:8px;opacity:.75"><summary>${rec.dropped.length} discarded by verification</summary>
+       <ul>${rec.dropped.map(d=>`<li>${d.reason}: ${JSON.stringify(d.proposed)}</li>`).join("")}</ul></details>`
+    : "";
+  $("#recBody").innerHTML = `
+    <span style="display:inline-block;padding:3px 10px;border-radius:6px;color:#fff;
+      font-weight:700;font-size:.8em;background:${color}">${rec.priority_tier}</span>
+    <p style="margin:8px 0"><strong>AI-generated advisory — verify before acting.</strong>
+      Every action cites a real finding or SOP entry, mechanically checked before being kept.</p>
+    <p style="opacity:.85">${rec.summary||""}</p>
+    <ul style="padding-left:1.1em;margin:8px 0">${actions||"<li>No action survived verification.</li>"}</ul>
+    ${dropped}
+    <button id="recRunBtn" style="margin-top:8px;border:1px solid var(--line2);border-radius:8px;padding:6px 14px;font-size:.8em;color:var(--dim);background:transparent;cursor:pointer" type="button">Regenerate</button>`;
+}
+async function loadRecommendation(sha){
+  const card=$("#recCard");
+  if(!sha){card.style.display="none";return;}
+  card.style.display="";
+  try{
+    const r=await fetch(`/api/recommend/${sha}`);
+    if(r.status===404){_renderRecEmpty("Not generated yet for this sample — makes one "
+      +"small LLM call (~$0.04 measured, capped at $0.25) grounded in a real SOP "
+      +"knowledge base, mechanically verified before anything is shown.");return;}
+    _renderRec(await r.json());
+  }catch(e){_renderRecEmpty("Could not reach the recommendation endpoint.");}
+}
+async function runRecommendation(sha){
+  const btn=$("#recRunBtn");
+  if(btn){btn.disabled=true;btn.textContent="Generating… (a few seconds)";}
+  try{
+    const r=await fetch(`/api/recommend/${sha}/run`,{method:"POST"});
+    if(!r.ok){
+      const detail=(await r.json().catch(()=>({}))).detail||`HTTP ${r.status}`;
+      _renderRecEmpty(`Generation failed: ${detail}`);
+      return;
+    }
+    _renderRec(await r.json());
+  }catch(e){
+    _renderRecEmpty("Generation failed — network error. Try again.");
+  }
+}
+// Delegated click handler -- #recRunBtn is re-created on every render, so a
+// direct .onclick binding would only ever work once.
+$("#recBody").addEventListener("click",(e)=>{
+  if(e.target && e.target.id==="recRunBtn" && curSha){
+    e.target.disabled=true;
+    runRecommendation(curSha);
+  }
+});
 function hideAiBadge(){const b=$("#aiBadge"); if(b){b.style.display="none";b.textContent="";}}
 function showAiBadge(delta){const b=$("#aiBadge"); if(b){b.textContent=`+${delta} from AI`;b.style.display="inline-block";}}
 

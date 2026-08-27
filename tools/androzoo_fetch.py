@@ -88,25 +88,53 @@ class Entry:
     markets: str
 
 
-def fetch_index(dest: Path = INDEX_PATH, force: bool = False) -> Path:
-    """The 2.7 GB nightly index. Only needed for --index selection."""
+def fetch_index(dest: Path = INDEX_PATH, force: bool = False,
+                max_retries: int = 8) -> Path:
+    """The ~3.5 GB nightly index. Only needed for --index selection.
+
+    Resumable via HTTP Range (the server advertises accept-ranges: bytes) and
+    retried on transient connection drops -- a plain single `requests.get`
+    here previously had no retry/resume at all, so one mid-transfer
+    ConnectionResetError (observed: at 2.3 of 3.5 GB, over what turned out to
+    be a flaky link) silently killed the whole download and discarded
+    everything downloaded so far, indistinguishable from "still running" to
+    a caller only watching the .part file's size grow.
+    """
     dest.parent.mkdir(parents=True, exist_ok=True)
     if dest.is_file() and not force:
         print(f"index present ({dest.stat().st_size / 1e9:.2f} GB); --force to refresh")
         return dest
-    print(f"downloading {INDEX_URL} (~2.7 GB)…")
-    resp = requests.get(INDEX_URL, timeout=3600, stream=True)
-    resp.raise_for_status()
     tmp = dest.with_suffix(".part")
-    got = 0
-    with tmp.open("wb") as fh:
-        for chunk in resp.iter_content(1 << 22):
-            fh.write(chunk)
-            got += len(chunk)
-            if got % (1 << 28) < (1 << 22):
-                print(f"  {got / 1e9:.2f} GB", flush=True)
-    tmp.replace(dest)
-    return dest
+    if force and tmp.exists():
+        tmp.unlink()
+
+    for attempt in range(1, max_retries + 1):
+        got = tmp.stat().st_size if tmp.exists() else 0
+        headers = {"Range": f"bytes={got}-"} if got else {}
+        mode = "ab" if got else "wb"
+        print(f"downloading {INDEX_URL} (~3.5 GB total) "
+              f"-- resuming from {got / 1e9:.2f} GB "
+              f"(attempt {attempt}/{max_retries})…" if got else
+              f"downloading {INDEX_URL} (~3.5 GB) (attempt {attempt}/{max_retries})…")
+        try:
+            resp = requests.get(INDEX_URL, timeout=3600, stream=True, headers=headers)
+            resp.raise_for_status()
+            with tmp.open(mode) as fh:
+                for chunk in resp.iter_content(1 << 22):
+                    fh.write(chunk)
+                    got += len(chunk)
+                    if got % (1 << 28) < (1 << 22):
+                        print(f"  {got / 1e9:.2f} GB", flush=True)
+            tmp.replace(dest)
+            return dest
+        except (requests.exceptions.RequestException, OSError) as exc:
+            print(f"  download interrupted ({exc}) -- will resume from "
+                  f"{tmp.stat().st_size / 1e9:.2f} GB" if tmp.exists() else
+                  f"  download interrupted ({exc}) -- will restart", flush=True)
+            if attempt == max_retries:
+                raise
+            time.sleep(min(30, 2 ** attempt))
+    raise RuntimeError("unreachable")  # loop always returns or raises above
 
 
 def iter_index(path: Path = INDEX_PATH) -> Iterator[Entry]:

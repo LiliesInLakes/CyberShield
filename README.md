@@ -70,7 +70,7 @@ is discarded outright.
 | **L3** ML prior | ✅ LightGBM on LAMDA, bounded ±10, never a verdict |
 | **L4** GenAI | ✅ verified deobfuscation with an execution verifier |
 | **L5** hybrid scoring | ✅ computed weights, fitted calibration, 4 gates |
-| **L6** output | ✅ HTML/PDF report, FastAPI dashboard, STIX 2.1 / CSV / YARA / Sigma |
+| **L6** output | ✅ HTML/PDF report, FastAPI dashboard, STIX 2.1 / CSV / YARA / Sigma, **post-verdict next-step recommendation** (RAG + mechanically verified, never a trained model — `docs/L6_RECOMMEND_EXPLAINER.md`) |
 
 ---
 
@@ -129,6 +129,7 @@ $SENTINEL_PYTHON L1/l1.py <apk>
 $SENTINEL_PYTHON L5/l5.py <sha256> --explain      # the audit trail
 $SENTINEL_PYTHON L6/report.py <sha256> --out report.html
 $SENTINEL_PYTHON L6/export.py <sha256> --format stix,csv,yara,sigma --out-dir /tmp/x
+$SENTINEL_PYTHON L6/recommend.py <sha256>          # next-step recommendation, ~$0.04/run measured
 
 $SENTINEL_PYTHON -m uvicorn L6.api:app --host 127.0.0.1 --port 8000   # localhost only
 $SENTINEL_PYTHON -m pytest tests/ -q

@@ -26,7 +26,7 @@ Seven layers, glued by a single evidence record:
 | **L3** ML classifier | Calibrated maliciousness prior, bounded ±10 | ⚠️ models exist (`lamda_lgbm`, `banking_lgbm`); **unified pipeline-extracted dataset** in progress (2026-08-24) to kill train/serve skew — see §9 |
 | **L4** GenAI reasoning | Verified deobfuscation + report generation | ✅ works — OpenRouter free tier, execution verifier, $0.00/call |
 | **L5** Hybrid scoring | Auditable additive score + smoking-gun gates | ⚠️ built; **gates refuse to arm** while weights are unsupported (T24) |
-| **L6** Output & UX | Dashboard, report, IOC export | ✅ works — STIX 2.1 / CSV / YARA / Sigma, FastAPI, HTML report |
+| **L6** Output & UX | Dashboard, report, IOC export, post-verdict recommendation | ✅ works — STIX 2.1 / CSV / YARA / Sigma, FastAPI, HTML report; **`L6/recommend.py`** (2026-08-27) adds "what should the analyst do next" — RAG-grounded LLM proposal + mechanical verification (never a trained model, never enters the machine exports), see `docs/L6_RECOMMEND_EXPLAINER.md` |
 
 🔴 **Every score the system currently emits is stamped `unsupported` and is not
 usable as evidence.** That is not a bug: A4 measured that at `n_benign = 4` the
@@ -60,7 +60,7 @@ python3 -m venv env && ./env/bin/pip install -r requirements.txt && ./env/bin/pi
 | Tool | State |
 |---|---|
 | jadx + bundled JDK 17 | ✅ `tools/jadx`, `tools/jdk17` |
-| **Ghidra** | ❌ absent — native track degrades gracefully; only ~12% of samples have native libs |
+| **Ghidra** | ✅ installed 2026-08-27 — `tools/ghidra/ghidra_12.1.3_PUBLIC` + bundled `tools/jdk21` (Ghidra 12.x requires exactly JDK 21; both the bundled JDK17 and system JDK25 were rejected). Verified end-to-end on `testing_apps/vuln/uncrackable-level2.apk`: `ghidra_available/attempted/ok` all `True`, real JNI finding + extracted native strings. Native track still degrades gracefully when absent on another machine; only ~12% of samples have native libs |
 | Android SDK, emulator, adb, frida-server, `/dev/kvm` | ✅ all present |
 | **`sentinel` AVD** | ❌ core-dumped on boot (T14) — **replaced** by ✅ `sentinel30` (android-30 Google-APIs x86_64, QEMU/ranchu on `/dev/kvm`, data at `/mnt/SharedData/cybershield-data/avd/sentinel30.avd`). Boot fixed 2026-08-25 (dropped `-writable-system`); re-verified live 2026-08-26: boots ~15–20s, `adb root` + guest `iptables`/`nc`/ping work, isolation enforces+verifies. Detonates real malware (§10) |
 
@@ -108,6 +108,8 @@ $SENTINEL_PYTHON L3/train.py --train-until 2022
 $SENTINEL_PYTHON L4/deobfuscate.py <sha256> --src L1/artifacts/<sha256>/jadx_src
 $SENTINEL_PYTHON L6/report.py <sha256> --out report.html
 $SENTINEL_PYTHON L6/export.py <sha256> --format stix,csv,yara,sigma --out-dir /tmp/x
+$SENTINEL_PYTHON L6/recommend.py <sha256>            # next-step recommendation, ~$0.04/run measured
+$SENTINEL_PYTHON L6/knowledge/build_sop_kb.py         # rebuild the SOP knowledge base
 $SENTINEL_PYTHON -m uvicorn L6.api:app --host 127.0.0.1 --port 8000   # localhost only
 
 # Disk. corpus_run disposes of jadx_src itself; direct l1.py runs do not (T18).
@@ -211,6 +213,7 @@ Each of these cost real time. Do not rediscover them.
 | **T30** | 🔴 **A step that stops early and exits 0 is indistinguishable from one that finished, and every number downstream inherits it.** `corpus_run` halted on its disk floor at 245/604 benign, returned 0, and `rerun_pipeline.sh` — whose entire design is "each step gated on the previous succeeding" — went on to build labels, weights, calibration, 1248 scores and an evaluation over a corpus that was **59% pre-T28 spines**. It printed a clean headline (AUROC 0.9261) and `unsupported=False`. Nothing errored. Early stop now returns **3**, and the pipeline independently re-checks `remaining=0` via `--dry-run` before measuring anything. Provenance is `l1.summary.ruleset_version`; **`l5.summary.ruleset_version` is stamped at scoring time on every spine and is not evidence that L1 was re-run.** |
 | **T31** | **The disk floor was watching the wrong filesystem.** One `--min-free-gb` guarded the repo, but the heavy writer is jadx (T18) and its output root is now `$SENTINEL_L1_ARTIFACTS` on the 276 GB NTFS partition. An 8 GB floor blocked a run whose repo writes total ~30 MB, while the filesystem doing the real work had 255 GB free and was never checked. Floors are now split: `--min-free-gb` for the L1 root, `REPO_MIN_FREE_GB = 2.0` for the repo. Measured before moving: 17.41 s on ntfs-3g vs 17.26 s on ext4 for the same APK, 6918 files either way, and the mount is case-sensitive — obfuscated `a.java`/`A.java` do not collide. |
 | **T27** | **F-Droid cannot validate the accessibility or BFSI rule classes.** Measured across all 4178 packages: **5** declare an accessibility service, **79** declare any SMS permission, and **zero** are commercial banking apps. It is also entirely F-Droid/developer-signed, so `certificate_anomaly` is ~0 by construction and any cert weight measured against it is an **upper bound**. Growing B fixes the arithmetic (T24); it does not make these rule classes tested. |
+| **T32** | **A sabotaged manifest silently disables L2 on exactly the samples that most deserve it.** The "Bank of lndia" typosquat (lowercase L, Chinese-signed cert) corrupts its `AndroidManifest.xml` — resource type names padded with invisible U+3164 filler, false chunk sizes — so androguard's `get_package()` returns `None`. L0/L1/L3/L4/L5 still run and produce an honest High verdict, but **L2 skips** (`"no package name"` — you can't `am start` an app whose package you don't know), so the *most* evasion-capable samples escape detonation. Fixed 2026-08-27: `L0/ingest.py::harvest_manifest()` and `L6/api.py::_package_of()` fall back to `aapt dump badging` (Android's own installer-time parser, already in `tools/android-sdk/build-tools/*/aapt`) when androguard reads no package — it tolerates the corruption and recovered `com.tomo.tozy.naki` (a random name, *not* a Bank-of-India package — itself a signal) + the `REQUEST_INSTALL_PACKAGES` dropper permission. Fallback fills **only** androguard's blanks, never overrides a value it read; degrades to a no-op if aapt is absent. Tests: `tests/test_l0_aapt_fallback.py`. |
 
 ---
 
@@ -525,8 +528,10 @@ checks) were `blocked: true`; the C2 POST to the malware IP was blocked, not for
   incoming path (broadcast receiver / `SmsMessage.createFromPdu`) XBot-style theft uses.
 - **Form-field base64 not auto-decoded**: `mitm_addon._decode_base64_payload` decodes only
   raw-JSON bodies, so the `data=<base64>` **form-field** beacon was not auto-flagged.
-- **Two code bugs still stand**: `honeypot.seed_contacts()` binds no name/number;
-  `l2_engine.process()` globs all `L2/sandbox/artifacts/*` dirs.
+- **One code bug still stands**: `honeypot.seed_contacts()` binds no name/number.
+  (`l2_engine.process()`'s cross-contamination bug — globbing all
+  `L2/sandbox/artifacts/*` dirs regardless of sha256 — is **fixed**: it now
+  matches a candidate dir's own `dynamic.json` sha256 field before including it.)
 
 ### L4 verified-decode promotion plan (proposed, awaiting review)
 `docs/plans/l4_verified_decode_promotion_plan.md` designs promoting L4's **structural**
@@ -537,3 +542,111 @@ the policy `unsupported`; it only makes machine-verified evidence *reach the spi
 cite it, A4 can price it). Companion section feeds AndroidManifest components + resources.arsc
 app-strings into L4 reasoning as new checkable claim classes in `verify.py`. Preserves "LLM
 contributes zero points" — only machine-decoded facts promote, never LLM judgment.
+
+---
+
+## 11. Update 2026-08-27 — L6 post-verdict recommendation (`L6/recommend.py`)
+
+**What it is.** After L0-L5 produce a score, `L6/recommend.py` answers the question none
+of them do: *what should the analyst actually do next?* Full design writeup, SOP-sourcing
+detail, and the mechanical-verification scheme:
+**[`docs/L6_RECOMMEND_EXPLAINER.md`](docs/L6_RECOMMEND_EXPLAINER.md)**.
+
+**Not a trained ML model — reuses L4's exact discipline.** A supervised classifier needs
+labelled `(report → correct action)` pairs that don't exist and can't be credibly
+manufactured in scope. Instead: an LLM proposes actions from a **closed, fixed taxonomy**
+(`L6/recommend_actions.py` — escalate to CERT-In, block an IOC, file a takedown, notify
+customers, isolate accounts, monitor only, insufficient evidence), grounded in retrieved
+SOP guidance; `L6/recommend_verify.py` mechanically drops any proposal whose action isn't
+on the menu, whose citation points at a finding/KB id that doesn't exist, or whose
+`block_ioc` names an indicator this sample never actually produced. The **priority tier**
+(IMMEDIATE/URGENT_24H/STANDARD/MONITOR) is a pure deterministic function of the score band
+— never the model's call — with two hard overrides: a Critical-band report force-adds
+`escalate_cert_in` even if the model didn't propose it, and an `unsupported` score (T24)
+collapses every recommendation to `insufficient_evidence` regardless of what the model said.
+
+**Contributes zero points, same as L4, and never enters an export.** Runs strictly after L5;
+no path back into the score. `L6/export.py`'s "nothing an LLM produced can enter an export"
+rule is respected explicitly — this module's output lives only in the HTML report and the
+web UI, verified live (2026-08-27): all four export formats (STIX/CSV/YARA/Sigma) checked
+against a real recommended sample, zero references found.
+
+**SOP knowledge base (`L6/knowledge/sop_kb.json`, 21 entries) — sourced, not fabricated.**
+A live bulk fetch of MITRE's `mitre/cti` STIX bundle (the same source `L4/knowledge/build_kb.py`
+uses for Techniques) timed out repeatedly on this network — the same unreliability pattern
+independently hit downloading the AndroZoo index this session. Rather than hand-writing
+plausible-looking MITRE Mitigation IDs from memory (exactly the "fluent but unverified"
+failure this project's whole design exists to prevent — see the `gate.php`/`get.php` story),
+**11 MITRE Mitigation entries were fetched individually** from `attack.mitre.org` technique
+pages for the IDs this project's own `CATEGORY_MITRE_MAP` already uses. Three technique pages
+(T1437 C2, T1646 exfiltration, T1471 ransomware) explicitly state MITRE has **no** mitigation
+for them — included as a real finding, not omitted, since it's exactly why response-oriented
+sources matter alongside MITRE's prevention-oriented guidance. **3 CERT-In + 3 RBI entries**
+came from facts `docs/PIPELINE_STUDY.md` §3.1-3.2 had already researched and cited. **4 NIST
+SP 800-61 phase entries** were fetched directly from the PDF — which corrected an assumption
+made before checking the primary source (the plan assumed six phases; the real document
+defines **four**, "Containment, Eradication, and Recovery" being one combined phase). **SANS
+Incident Handler's Handbook was named as a candidate source and deliberately NOT ingested**
+— licensing wasn't checked, so `sop_kb.json`'s `source_counts.sans_handbook` is explicitly `0`,
+not omitted, so a reader sees it was considered and deferred, not forgotten.
+
+**Real end-to-end measurement, not an estimate.** Run against XBot's real scored sample:
+`priority_tier=IMMEDIATE`, 2 actions kept (0 dropped), correctly cited the real F011/F009
+findings, correctly named the real captured C2 IP (`192.227.137.154`) for `block_ioc` after
+mechanically confirming it was actually in this sample's extracted IOC list. **Cost: $0.037**
+on the cheap-tier model — the `--budget` default was set to `$0.25` (not a round-number
+guess) specifically because that measurement exists.
+
+**New files**: `L6/recommend.py`, `L6/recommend_verify.py`, `L6/recommend_actions.py`,
+`L6/knowledge/{__init__.py,build_sop_kb.py,sop_kb.json}`. **Touched**: `L6/api.py` (new
+`GET /api/recommend/{sha256}`, opt-in `"l6"` job step), `L6/web/index.html` (new card,
+fetched via `loadRecommendation()`), `L6/report.py` (`_recommendation_section()`, rendered
+right after the verdict card), `L6/export.py` (docstring only — documents the exclusion).
+`spine.py` needed no change: `"l6"` was already a reserved, unused layer slot. 24 new tests
+(`tests/test_l6_recommend_{verify,priority,integration}.py`), full suite green (440 passed).
+
+---
+
+## 12. Update 2026-08-27 — dropper/packer YARA + KB, from 5 BOI-impersonator samples
+
+Analysed the five Bank-of-India-impersonating APKs in `testing_apps/unknown/`. Four of
+five produced **findings=1** (just the structure check) — the existing dropper coverage
+missed them. Root cause, measured on the actual files: the multidex rule only knows
+`classes2.dex` (these hide the stage-2 dex at `assets/raw/ddb0e2.dex`,
+`assets/ScKit_shield_v1.dex`); the encrypted-payload rule caps at 10 MB and wants a
+PNG/JPEG-disguise header these don't use (payload is in dozens of random `.dat/.bin/.cfg`
+blobs); and there was **no** commercial-packer rule at all.
+
+**New YARA file `L1/yara_templates/apk_bfsi_dropper_packer_2026.yar`** (3 rules, all
+`scope="apk"`, wired into `index.yar`), each **measured against benign BEFORE writing** and
+then re-validated with the real YARA engine — **0 false positives across 200 F-Droid+good
+apps**:
+- `Android_Dropper_Asset_Hidden_Dex` — a `.dex` buried under `assets/` (not root multidex).
+- `Android_Commercial_Packer_Protector` — ScKit/SecShell, np_protect, Jiagu, DexHelper,
+  Bangcle, mobisec packer library signatures.
+- `Android_Dropper_Bulk_Encrypted_Assets` — `#blob >= 12` random-named `.dat/.bin/.cfg`
+  (malware measured 30–40, benign max 0). Threshold has wide margin.
+
+Result: 3 of the 4 previously-missed samples now get real dropper/packer L1 findings
+(`Bank of india` 1→2, `Bank Of India(1)` 1→3, `Bank Of India` 5→7). The 4th
+(`Bank of lndia`, native-lib payload) is covered at L0 by its cert anomaly + the aapt
+fallback (T32).
+
+**4 new KB entries** in `L4/knowledge/build_kb.py::curated_india_patterns()` (rebuilt
+`kb.json`: 216→225 entries, **mitre=122 preserved**, curated 27→31, yara auto-ingest
+59→64): `india:asset_hidden_secondary_dex`, `india:bulk_encrypted_asset_payload`,
+`india:commercial_packer_on_bank_impersonator`, `india:impersonation_cert_and_typosquat_signals`.
+Verified L4 retrieval surfaces each at the top of its query (sim 0.38–0.56).
+
+**Cert intel from these samples** (grounds the impersonation-cert KB entry): fake "Pvt Ltd"
+developer identities ("Vikram TechLabs Pvt Ltd/Priya Apps", "Sanjay Solutions Pvt
+Ltd/Suresh App"), the **AOSP test key** (`CN=Android, O=Google, android@android.com` — a
+repackaging signature, present on both `Bank Of India.apk` and `Boi_Mobile.apk`, so neither
+is a genuine release), a **China-origin cert** (`Country: CN`), and placeholder DNs (np/np/np).
+
+🔴 **Known L0 gap, NOT fixed here (out of scope, high T7 risk):** the label typosquat
+"Bank Of lndia" / "Bank of lndia" (lowercase-L homoglyph for the I) **evades exact
+brand-token matching** — `Bank Of India.apk` came back `verdict: unknown` for this reason.
+Homoglyph-aware brand matching in `L0/impersonation.py` would help but risks reintroducing
+the T7 fuzzy-match false-positive class; it needs its own measured design. Documented in the
+new KB entry so L4 can at least reason about it. Full suite green (449 passed).

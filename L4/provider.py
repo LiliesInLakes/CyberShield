@@ -86,11 +86,59 @@ DEFAULT_FALLBACKS = (
 # OpenRouter's `provider/model` naming (GET /v1/models), and `openai/gpt-4o-mini`
 # and `nvidia/nemotron-3-ultra-550b-a55b` (non-`:free` — this proxy has no
 # free-tier suffix convention) both return HTTP 200 in the same response shape
-# `_post_with_retries` already parses. Paid credits are finite (₹50 at setup),
-# so this is opt-in (``get_provider("aicredits")``), never the default.
+# `_post_with_retries` already parses. Paid credits are finite (₹50 at setup).
+#
+# Promoted to the default provider for both L2's navigator and L4 (2026-08-27):
+# OpenRouter's free-tier daily cap was the root cause of the navigator's
+# infinite-WAIT-loop bug (rate-limited mid-run, indistinguishable from a real
+# parse failure in the old logs). aicredits has no such cap within budget.
 AICREDITS_URL = "https://aicredits.in/v1/chat/completions"
-AICREDITS_DEFAULT_MODEL = "openai/gpt-4o-mini"
-AICREDITS_DEFAULT_FALLBACKS = ("nvidia/nemotron-3-ultra-550b-a55b",)
+# Single-model policy (2026-08-27, user decision): every LLM call in the system
+# goes through z-ai/glm-5.2 on this proxy. .env.local's AICREDITS_MODEL mirrors
+# this and wins at runtime; the constant is the fallback default and what tests
+# see. No fallback list — a single-model policy means "glm-5.2 or fail", not
+# "silently degrade to a different model" (fail-closed, cf. the rest of L4).
+AICREDITS_DEFAULT_MODEL = "z-ai/glm-5.2"
+AICREDITS_DEFAULT_FALLBACKS: tuple[str, ...] = ()
+
+# Two-tier model strategy (2026-08-27): a cheap/fast model for generation-only
+# steps (extracting claims from source, structuring a reasoning trail out of
+# already-verified claims) and a stronger-but-still-cheap model reserved for
+# steps that actually require reasoning/planning under adversarial pressure —
+# L4's verify_trail() adversarial verifier, and L2's navigator (deciding the
+# next UI action from screen state). Both are "the one thing that has to catch
+# a subtle gap", which is exactly where model quality has the most leverage
+# and the call volume is lowest (one call per class / per navigation step,
+# not per retry).
+#
+# Model history, and why: tried deepseek/deepseek-v4-pro and -v4-flash first
+# (both on aicredits' catalog). A live smoke test against genai_navigator.py's
+# exact system prompt, replaying the precise scenario that caused a real past
+# incident (Mazar BOT: Cancel doesn't register, screen unchanged, model then
+# rationalizes confirming the uninstall) -- BOTH DeepSeek variants reproduced
+# that exact failure ("tap OK ... safety check prevents actual uninstall" is
+# backwards reasoning: using the guardrail's existence to justify the risky
+# choice instead of avoiding it). The prior default, claude-haiku-4.5, passed
+# that same test (retried Cancel). z-ai/glm-5.3-flash was tried next and also
+# passed -- correctly chose "back" over tapping OK, explicitly reasoning that
+# Cancel had already failed so a different dismiss action was needed, which
+# is a *better* answer than a blind retry. Picked as the new default on that
+# basis. It is a reasoning model (spends tokens on internal chain-of-thought
+# before the JSON answer) -- callers must give it real max_tokens headroom
+# (see L4/verify_verdict.py and L2/sandbox/genai_navigator.py's call sites,
+# which hit finish_reason="length"/empty content at their old, lower caps).
+# The destructive-screen guardrail (genai_navigator.py) remains the actual,
+# model-independent backstop regardless of which model sits here -- this
+# choice is about reasoning quality, not a claim that model choice alone is
+# a sufficient safety mechanism.
+# 2026-08-27: the two-tier split collapsed to ONE model by user decision — the
+# reasoning-tier callers (L2 navigator, L4 verify_trail) now use the same
+# z-ai/glm-5.2 as everything else. The previous z-ai/glm-5.3-flash was delisted
+# from aicredits' catalog (404). Kept as a named constant so those call sites
+# (and SENTINEL_GENAI_MODEL's default in orchestrator.py) need no change; it is
+# still a reasoning model, so the "give it real max_tokens headroom" note above
+# still applies.
+AICREDITS_REASONING_MODEL = "z-ai/glm-5.2"
 
 # Attribution headers OpenRouter uses for its dashboard. Harmless, and it makes
 # this project's traffic identifiable if the key is ever audited.

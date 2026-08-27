@@ -103,6 +103,85 @@ def _score_artifact(sha: str) -> dict[str, Any]:
     return {}
 
 
+_TIER_COLOR = {
+    "IMMEDIATE": "#c0392b",
+    "URGENT_24H": "#d68910",
+    "STANDARD": "#2471a3",
+    "MONITOR": "#5b6b7c",
+}
+
+
+def _recommendation_artifact(sha: str) -> dict[str, Any]:
+    p = REPO_ROOT / "L6" / "artifacts" / sha / "recommendation.json"
+    if p.is_file():
+        try:
+            return json.loads(p.read_text())
+        except (OSError, json.JSONDecodeError):
+            pass
+    return {}
+
+
+def _recommendation_section(sha: str) -> str:
+    """Renders L6/recommend.py's output, if it has run for this sample.
+
+    Absent gracefully -- this step is opt-in (needs a paid LLM call), same
+    as the L4 section already tolerates L4 not having run.
+    """
+    rec = _recommendation_artifact(sha)
+    if not rec:
+        return ("<h2>Recommended next steps</h2>"
+                "<p class='muted'>Not generated for this sample "
+                "(opt-in step — see L6/recommend.py).</p>")
+
+    tier = rec.get("priority_tier", "—")
+    color = _TIER_COLOR.get(tier, "#5b6b7c")
+    summary = _e(rec.get("summary", ""))
+    actions = rec.get("actions", [])
+    dropped = rec.get("dropped", [])
+
+    action_rows = []
+    for a in actions:
+        cites = ", ".join(
+            f"{_e(c.get('kind'))}:{_e(c.get('id'))}" for c in a.get("citations", [])
+        )
+        ioc = f" <span class='mono'>({_e(a.get('ioc_value'))})</span>" if a.get("ioc_value") else ""
+        action_rows.append(
+            f"<li><strong>{_e(a.get('action'))}</strong>{ioc}"
+            f"<br><span class='muted'>{_e(a.get('rationale'))}</span>"
+            f"<br><span class='muted mono' style='font-size:.8rem'>"
+            f"citations: {cites or '(none)'}</span></li>"
+        )
+    actions_html = (
+        f"<ul style='margin:.6rem 0 0;padding-left:1.2rem'>{''.join(action_rows)}</ul>"
+        if action_rows else "<p class='muted'>No action survived mechanical verification.</p>"
+    )
+
+    dropped_html = ""
+    if dropped:
+        drop_items = "".join(
+            f"<li><span class='mono'>{_e(d.get('reason'))}</span>: "
+            f"{_e(d.get('proposed'))}</li>" for d in dropped
+        )
+        dropped_html = (
+            "<details style='margin-top:.6rem'><summary class='muted'>"
+            f"{len(dropped)} proposed action(s) discarded by mechanical "
+            f"verification</summary><ul style='padding-left:1.2rem'>"
+            f"{drop_items}</ul></details>"
+        )
+
+    return f"""<h2>Recommended next steps</h2>
+<div class="card">
+<span class="band" style="background:{color}">{_e(tier)}</span>
+<p style="margin-top:.6rem"><strong>AI-generated advisory — verify before
+acting.</strong> Every action below cites a real finding or SOP entry and
+was mechanically checked before being kept; the summary and rationale text
+is model prose, not asserted fact — see L6/recommend_verify.py.</p>
+<p>{summary}</p>
+{actions_html}
+{dropped_html}
+</div>"""
+
+
 def _verdict_card(b: Bundleable, l5: dict[str, Any]) -> str:
     band = b.band or "Not scored"
     color = BAND_COLOR.get(band, "#40566b")
@@ -367,6 +446,7 @@ def render(doc: dict[str, Any]) -> str:
 <p class="sub">{_e(b.label)} · generated {_e(generated)}</p>
 {banner}
 {_verdict_card(b, l5)}
+{_recommendation_section(b.sha256)}
 {l5_section}
 <h2>Findings ({len(b.findings)})</h2>
 {_findings_section(b)}

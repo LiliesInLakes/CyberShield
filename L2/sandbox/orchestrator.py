@@ -89,6 +89,21 @@ class DetonationStopped(Exception):
     """
 
 
+def _default_navigator_model() -> str:
+    """SENTINEL_GENAI_MODEL, else L4's reasoning-tier model constant.
+
+    A plain function (not an inline lambda) so this stays a normal, lazy,
+    top-of-function import -- same convention as this module's other L4
+    imports -- rather than an `__import__()` call buried in a dataclass
+    field default.
+    """
+    override = os.environ.get("SENTINEL_GENAI_MODEL")
+    if override:
+        return override
+    from L4.provider import AICREDITS_REASONING_MODEL
+    return AICREDITS_REASONING_MODEL
+
+
 @dataclass
 class L2Orchestrator:
     """Drive an L2 sandbox detonation run."""
@@ -101,27 +116,35 @@ class L2Orchestrator:
     auto_launch_emulator: bool = True
     navigator: str = "droidbot"
     # Which L4.provider backend the GenAI navigator's LLM calls use --
-    # "openrouter" (free tier, default) or "aicredits" (paid fallback, see
-    # L4/provider.py). Overridable via SENTINEL_GENAI_PROVIDER so a run
-    # through the web dashboard (which launches this as a subprocess and
-    # inherits its env) can switch providers with no code change, exactly
-    # like SENTINEL_MITM_BLOCK_UNKNOWN. Was previously hardcoded to
-    # "openrouter" with no override -- when OpenRouter's free daily cap was
-    # exhausted, every navigator reasoning call failed silently and the
-    # loop just repeated "wait" forever with no way to route around it.
+    # "aicredits" (paid, default since 2026-08-27) or "openrouter" (free
+    # tier). Overridable via SENTINEL_GENAI_PROVIDER so a run through the web
+    # dashboard (which launches this as a subprocess and inherits its env)
+    # can switch providers with no code change, exactly like
+    # SENTINEL_MITM_BLOCK_UNKNOWN. Was previously hardcoded to "openrouter"
+    # with no override -- when OpenRouter's free daily cap was exhausted,
+    # every navigator reasoning call failed silently and the loop just
+    # repeated "wait" forever with no way to route around it. aicredits has
+    # no such cap within budget, so it is now the default for both this and
+    # L4 (see L4/provider.py, L4/deobfuscate.py's --provider default).
     navigator_provider: str = field(
-        default_factory=lambda: os.environ.get("SENTINEL_GENAI_PROVIDER", "openrouter"))
+        default_factory=lambda: os.environ.get("SENTINEL_GENAI_PROVIDER", "aicredits"))
     # Model override for the navigator specifically -- separate from L4's own
-    # default so upgrading navigation reasoning doesn't silently change L4's
-    # cost profile too. Empty means "use the provider's own default" (e.g.
-    # gpt-4o-mini for aicredits). claude-haiku-4.5 is recommended when running
-    # via aicredits: measured live to correctly follow the navigator's strict
-    # "never confirm a destructive dialog" framing better than gpt-4o-mini did
-    # (see genai_navigator.py's destructive-screen guard, which is the hard
-    # backstop regardless of model choice -- this is defense in depth, not a
-    # replacement for it).
-    navigator_model: str = field(
-        default_factory=lambda: os.environ.get("SENTINEL_GENAI_MODEL", ""))
+    # generation-tier default so this doesn't silently change L4's cost
+    # profile too. Defaults to L4.provider.AICREDITS_REASONING_MODEL
+    # (z-ai/glm-5.3-flash as of 2026-08-27, see that constant's own comment
+    # for the full model-selection history): navigating is a per-step
+    # reasoning/planning task (decide the next UI action from screen state
+    # under an adversarial "never confirm a destructive dialog" constraint),
+    # not a cheap generation task, so it belongs on the stronger tier by
+    # default, not whatever the provider's own cheapest model happens to be.
+    # This specific model was chosen because it passed a live replay of the
+    # exact scenario that caused a real past incident (Mazar BOT: Cancel
+    # doesn't register, model then confirms the uninstall) where two DeepSeek
+    # variants tried first did not. Either way, genai_navigator.py's
+    # destructive-screen guard is the hard, model-independent backstop --
+    # defense in depth, not a claim that any
+    # model choice alone is sufficient.
+    navigator_model: str = field(default_factory=lambda: _default_navigator_model())
     device_serial: str = field(default="", init=False)
     artifacts_dir: Path = field(default=Path(), init=False)
     frida_log_path: Path = field(default=Path(), init=False)
@@ -989,6 +1012,16 @@ class L2Orchestrator:
                 os.killpg(os.getpgid(self._mitm_proc.pid), signal.SIGTERM)
             except (OSError, ProcessLookupError) as exc:
                 log.warning("failed to kill mitmproxy: %s", exc)
+            else:
+                # The addon writes network_evidence.json only from its `done()`
+                # shutdown hook -- SIGTERM is asynchronous, so copying
+                # immediately after sending it raced the write and copied a
+                # stale/empty file (observed: dynamic.json total_requests=0
+                # while the real file on disk had captured entries).
+                try:
+                    self._mitm_proc.wait(timeout=5)
+                except Exception as exc:  # noqa: BLE001
+                    log.warning("mitmproxy did not exit within 5s: %s", exc)
 
         self._copy_network_evidence()
 
@@ -1055,6 +1088,14 @@ class L2Orchestrator:
                     os.killpg(os.getpgid(self._mitm_proc.pid), signal.SIGTERM)
                 except (OSError, ProcessLookupError) as exc:
                     log.warning("failed to kill mitmproxy: %s", exc)
+                else:
+                    # See the matching comment in cleanup() -- the addon only
+                    # flushes network_evidence.json from its `done()` hook,
+                    # so copying right after an async SIGTERM can race it.
+                    try:
+                        self._mitm_proc.wait(timeout=5)
+                    except Exception as exc:  # noqa: BLE001
+                        log.warning("mitmproxy did not exit within 5s: %s", exc)
                 self._mitm_proc = None
             self._copy_network_evidence()
             self._generate_dynamic_json(elapsed_s)
@@ -1133,7 +1174,15 @@ class L2Orchestrator:
                         host = entry.get("host", "unknown")
                         if host not in data_exfiltrated:
                             data_exfiltrated.append(host)
-                    if entry.get("hijacked"):
+                    # "hijacked" = a known honeypot endpoint got a faked
+                    # reply; "blocked" = an *unknown* host's request was
+                    # contained rather than forwarded (the default posture
+                    # since SENTINEL_MITM_BLOCK_UNKNOWN). Both are a C2/
+                    # callout attempt and were being silently dropped here
+                    # when only "hijacked" was checked -- e.g. XBot's real
+                    # POST to its C2 IP is "blocked", never "hijacked", and
+                    # never reached this list before this fix.
+                    if entry.get("hijacked") or entry.get("blocked"):
                         url = entry.get("url", "")
                         if url and url not in c2_endpoints:
                             c2_endpoints.append(url)

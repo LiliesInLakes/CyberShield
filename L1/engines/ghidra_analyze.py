@@ -14,18 +14,53 @@ from pathlib import Path
 from schema import L1Finding, L1Report, Severity, Category, CATEGORY_MITRE_MAP
 from engines.yara_scan import scan_text
 
-# Resolve via env var (set by setup_env.sh) or assume they are in PATH
-GHIDRA_DIR = Path(os.environ.get("GHIDRA_HOME", "/opt/apk-sentinel/tools/ghidra/ghidra_12.1.2_PUBLIC"))
+_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+
+# GHIDRA_HOME is set by source_env.sh (glob over tools/ghidra/ghidra_*_PUBLIC),
+# consistent with how JADX_DIR/JDK17_HOME are resolved. The fallback here is
+# only reached if that env var is unset (e.g. this module imported without
+# sourcing the env script); it points at the same self-contained location
+# rather than an absolute path from a different machine, which is what made
+# _available() silently return False everywhere until Ghidra was actually
+# installed at this path (2026-08-27).
+GHIDRA_DIR = Path(os.environ.get("GHIDRA_HOME", str(_REPO_ROOT / "tools" / "ghidra" / "ghidra_12.1.3_PUBLIC")))
 # On Linux it's just analyzeHeadless, on Windows .bat
 _analyze_headless = "analyzeHeadless.bat" if os.name == "nt" else "analyzeHeadless"
 ANALYZE_HEADLESS = GHIDRA_DIR / "support" / _analyze_headless
-_JDK21 = Path(os.environ.get("JDK21_HOME", "/usr/lib/jvm/java-21-openjdk-amd64"))
+# Ghidra 12.x's own launcher rejects both an older JDK (17, used for jadx)
+# and a newer one (25 was tried and rejected too) -- it wants a JDK actually
+# built for the 21 line (application.java.min=21). source_env.sh bundles one
+# at tools/jdk21 for exactly this reason; this fallback mirrors that path.
+_JDK21 = Path(os.environ.get("JDK21_HOME", str(_REPO_ROOT / "tools" / "jdk21")))
+# Ghidra 12.x dropped the bundled Jython interpreter for .py postScripts in
+# favour of PyGhidra, a separate CPython bridge this install does not have
+# ("Ghidra was not started with PyGhidra. Python is not available" -- headless
+# log, 2026-08-27). A .java GhidraScript needs neither Jython nor PyGhidra --
+# analyzeHeadless compiles and runs it directly -- so that's what this is.
+# The class name must match the file name (ExportStrings.java / ExportStrings).
 EXPORT_SCRIPT = r"""
-from __future__ import print_function
-f = open(r"{out}", "w")
-for s in currentProgram.getListing().getDefinedStrings(True):
-    f.write(s.getString(0, 200) + "\n")
-f.close()
+import ghidra.app.script.GhidraScript;
+import ghidra.program.model.listing.Data;
+import java.io.PrintWriter;
+
+public class ExportStrings extends GhidraScript {
+    @Override
+    public void run() throws Exception {
+        String outPath = getScriptArgs()[0];
+        PrintWriter out = new PrintWriter(outPath);
+        try {
+            Data d = getFirstData();
+            while (d != null) {
+                if (d.hasStringValue()) {
+                    out.println(d.getDefaultValueRepresentation());
+                }
+                d = getDataAfter(d);
+            }
+        } finally {
+            out.close();
+        }
+    }
+}
 """
 
 
@@ -35,8 +70,8 @@ def _available() -> bool:
 
 def _export_strings(target: Path, out_file: Path, timeout: int = 900) -> bool:
     proj = tempfile.mkdtemp(prefix="ghidra_")
-    script = Path(proj) / "export_strings.py"
-    script.write_text(EXPORT_SCRIPT.format(out=str(out_file)))
+    script = Path(proj) / "ExportStrings.java"
+    script.write_text(EXPORT_SCRIPT)
     env = dict(__import__("os").environ)
     if _JDK21.exists():
         env["JAVA_HOME"] = str(_JDK21)
@@ -45,7 +80,7 @@ def _export_strings(target: Path, out_file: Path, timeout: int = 900) -> bool:
         str(ANALYZE_HEADLESS),
         proj, "l1proj",
         "-import", str(target),
-        "-postScript", str(script),
+        "-postScript", "ExportStrings.java", str(out_file),
         "-scriptPath", str(proj),
         "-deleteProject",
         "-readOnly",
@@ -91,7 +126,8 @@ def _analyse_one(so: Path, out_file: Path) -> list[L1Finding]:
 def analyze(apk_path: str | Path, sha256: str, track: str, l0_evidence: dict,
             artifacts_root: Path) -> L1Report:
     if not _available():
-        raise RuntimeError("Ghidra not found at D:\\BOI\\tools\\ghidra\\")
+        raise RuntimeError(f"Ghidra not found at {ANALYZE_HEADLESS} "
+                          f"(GHIDRA_HOME={os.environ.get('GHIDRA_HOME', '<unset>')})")
     apk_path = Path(apk_path)
     arts = {}
     findings: list[L1Finding] = []

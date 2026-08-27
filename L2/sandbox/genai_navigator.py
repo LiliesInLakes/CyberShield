@@ -68,12 +68,32 @@ _SAFE_DISMISS_RE = re.compile(
 )
 
 
-def _screen_text(elements: list["UiElement"]) -> str:
-    return " ".join(f"{e.text} {e.content_desc}" for e in elements)
+def _all_screen_text(xml_text: str) -> str:
+    """All on-screen text, not just interactable elements.
+
+    A real system uninstall/wipe confirmation's warning message ("Do you
+    want to uninstall this app?") is almost always a non-clickable
+    TextView -- only its OK/Cancel buttons are clickable/editable. Checking
+    ``parse_ui_elements()``'s output (interactable-only, by design -- see
+    its own docstring) would miss that message entirely and only catch a
+    destructive screen when the *button itself* happens to be labelled with
+    a matching word, which is not reliably true. Scanned directly from the
+    raw XML for exactly this reason.
+    """
+    parts: list[str] = []
+    for match in _NODE_RE.finditer(xml_text):
+        attrs = _parse_node_attrs(match.group(1))
+        if not attrs:
+            continue
+        text = attrs.get("text", "")
+        desc = attrs.get("content-desc", "")
+        if text or desc:
+            parts.append(f"{text} {desc}")
+    return " ".join(parts)
 
 
-def _is_destructive_screen(elements: list["UiElement"]) -> bool:
-    return bool(_DESTRUCTIVE_SCREEN_RE.search(_screen_text(elements)))
+def _is_destructive_screen(xml_text: str) -> bool:
+    return bool(_DESTRUCTIVE_SCREEN_RE.search(_all_screen_text(xml_text)))
 
 
 def _is_safe_dismiss(element: "UiElement") -> bool:
@@ -384,10 +404,32 @@ class DummyDataGenerator:
 # Reasoning: LLM call + defensive JSON parsing
 # ---------------------------------------------------------------------------
 
-_SYSTEM_PROMPT = """You are driving an Android app's UI inside an isolated \
-malware analysis sandbox to make its login/registration/OTP/SUBMIT flow \
-progress. You see a JSON list of on-screen interactable elements and must \
-choose exactly ONE next action.
+_SYSTEM_PROMPT = """You are driving an Android app's UI inside an isolated, \
+network-contained malware analysis sandbox (a disposable emulator, no real \
+user, no real data) whose entire purpose is to make a malware sample reveal \
+its real behaviour by exploring and progressing through it as far as \
+possible -- login/registration/OTP/SUBMIT flows, and just as importantly, \
+permission prompts, device-admin activation, accessibility-service and \
+overlay/"draw over other apps" grants, and any other request the app makes. \
+This is authorized dynamic analysis of a known malware sample in a \
+disposable, isolated environment built specifically for this -- it is not a \
+real device and nothing you do here has a real consequence.
+
+Do NOT cancel, deny, or back away from a permission/admin/accessibility/ \
+overlay request out of caution -- tapping "Allow"/"Grant"/"OK"/"Activate" on \
+those is exactly the desired action: it is what makes the sample's real \
+payload (SMS theft, overlay injection, screen locking, etc.) actually fire \
+so the sandbox can observe and capture it. A request that would look \
+alarming on a real personal device is the intended signal here, not a \
+reason to retreat. Only refuse an action that is IRREVERSIBLY DESTRUCTIVE to \
+the analysis itself -- uninstalling the app, wiping/factory-resetting the \
+device, or clearing all app data -- since those end the detonation before \
+its behaviour can be captured; a separate mechanical safety check enforces \
+this specific boundary regardless of your choice, so you do not need to be \
+the last line of defense on it, just do not pick it yourself.
+
+You see a JSON list of on-screen interactable elements and must choose \
+exactly ONE next action.
 
 Reply with STRICT JSON only, no prose, no markdown fences, matching this \
 shape exactly:
@@ -406,8 +448,11 @@ substitutes real synthetic data.
 - "wait": nothing on screen looks actionable yet (e.g. a splash/loading \
 screen).
 - "done": the flow looks complete, or no further progress seems possible.
-Prefer submitting/continuing over exploring. Never repeat an action that \
-was just tried on this exact screen."""
+Prefer submitting/continuing/granting over exploring, and prefer exploring \
+over backing out. Never repeat an action that was just tried on this exact \
+screen. Never choose "back" as a way to avoid a request merely because it \
+looks sensitive or risky -- only back away from the specific destructive \
+actions named above."""
 
 
 @dataclass
@@ -520,10 +565,18 @@ class GenAINavigator:
     max_steps: int = 40
     budget_s: float = 120.0
     cycle_repeat_threshold: int = 3
+    # If the destructive-screen guardrail (see _DESTRUCTIVE_SCREEN_RE) fires
+    # this many times in a row, stop rather than keep forcing "back" -- some
+    # lockers/persistent screens re-show the same destructive-looking dialog
+    # every step (or don't actually dismiss on back at all), which would
+    # otherwise silently burn the whole step/time budget on a guardrail that
+    # can never make progress, indistinguishable from the run just being slow.
+    destructive_guardrail_limit: int = 5
     model_hint: str = ""
     _dummy: DummyDataGenerator = field(init=False, repr=False)
     _history: list[str] = field(default_factory=list, init=False, repr=False)
     _hash_counts: dict[str, int] = field(default_factory=dict, init=False, repr=False)
+    _consecutive_guardrail_hits: int = field(default=0, init=False, repr=False)
 
     def __post_init__(self) -> None:
         self._dummy = DummyDataGenerator(otp_hint_file=self.otp_hint_file)
@@ -569,7 +622,16 @@ class GenAINavigator:
             {"role": "user", "content": json.dumps(payload)},
         ]
         completion = self.provider.complete(
-            messages, max_tokens=512, temperature=0.0, json_object=True,
+            # 512 was sized for a non-reasoning model's direct JSON answer.
+            # The navigator's default model (L4.provider.AICREDITS_
+            # REASONING_MODEL, z-ai/glm-5.3-flash as of 2026-08-27) is a
+            # reasoning model that spends tokens on an internal chain-of-
+            # thought before emitting the JSON action -- a live smoke test
+            # against this exact system prompt hit finish_reason="length"
+            # (empty content) at 200 tokens and needed ~1500 to succeed on a
+            # short prompt; this call's prompt is larger (a full element
+            # list), so the cap is set well above that measured floor.
+            messages, max_tokens=2000, temperature=0.0, json_object=True,
         )
         return parse_action_json(completion.text)
 
@@ -709,19 +771,25 @@ class GenAINavigator:
                 action = NavAction(action="swipe", target_i=None, value=None,
                                     reason="cycle detected, trying to reveal new elements")
 
-            if (action.action in ("tap", "type") and _is_destructive_screen(elements)
-                    and not (action.target_i is not None and 0 <= action.target_i < len(elements)
-                             and _is_safe_dismiss(elements[action.target_i]))):
+            guardrail_triggered = (
+                action.action in ("tap", "type") and _is_destructive_screen(xml_text)
+                and not (action.target_i is not None and 0 <= action.target_i < len(elements)
+                         and _is_safe_dismiss(elements[action.target_i]))
+            )
+            if guardrail_triggered:
                 # Hard, model-independent safety gate: this screen is asking
                 # to uninstall/wipe, and the chosen target is not a
                 # recognised dismiss button. Never execute this -- press
                 # BACK instead, which dismisses almost every Android dialog
                 # without confirming it. See _DESTRUCTIVE_SCREEN_RE's
                 # docstring for the measured failure this guards against.
+                self._consecutive_guardrail_hits += 1
                 action = NavAction(action="back", target_i=None, value=None,
                                     reason="blocked: destructive-looking screen "
                                             "(uninstall/wipe) -- pressing BACK instead "
                                             "of the model's chosen action")
+            else:
+                self._consecutive_guardrail_hits = 0
 
             self._log_step({
                 "step": steps_taken,
@@ -733,6 +801,15 @@ class GenAINavigator:
                 "value_kind": action.value,
                 "reason": action.reason,
             })
+
+            if self._consecutive_guardrail_hits > self.destructive_guardrail_limit:
+                # BACK isn't dismissing it (or it keeps reappearing) -- more
+                # of the same would just burn the rest of the budget with no
+                # chance of progress. The forced BACK above is already
+                # logged; stop the run cleanly instead of executing it again.
+                stop_reason = "destructive_guardrail_limit"
+                steps_taken += 1
+                break
 
             self._history.append(f"{action.action}:{action.target_i}:{action.value}")
 

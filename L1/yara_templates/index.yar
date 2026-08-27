@@ -30,6 +30,11 @@ include "apk_droppers_loaders.yar"
 // Dropper + screen-locker primitives (2026-08-26, measured on XBot)
 include "apk_dropper_locker_2026.yar"
 
+// Dropper staging + commercial packer signatures (2026-08-27, measured on
+// five Bank-of-India-impersonator samples: asset-hidden dex, ScKit/np_protect
+// packers, bulk random encrypted asset blobs)
+include "apk_bfsi_dropper_packer_2026.yar"
+
 // File Format Validation
 include "apk_file_format.yar"
 

@@ -705,6 +705,112 @@ def curated_india_patterns() -> list[dict[str, Any]]:
             "mitre_techniques": ["T1660"],
             "families": ["FakeUPI"],
         },
+        # ------------------------------------------------------------------
+        # Added 2026-08-27, grounded in five Bank-of-India-impersonator
+        # samples analysed from testing_apps/unknown/ (see the matching YARA
+        # file L1/yara_templates/apk_bfsi_dropper_packer_2026.yar, whose rules
+        # were measured 0-FP against 200 benign apps). These entries let L4
+        # reason about *how the payload is hidden in the package*, which the
+        # behavioural entries above do not cover.
+        # ------------------------------------------------------------------
+        {
+            "id": "india:asset_hidden_secondary_dex",
+            "source": "curated_india",
+            "title": "Second-stage DEX hidden under assets/",
+            "description": (
+                "A dropper stages its real payload as a DEX file buried under "
+                "assets/ with a random or packer-branded name "
+                "(e.g. assets/raw/ddb0e2.dex, assets/ScKit_shield_v1.dex) "
+                "rather than a standard root-level classes2.dex, then loads it "
+                "at runtime with DexClassLoader. Placing it in assets evades "
+                "the standard multidex check and keeps the malicious code out "
+                "of the class that ships in classes.dex. Observed on multiple "
+                "Bank-of-India-impersonating APKs; the visible classes.dex is "
+                "a thin launcher, the banking-trojan behaviour is in the "
+                "hidden stage."
+            ),
+            "code_indicators": [
+                "assets/", ".dex", "DexClassLoader", "loadClass",
+                "getCacheDir", "dalvik.system.DexClassLoader",
+            ],
+            "severity": "high",
+            "mitre_techniques": ["T1407", "T1406"],
+            "families": ["generic-dropper", "apkshield"],
+        },
+        {
+            "id": "india:bulk_encrypted_asset_payload",
+            "source": "curated_india",
+            "title": "Encrypted payload split across bulk random-named assets",
+            "description": (
+                "The real second stage is encrypted and split across dozens of "
+                "generated-name opaque asset blobs "
+                "(assets/xv0j5bvm.dat, s1qz.dat, w5rkcb6x.cfg, ...), "
+                "reassembled and decrypted at runtime (Cipher / SecretKeySpec "
+                "/ IvParameterSpec) before being written to the app's private "
+                "storage and loaded. Observed on the com.apkshield.installer "
+                "dropper impersonating Bank of India (~40 such blobs). The "
+                "opaque, high-entropy, human-meaningless filenames are the "
+                "tell — a legitimate app's assets are named for what they are."
+            ),
+            "code_indicators": [
+                "assets/", ".dat", ".bin", ".cfg", "Cipher", "SecretKeySpec",
+                "IvParameterSpec", "getFilesDir", "FileOutputStream",
+            ],
+            "severity": "high",
+            "mitre_techniques": ["T1406", "T1407"],
+            "families": ["apkshield", "generic-dropper"],
+        },
+        {
+            "id": "india:commercial_packer_on_bank_impersonator",
+            "source": "curated_india",
+            "title": "Commercial packer/protector wrapping a bank impersonator",
+            "description": (
+                "The app is wrapped by a commercial Android packer/protector — "
+                "ScKit/SecShell (libScKitShieldV1, ScKit_shield_v1.dex), "
+                "np_protect (libnp_protect_res), Qihoo Jiagu (libjiagu), 360 "
+                "DexHelper (libDexHelper), Bangcle (libsecexe/libSecShell), "
+                "mobisec — so its real bytecode is decrypted only in memory at "
+                "runtime and static analysis sees a stub. A genuine bank ships "
+                "an unpacked app; a packer on an app that *impersonates* a "
+                "specific bank is a strong repackaging/evasion signal, "
+                "especially combined with a self-signed or AOSP-test-key "
+                "certificate."
+            ),
+            "code_indicators": [
+                "ScKit_shield", "libScKitShieldV1", "np_protect", "libjiagu",
+                "libDexHelper", "libsecexe", "libSecShell", "libmobisec",
+            ],
+            "severity": "high",
+            "mitre_techniques": ["T1406", "T1027"],
+            "families": ["ScKit", "SecShell", "Jiagu", "generic-packer"],
+        },
+        {
+            "id": "india:impersonation_cert_and_typosquat_signals",
+            "source": "curated_india",
+            "title": "Fake-developer cert + label typosquat on a bank impersonator",
+            "description": (
+                "Bank-impersonating APKs are signed with tell-tale "
+                "certificates: fabricated 'Pvt Ltd' developer identities "
+                "(e.g. 'Vikram TechLabs Pvt Ltd/Priya Apps', 'Sanjay Solutions "
+                "Pvt Ltd/Suresh App'), the AOSP debug/test key "
+                "(CN=Android, O=Google, android@android.com — meaning the app "
+                "was repackaged and re-signed, never a genuine release), "
+                "China-origin certs (Country: CN) on an Indian-bank app, or "
+                "placeholder DNs (np/np/np). The visible app label is often a "
+                "homoglyph typosquat — 'Bank Of lndia' with a lowercase L for "
+                "the I — which can defeat exact brand-token matching while "
+                "still deceiving a human. None of these alone proves malice, "
+                "but on an app claiming a specific bank they corroborate "
+                "impersonation strongly."
+            ),
+            "code_indicators": [
+                "Pvt Ltd", "CN=Android", "android@android.com",
+                "REQUEST_INSTALL_PACKAGES", "Bank Of lndia", "Country: CN",
+            ],
+            "severity": "high",
+            "mitre_techniques": ["T1655", "T1660"],
+            "families": ["generic-bank-impersonator"],
+        },
     ]
 
 

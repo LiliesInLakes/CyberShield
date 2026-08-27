@@ -6,6 +6,8 @@ import io
 import hashlib
 import json
 import os
+import re
+import subprocess
 import sys
 import zipfile
 import requests
@@ -51,6 +53,8 @@ def load_env(path: Path | None = None) -> None:
 logging.getLogger("androguard").setLevel(logging.ERROR)
 for _nh in ("androguard.core.axml", "androguard.core.analysis", "androguard.core.bytecodes"):
     logging.getLogger(_nh).setLevel(logging.ERROR)
+
+log = logging.getLogger("L0.ingest")
 
 HIGH_RISK_PERMISSIONS = {
     "android.permission.SEND_SMS",
@@ -104,10 +108,88 @@ def compute_hashes(apk_path: Path) -> dict[str, str]:
     return {"md5": md5.hexdigest(), "sha256": sha256.hexdigest()}
 
 
-def harvest_manifest(apk: APK) -> dict[str, Any]:
+def _find_aapt() -> str | None:
+    """Locate the `aapt` binary shipped with the bundled Android SDK.
+
+    Uses the newest build-tools version present. Returns None if the SDK or
+    build-tools aren't installed (the fallback then just doesn't run, and L0
+    degrades exactly as it did before this fallback existed).
+    """
+    sdk = os.environ.get("ANDROID_SDK_ROOT")
+    roots = [Path(sdk)] if sdk else []
+    roots.append(REPO_ROOT / "tools" / "android-sdk")
+    for root in roots:
+        bts = root / "build-tools"
+        if not bts.is_dir():
+            continue
+        for version_dir in sorted(bts.iterdir(), reverse=True):  # newest first
+            cand = version_dir / "aapt"
+            if cand.is_file() and os.access(cand, os.X_OK):
+                return str(cand)
+    return None
+
+
+def _aapt_badging(apk_path: Path) -> dict[str, Any] | None:
+    """Parse `aapt dump badging` — Android's own manifest reader.
+
+    Why this exists: androguard's binary-XML parser gives up (returns None
+    for the package name) on a manifest that has been *deliberately*
+    corrupted to evade static analysis — e.g. resource type names padded
+    with invisible Unicode filler (U+3164), false chunk sizes. That is
+    exactly the anti-analysis technique the "Bank of lndia" typosquat sample
+    uses. aapt is the same parser a real Android device runs at install
+    time, and it is far more tolerant, so where androguard reads nothing,
+    aapt still recovers the package, label and permissions. Without a
+    package name, L2 (detonation) has nothing to `am start` and skips the
+    sample outright — so the very samples sophisticated enough to sabotage
+    their manifest were also the ones escaping dynamic analysis.
+
+    Returns only the fields aapt actually reports; the caller fills these in
+    over androguard's blanks, never overriding a value androguard got.
+    Any failure (aapt absent, non-zero exit, timeout, unparseable output)
+    returns None — a best-effort fallback, never a hard dependency.
+    """
+    aapt = _find_aapt()
+    if not aapt:
+        return None
+    try:
+        proc = subprocess.run(
+            [aapt, "dump", "badging", str(apk_path)],
+            capture_output=True, text=True, timeout=60,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        log.warning("aapt fallback failed to run: %s", exc)
+        return None
+    # aapt exits non-zero on some malformed inputs but still prints a usable
+    # `package:` line first, so parse stdout regardless of return code.
+    out = proc.stdout or ""
+    pkg_match = re.search(r"package: name='([^']*)'", out)
+    if not pkg_match or not pkg_match.group(1):
+        return None  # nothing usable recovered
+
+    result: dict[str, Any] = {"package_name": pkg_match.group(1),
+                              "recovered_via": "aapt"}
+    for field, pat in (
+        ("version_name", r"versionName='([^']*)'"),
+        ("version_code", r"versionCode='([^']*)'"),
+        ("min_sdk", r"sdkVersion:'([^']*)'"),
+        ("target_sdk", r"targetSdkVersion:'([^']*)'"),
+    ):
+        m = re.search(pat, out)
+        if m and m.group(1):
+            result[field] = m.group(1)
+    label = re.search(r"application-label:'([^']*)'", out)
+    if label:
+        result["app_label"] = label.group(1)
+    perms = re.findall(r"uses-permission: name='([^']*)'", out)
+    if perms:
+        result["permissions"] = sorted(set(perms))
+    return result
+
+
+def harvest_manifest(apk: APK, apk_path: Path | None = None) -> dict[str, Any]:
     permissions = list(apk.get_permissions())
-    high_risk = sorted(set(permissions) & HIGH_RISK_PERMISSIONS)
-    return {
+    manifest = {
         "package_name": apk.get_package(),
         "app_label": apk.get_app_name(),
         "version_name": apk.get_androidversion_name(),
@@ -115,10 +197,30 @@ def harvest_manifest(apk: APK) -> dict[str, Any]:
         "min_sdk": apk.get_min_sdk_version(),
         "target_sdk": apk.get_target_sdk_version(),
         "permissions": sorted(permissions),
+    }
+
+    # Anti-analysis fallback: a sabotaged manifest leaves androguard with no
+    # package name (and often no permissions). Recover what we can from aapt,
+    # filling ONLY the blanks androguard left — never overriding a value it
+    # did read. See _aapt_badging's docstring.
+    if not manifest["package_name"] and apk_path is not None:
+        recovered = _aapt_badging(Path(apk_path))
+        if recovered:
+            manifest["manifest_parse_fallback"] = "aapt"
+            for key, value in recovered.items():
+                if key == "recovered_via":
+                    continue
+                if not manifest.get(key):
+                    manifest[key] = value
+            permissions = list(manifest["permissions"])
+
+    high_risk = sorted(set(permissions) & HIGH_RISK_PERMISSIONS)
+    manifest.update({
         "permission_count": len(permissions),
         "high_risk_permissions": high_risk,
         "high_risk_permission_count": len(high_risk),
-    }
+    })
+    return manifest
 
 
 def extract_icon_phash(apk: APK, artifacts_dir: Path | None = None) -> dict[str, Any]:
@@ -622,7 +724,7 @@ def run_l0(apk_path: str | Path, out_path: str | Path | None = None, vt_api_key:
     apk = APK(str(apk_path))
 
     hashes = compute_hashes(apk_path)
-    manifest = harvest_manifest(apk)
+    manifest = harvest_manifest(apk, apk_path)
     artifacts_dir = L0_DIR / "artifacts" / hashes["sha256"]
     icon = extract_icon_phash(apk, artifacts_dir)
     cert_info = extract_cert_info(apk)

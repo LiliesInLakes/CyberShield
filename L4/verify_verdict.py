@@ -139,7 +139,13 @@ def verify_trail(
     completion = provider.complete(
         [{"role": "system", "content": SYSTEM},
          {"role": "user", "content": prompt}],
-        max_tokens=800, temperature=0.0, json_object=True,
+        # 800 was sized for a non-reasoning model's direct JSON answer.
+        # AICREDITS_REASONING_MODEL (z-ai/glm-5.3-flash as of 2026-08-27) is
+        # a reasoning model that spends tokens on an internal chain-of-thought
+        # before it ever emits the JSON answer -- 800 wasn't enough even for
+        # a short smoke-test prompt (finish_reason="length", empty content),
+        # and this call's prompt (full source + trail + KB entries) is larger.
+        max_tokens=2500, temperature=0.0, json_object=True,
     )
     try:
         parsed = completion.json()
