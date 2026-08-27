@@ -207,6 +207,14 @@ class L2ActiveHoneypot:
         self.evidence_path = evidence_path or _DEFAULT_EVIDENCE_PATH
         self.evidence_path.parent.mkdir(parents=True, exist_ok=True)
         self._log: list[dict[str, Any]] = []
+        # CONNECT tunnel targets (host:port -> {host, port, count, first/last
+        # seen}) and the set of hosts we actually decrypted a request for. A
+        # pinned/undecryptable HTTPS flow never reaches `request()`, but its
+        # CONNECT line names the C2 host in plaintext -- so at `done()` we emit
+        # an entry for every tunnel that produced no decrypted request, instead
+        # of losing the beacon entirely (see `http_connect`).
+        self._connect_targets: dict[str, dict[str, Any]] = {}
+        self._decrypted_hosts: set[str] = set()
         # When True (the default), a flow to any host we don't explicitly
         # hijack is answered locally and never forwarded upstream — the
         # sandbox contains web egress instead of merely observing it.
@@ -214,8 +222,43 @@ class L2ActiveHoneypot:
             block_unknown if block_unknown is not None else _block_unknown_default()
         )
 
+    def http_connect(self, flow: "mhttp.HTTPFlow") -> None:  # type: ignore[name-defined]
+        """Record every HTTPS CONNECT tunnel target.
+
+        A sample that pins its certificate (or whose TLS we otherwise fail to
+        intercept) resets the handshake and never reaches ``request()`` -- but
+        the CONNECT line carries the destination ``host:port`` in plaintext,
+        and that is exactly the C2 endpoint. Accumulating targets here lets an
+        undecryptable beacon still become evidence at ``done()`` rather than
+        vanishing (measured: this recovered ``mr-panel-bbv.pages.dev`` /
+        ``motupatlu-324.pages.dev`` from a run whose ``network_evidence.json``
+        was otherwise ``[]``). Logging only -- containment/hijack still happen
+        in ``request()`` on the flows we can decrypt.
+        """
+        try:
+            host = flow.request.host
+            port = int(flow.request.port or 443)
+        except Exception:  # noqa: BLE001 — never let a hook break the proxy
+            return
+        if not host:
+            return
+        key = f"{host}:{port}"
+        now = time.time()
+        rec = self._connect_targets.get(key)
+        if rec is None:
+            self._connect_targets[key] = {
+                "host": host, "port": port, "count": 1,
+                "first_seen": now, "last_seen": now,
+            }
+        else:
+            rec["count"] += 1
+            rec["last_seen"] = now
+
     def request(self, flow: "mhttp.HTTPFlow") -> None:  # type: ignore[name-defined]
         """Log outgoing request and detect exfiltration."""
+        # We decrypted a request for this host, so its CONNECT tunnel (if any)
+        # must NOT be re-emitted as an undecrypted beacon at done().
+        self._decrypted_hosts.add(flow.request.host)
         raw_body = flow.request.raw_content or b""
         try:
             body = flow.request.get_text() or ""
@@ -394,8 +437,45 @@ class L2ActiveHoneypot:
 
         return None
 
+    @staticmethod
+    def _is_cdn(host: str) -> bool:
+        """CDN/infra host — OS connectivity checks and telemetry ride these, so
+        an undecrypted tunnel to one is noise, not a C2 beacon."""
+        return any(host.endswith(suffix) for suffix in _CDN_SUFFIXES)
+
+    def _synthesize_tunnel_evidence(self) -> None:
+        """Emit one entry per CONNECT target that never yielded a decrypted
+        request. Non-CDN targets are flagged ``C2_BEACON_HTTPS`` (l2_engine
+        promotes those to a C2 finding); CDN/infra targets are recorded without
+        an alert so they stay in the raw evidence without masquerading as C2.
+        """
+        for rec in self._connect_targets.values():
+            host = rec["host"]
+            if host in self._decrypted_hosts:
+                continue  # TLS was intercepted; the real request is already logged
+            entry: dict[str, Any] = {
+                "timestamp": rec["last_seen"],
+                "event": "tls_tunnel",
+                "method": "CONNECT",
+                "host": host,
+                "port": rec["port"],
+                "url": f"https://{host}:{rec['port']}",
+                "connect_count": rec["count"],
+                "first_seen": rec["first_seen"],
+                "tls_not_intercepted": True,
+            }
+            if not self._is_cdn(host):
+                entry["alert"] = "C2_BEACON_HTTPS"
+                entry["severity"] = "high"
+                log.warning(
+                    "undecrypted HTTPS beacon to %s:%d (x%d) — TLS not intercepted",
+                    host, rec["port"], rec["count"],
+                )
+            self._log.append(entry)
+
     def done(self) -> None:
         """Dump the annotated logs when mitmproxy shuts down."""
+        self._synthesize_tunnel_evidence()
         try:
             with self.evidence_path.open("w") as fh:
                 json.dump(self._log, fh, indent=2)

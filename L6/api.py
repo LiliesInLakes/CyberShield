@@ -383,7 +383,7 @@ def _run_l4(job_id: str, sha: str | None) -> None:
         return
     _job_step(job_id, "l4", "running", "GenAI reasoning (LLM) — see live feed for per-class progress")
     cmd = [PYTHON, str(REPO_ROOT / "L4" / "deobfuscate.py"), sha,
-           "--src", str(src), "--limit", "4", "--budget", "0.5"]
+           "--src", str(src), "--limit", "4", "--budget", "1.5"]
     outcome = _stream_subprocess(job_id, cmd, cwd=REPO_ROOT, timeout_s=600)
     if outcome == "stopped":
         _job_step(job_id, "l4", "stopped", "stopped by request")

@@ -282,6 +282,26 @@ def _parse_network_evidence(path: Path) -> list[L1Finding]:
                 observation=ObservationSource.OBSERVED,
                 detail={"url": entry.get("url"), "method": entry.get("method")},
             ))
+        if entry.get("alert") == "C2_BEACON_HTTPS":
+            # An HTTPS beacon whose TLS the addon could not intercept (cert
+            # pinning / untrusted MITM CA). The request body is opaque, but the
+            # CONNECT target host:port is a captured C2 indicator in its own
+            # right — without this it produced zero findings despite dozens of
+            # beacons on the wire.
+            host = entry.get("host", "unknown")
+            findings.append(L1Finding(
+                engine="mitmproxy",
+                category=Category.C2_COMMS,
+                severity=Severity.HIGH,
+                evidence=f"HTTPS C2 beacon to {host}:{entry.get('port', 443)} "
+                         f"(TLS not intercepted; {entry.get('connect_count', 1)} connect(s))",
+                location="runtime/network",
+                mitre_techniques=CATEGORY_MITRE_MAP[Category.C2_COMMS],
+                observation=ObservationSource.OBSERVED,
+                detail={"host": host, "port": entry.get("port"),
+                        "connect_count": entry.get("connect_count"),
+                        "tls_not_intercepted": True},
+            ))
         if entry.get("hijacked"):
             findings.append(L1Finding(
                 engine="mitmproxy",

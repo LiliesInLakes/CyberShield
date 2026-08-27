@@ -162,6 +162,7 @@ def identity(l0: dict[str, Any], source_apk: str = "") -> dict[str, Any]:
     impersonation = l0.get("impersonation") or {}
     return {
         "sha256": fingerprint.get("sha256"),
+        "sha1": fingerprint.get("sha1"),
         "md5": fingerprint.get("md5"),
         "package": manifest.get("package_name"),
         "app_label": manifest.get("app_label"),

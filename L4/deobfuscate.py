@@ -180,6 +180,69 @@ def interesting_locations(doc: dict[str, Any], limit: int = MAX_CLASSES) -> list
     return [loc for loc, _ in sorted(seen.items(), key=lambda kv: (kv[1], kv[0]))][:limit]
 
 
+# Source roots jadx emits that are framework / third-party SDK code, never the
+# app's own logic. Used only by the fallback below, which fires when L1 named
+# nothing analyzable — picking a library class there is wasteful, not wrong, so
+# the list need not be exhaustive.
+_SDK_SOURCE_PREFIXES = (
+    "android/", "androidx/", "kotlin/", "kotlinx/", "java/", "javax/", "sun/",
+    "com/google/", "com/facebook/", "com/unity3d/", "com/squareup/",
+    "com/bumptech/", "okhttp3/", "okio/", "retrofit2/", "org/apache/",
+    "org/json/", "org/intellij/", "org/jetbrains/", "io/reactivex/", "dagger/",
+)
+
+
+def _looks_obfuscated(class_file: str) -> bool:
+    """True if a jadx class basename reads like a name-mangler's output.
+
+    Short (``o7``, ``fOk``) or short-with-digits (``etre8vlg``, ``p7cfed697``)
+    stems are the loader stubs a dropper hides behind; real class names are
+    longer and pronounceable. A cheap heuristic — only used to *order* the
+    fallback set, never to exclude anything.
+    """
+    stem = class_file[:-5] if class_file.endswith(".java") else class_file
+    stem = stem.split("$", 1)[0]
+    if len(stem) <= 3:
+        return True
+    if not re.fullmatch(r"[A-Za-z][A-Za-z0-9]{0,11}", stem):
+        return False
+    return any(c.isdigit() for c in stem) or not re.search(r"[aeiou]", stem.lower())
+
+
+def fallback_locations(src_root: Path, limit: int = MAX_CLASSES) -> list[str]:
+    """App classes to explain when L1 flagged only the container / native libs.
+
+    Droppers and commercially-packed samples put nothing analyzable in a named
+    Java class — every L1 hit is apk/dex/native-scoped — so
+    ``interesting_locations`` returns nothing and L4 would explain zero classes
+    on exactly the samples that most need it (the small obfuscated loader stub
+    that decrypts and side-loads the real payload). Returns the app's own
+    decompiled classes, obfuscated-looking ones first and larger first, so a
+    packed sample still gets GenAI reasoning on its actual code. Framework/SDK
+    source and ``R``/``BuildConfig`` are dropped; capped at ``limit``.
+    """
+    sources = src_root / "sources"
+    root = sources if sources.is_dir() else src_root
+    if not root.is_dir():
+        return []
+    cands: list[tuple[int, int, str]] = []   # (obfuscated?, -size, rel-path)
+    for path in root.rglob("*.java"):
+        rel = path.relative_to(root).as_posix()
+        name = path.name
+        if name in ("R.java", "BuildConfig.java") or name.startswith("R$"):
+            continue
+        if any(rel.startswith(p) for p in _SDK_SOURCE_PREFIXES):
+            continue
+        try:
+            size = path.stat().st_size
+        except OSError:
+            continue
+        obf = 0 if _looks_obfuscated(name) else 1
+        cands.append((obf, -size, f"sources/{rel}"))
+    cands.sort()
+    return [rel for _, _, rel in cands[:limit]]
+
+
 def package_l0_context(doc: dict[str, Any]) -> str:
     """One line of L0 context — brand claim / cert anomaly — best-effort.
 
@@ -433,6 +496,54 @@ def dex_symbols(apk_path: str | Path) -> list[str]:
     return ["\n".join(sorted(syms))] if syms else []
 
 
+def _lenient_json(text: str) -> dict[str, Any]:
+    """Best-effort object extraction from a model reply. Never raises.
+
+    Reasoning models (glm-5.2 here) wrap the JSON in chain-of-thought or truncate
+    it mid-object at the token cap; a single malformed reply must not cost L4 the
+    whole class (before this, the salvage path's own ``json.loads`` re-raised and
+    the class was dropped). Tries a strict parse of the first balanced object,
+    then a trailing-comma repair, and finally degrades to ``{}`` — an empty claim
+    set, so the class is still scored with nothing verified rather than lost.
+    """
+    if not text:
+        return {}
+    start = text.find("{")
+    if start == -1:
+        return {}
+    depth = 0
+    in_str = esc = False
+    end = -1
+    for i in range(start, len(text)):
+        c = text[i]
+        if in_str:
+            if esc:
+                esc = False
+            elif c == "\\":
+                esc = True
+            elif c == '"':
+                in_str = False
+            continue
+        if c == '"':
+            in_str = True
+        elif c == "{":
+            depth += 1
+        elif c == "}":
+            depth -= 1
+            if depth == 0:
+                end = i
+                break
+    candidate = text[start:end + 1] if end != -1 else text[start:]
+    for attempt in (candidate, re.sub(r",\s*([}\]])", r"\1", candidate)):
+        try:
+            obj = json.loads(attempt)
+            if isinstance(obj, dict):
+                return obj
+        except Exception:  # noqa: BLE001
+            continue
+    return {}
+
+
 def explain_class(provider: Provider, location: str, source: str,
                   extracted_iocs: Iterable[str], *,
                   l0_context: str = "", l2_context: str = "",
@@ -486,10 +597,11 @@ def explain_class(provider: Provider, location: str, source: str,
     completions.append(completion)
     try:
         claims = completion.json()
+        if not isinstance(claims, dict):
+            claims = {}
     except Exception:  # noqa: BLE001
-        # Salvage the first JSON object if the model wrapped it in prose.
-        m = re.search(r"\{.*\}", completion.text, re.S)
-        claims = json.loads(m.group()) if m else {}
+        # Salvage from prose-wrapped or truncated output; never re-raise.
+        claims = _lenient_json(completion.text)
 
     valid_kb_ids = [m.kb_id for m in kb_matches]
     v: Verdict = verify(claims, code=[source], extracted_iocs=extracted_iocs,
@@ -571,6 +683,17 @@ def deobfuscate(doc: dict[str, Any], src_root: Path, *,
     spend_before = spend_before.spent_usd if spend_before else 0.0
 
     locations = interesting_locations(doc, limit)
+    # If L1 named nothing that resolves to decompiled source — droppers, packed
+    # apps and native-only payloads flag only apk/dex/native-scoped locations —
+    # fall back to the app's own jadx classes so L4 reasons about the sample's
+    # actual code instead of returning "0 classes explained" on exactly the
+    # samples that most warrant it. `any(...)` short-circuits on the normal path.
+    if not any(read_source(src_root, loc) for loc in locations):
+        fb = fallback_locations(src_root, limit)
+        if fb:
+            _emit(f"L1 named no analyzable class; falling back to the app's own "
+                  f"{len(fb)} decompiled class(es)")
+            locations = fb
     total = len(locations)
     for i, location in enumerate(locations, start=1):
         _emit(f"[{i}/{total}] analyzing {location} (up to 3 LLM calls)")
@@ -680,7 +803,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("sha256")
     ap.add_argument("--src", required=True, help="jadx_src directory for this sample")
     ap.add_argument("--limit", type=int, default=MAX_CLASSES)
-    ap.add_argument("--budget", type=float, default=1.0, help="USD cap for this run")
+    ap.add_argument("--budget", type=float, default=1.5, help="USD cap for this run")
     ap.add_argument("--provider", default="aicredits",
                     help="'aicredits' (paid, default -- avoids OpenRouter's free "
                          "daily cap, which caused the navigator's WAIT-loop bug) "

@@ -100,12 +100,15 @@ class Evidence:
 
 def compute_hashes(apk_path: Path) -> dict[str, str]:
     md5 = hashlib.md5()
+    sha1 = hashlib.sha1()
     sha256 = hashlib.sha256()
     with apk_path.open("rb") as fh:
         for chunk in iter(lambda: fh.read(1 << 20), b""):
             md5.update(chunk)
+            sha1.update(chunk)
             sha256.update(chunk)
-    return {"md5": md5.hexdigest(), "sha256": sha256.hexdigest()}
+    return {"md5": md5.hexdigest(), "sha1": sha1.hexdigest(),
+            "sha256": sha256.hexdigest()}
 
 
 def _find_aapt() -> str | None:

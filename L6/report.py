@@ -23,6 +23,7 @@ usable, and a report that hid that would be worse than no report.
 
 from __future__ import annotations
 
+import hashlib
 import html
 import json
 import sys
@@ -182,6 +183,26 @@ is model prose, not asserted fact — see L6/recommend_verify.py.</p>
 </div>"""
 
 
+def _sha1_of(b: Bundleable) -> str:
+    """The APK's SHA-1, from the spine's identity block when present.
+
+    Spines analysed before SHA-1 was added to L0 carry only sha256/md5, so fall
+    back to computing it from the on-disk source APK when that path still exists.
+    Returns "—" when neither is available rather than a misleading blank.
+    """
+    existing = b.identity.get("sha1")
+    if existing:
+        return str(existing)
+    src = b.identity.get("source_apk")
+    if src and Path(src).is_file():
+        h = hashlib.sha1()
+        with Path(src).open("rb") as fh:
+            for chunk in iter(lambda: fh.read(1 << 20), b""):
+                h.update(chunk)
+        return h.hexdigest()
+    return "—"
+
+
 def _verdict_card(b: Bundleable, l5: dict[str, Any]) -> str:
     band = b.band or "Not scored"
     color = BAND_COLOR.get(band, "#40566b")
@@ -194,6 +215,7 @@ def _verdict_card(b: Bundleable, l5: dict[str, Any]) -> str:
         rows.append(("Impersonates", b.impersonates))
     rows += [
         ("SHA-256", b.sha256),
+        ("SHA-1", _sha1_of(b)),
         ("Confidence", f"{conf} ({conf_band})" if conf_band else conf),
         ("Binding constraint", l5.get("binding_reason", "—")),
     ]
