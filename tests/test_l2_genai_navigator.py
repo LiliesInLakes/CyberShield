@@ -526,6 +526,7 @@ def test_orchestrator_start_genai_navigator_falls_back_when_provider_missing(mon
     orch.otp_file_path = Path("/tmp/does_not_matter_otp.txt")
     orch.genai_nav_log_path = Path("/tmp/does_not_matter_nav.jsonl")
     orch.navigator_provider = "openrouter"
+    orch.navigator_model = ""
 
     monkeypatch.setattr(provider_mod, "load_env", lambda path=provider_mod.ENV_FILE: {})
     monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)

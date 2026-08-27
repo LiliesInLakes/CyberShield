@@ -653,10 +653,12 @@ class L2Orchestrator:
             return None
 
         try:
-            provider = get_provider(self.navigator_provider)
+            provider_kwargs = {"model": self.navigator_model} if self.navigator_model else {}
+            provider = get_provider(self.navigator_provider, **provider_kwargs)
         except ProviderError as exc:
-            log.warning("genai navigator: provider %r unavailable (%s) -- falling back to droidbot",
-                       self.navigator_provider, exc)
+            log.warning("genai navigator: provider %r (model=%r) unavailable (%s) -- "
+                       "falling back to droidbot",
+                       self.navigator_provider, self.navigator_model or "<default>", exc)
             return None
 
         activity = self._find_launcher_activity()
